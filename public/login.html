@@ -74,7 +74,7 @@
 
         input {
             width: 100%;
-            padding: 12px 16px;
+            padding: 12px 40px 12px 16px;
             border: 1px solid rgba(200, 168, 75, 0.3);
             border-radius: 8px;
             background: rgba(10, 14, 39, 0.5);
@@ -108,31 +108,7 @@
             color: #c8a84b;
         }
 
-        .password-group {
-            display: none !important;
-            height: 0;
-            overflow: hidden;
-            opacity: 0;
-        }
-
-        .password-group.active {
-            display: block !important;
-            height: auto;
-            overflow: visible;
-            opacity: 1;
-        }
-
-        .password-group.active input {
-            display: block !important;
-            visibility: visible !important;
-        }
-
-        .password-group input {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        button {
+        button[type="submit"] {
             width: 100%;
             padding: 12px;
             background: linear-gradient(135deg, #c8a84b 0%, #a88a3a 100%);
@@ -146,12 +122,12 @@
             margin-top: 20px;
         }
 
-        button:hover {
+        button[type="submit"]:hover {
             transform: translateY(-2px);
             box-shadow: 0 12px 24px rgba(200, 168, 75, 0.3);
         }
 
-        button:disabled {
+        button[type="submit"]:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
@@ -210,13 +186,19 @@
         .message.show {
             display: block;
         }
+
+        .hidden-group {
+            display: none !important;
+            height: 0;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
             <div class="header">
-                <h1>⚓ Admiral</h1>
+                <h1>Admiral</h1>
                 <p id="header-subtitle">Logga in på ditt konto</p>
             </div>
 
@@ -227,51 +209,48 @@
 
                 <div id="message" class="message"></div>
 
-                <form id="auth-form" novalidate>
+                <form id="auth-form">
                     <div class="form-group">
                         <label for="email">E-postadress</label>
                         <input 
                             type="email" 
                             id="email" 
-                            name="email" 
                             placeholder="din@email.com"
                         >
                     </div>
 
-                    <div class="form-group password-group active" id="password-login-group">
-                        <label for="password">Lösenord</label>
+                    <!-- Login password field -->
+                    <div class="form-group" id="login-password-group">
+                        <label for="password-login">Lösenord</label>
                         <div class="input-group">
                             <input 
                                 type="password" 
-                                id="password" 
-                                name="password" 
+                                id="password-login" 
                                 placeholder="Ditt lösenord"
-                                required
                             >
-                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password')">👁️</button>
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password-login')">👁️</button>
                         </div>
                     </div>
 
-                    <div class="form-group password-group" id="password-register-group">
-                        <label for="password-new">Lösenord (minst 6 tecken)</label>
+                    <!-- Register password fields -->
+                    <div class="form-group hidden-group" id="register-password-group">
+                        <label for="password-register">Lösenord (minst 6 tecken)</label>
                         <div class="input-group">
                             <input 
                                 type="password" 
-                                id="password-new" 
-                                name="password-new" 
+                                id="password-register" 
                                 placeholder="Välj ett starkt lösenord"
                             >
-                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password-new')">👁️</button>
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password-register')">👁️</button>
                         </div>
                     </div>
 
-                    <div class="form-group password-group" id="password-confirm-group">
+                    <div class="form-group hidden-group" id="confirm-password-group">
                         <label for="password-confirm">Bekräfta lösenord</label>
                         <div class="input-group">
                             <input 
                                 type="password" 
                                 id="password-confirm" 
-                                name="password-confirm" 
                                 placeholder="Bekräfta lösenord"
                             >
                             <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password-confirm')">👁️</button>
@@ -289,10 +268,9 @@
     </div>
 
     <script>
-        const BACKEND_URL = 'http://187.124.32.19:3000'; // VPS backend
+        const BACKEND_URL = 'http://187.124.32.19:3000';
         let isRegisterMode = false;
 
-        // Check if register mode from URL
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('register') === 'true') {
             toggleMode();
@@ -303,37 +281,40 @@
             const submitBtn = document.getElementById('submit-btn');
             const headerSubtitle = document.getElementById('header-subtitle');
             const toggleText = document.getElementById('toggle-text');
-            const loginGroup = document.getElementById('password-login-group');
-            const registerGroup = document.getElementById('password-register-group');
-            const confirmGroup = document.getElementById('password-confirm-group');
+            const loginGroup = document.getElementById('login-password-group');
+            const registerGroup = document.getElementById('register-password-group');
+            const confirmGroup = document.getElementById('confirm-password-group');
 
             if (isRegisterMode) {
                 submitBtn.textContent = 'Registrera konto';
                 headerSubtitle.textContent = 'Skapa ett nytt konto';
                 toggleText.innerHTML = 'Redan kund? <a onclick="toggleMode()">Logga in här</a>';
-                loginGroup.classList.remove('active');
-                registerGroup.classList.add('active');
-                confirmGroup.classList.add('active');
+                loginGroup.classList.add('hidden-group');
+                registerGroup.classList.remove('hidden-group');
+                confirmGroup.classList.remove('hidden-group');
             } else {
                 submitBtn.textContent = 'Logga in';
                 headerSubtitle.textContent = 'Logga in på ditt konto';
                 toggleText.innerHTML = 'Ingen kund än? <a onclick="toggleMode()">Registrera dig här</a>';
-                loginGroup.classList.add('active');
-                registerGroup.classList.remove('active');
-                confirmGroup.classList.remove('active');
+                loginGroup.classList.remove('hidden-group');
+                registerGroup.classList.add('hidden-group');
+                confirmGroup.classList.add('hidden-group');
             }
         }
 
         function togglePasswordVisibility(fieldId) {
             const field = document.getElementById(fieldId);
-            const isPassword = field.type === 'password';
-            field.type = isPassword ? 'text' : 'password';
+            if (field.type === 'password') {
+                field.type = 'text';
+            } else {
+                field.type = 'password';
+            }
         }
 
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim();
             const messageDiv = document.getElementById('message');
             const submitBtn = document.getElementById('submit-btn');
 
@@ -341,11 +322,17 @@
             submitBtn.disabled = true;
 
             try {
-                let response;
+                if (!email) {
+                    throw new Error('E-postadress är obligatorisk');
+                }
 
                 if (isRegisterMode) {
-                    const password = document.getElementById('password-new').value;
+                    const password = document.getElementById('password-register').value;
                     const confirmPassword = document.getElementById('password-confirm').value;
+
+                    if (!password) {
+                        throw new Error('Lösenord är obligatoriskt');
+                    }
 
                     if (password !== confirmPassword) {
                         throw new Error('Lösenorden matchar inte');
@@ -355,46 +342,58 @@
                         throw new Error('Lösenordet måste vara minst 6 tecken');
                     }
 
-                    response = await fetch(`${BACKEND_URL}/auth/register`, {
+                    const response = await fetch(`${BACKEND_URL}/auth/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, password })
+                        body: JSON.stringify({
+                            email,
+                            password,
+                            company_name: email.split('@')[0] + ' Company'
+                        })
                     });
 
-                    if (response.ok) {
-                        const data = await response.json();
-                        messageDiv.textContent = '✓ Konto skapat! Loggar in...';
-                        messageDiv.classList.add('show', 'success');
-                        setTimeout(() => {
-                            localStorage.setItem('token', data.token);
-                            window.location.href = '/dashboard.html';
-                        }, 1500);
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Registrering misslyckades');
                     }
+
+                    const data = await response.json();
+                    messageDiv.textContent = '✓ Konto skapat! Loggar in...';
+                    messageDiv.classList.add('show', 'success');
+                    setTimeout(() => {
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        window.location.href = '/dashboard.html';
+                    }, 1500);
                 } else {
-                    const password = document.getElementById('password').value;
+                    const password = document.getElementById('password-login').value;
 
-                    response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    if (!password) {
+                        throw new Error('Lösenord är obligatoriskt');
+                    }
+
+                    const response = await fetch(`${BACKEND_URL}/auth/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, password })
                     });
 
-                    if (response.ok) {
-                        const data = await response.json();
-                        messageDiv.textContent = '✓ Logga in lyckades! Omdirigerar...';
-                        messageDiv.classList.add('show', 'success');
-                        setTimeout(() => {
-                            localStorage.setItem('token', data.token);
-                            window.location.href = '/dashboard.html';
-                        }, 1500);
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Login misslyckades');
                     }
-                }
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Något gick fel');
+                    const data = await response.json();
+                    messageDiv.textContent = '✓ Login lyckades! Omdirigerar...';
+                    messageDiv.classList.add('show', 'success');
+                    setTimeout(() => {
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        window.location.href = '/dashboard.html';
+                    }, 1500);
                 }
             } catch (error) {
+                console.error('Error:', error);
                 messageDiv.textContent = `✗ ${error.message}`;
                 messageDiv.classList.add('show', 'error');
                 submitBtn.disabled = false;
