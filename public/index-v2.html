@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admiral — Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+:root {
+  --bg-primary: #0a0e27;
+  --bg-secondary: #1a1f3a;
+  --glass-bg: rgba(26, 31, 58, 0.5);
+  --glass-border: rgba(200, 168, 75, 0.15);
+  --gold: #c8a84b;
+  --blue: #5898f0;
+  --mint: #3dd68c;
+  --text-primary: #dce3f0;
+  --text-secondary: #a0a8b3;
+  --text-tertiary: #7a8baa;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1428 100%);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 3D Background Environment */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(88, 152, 240, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 30%, rgba(200, 168, 75, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(61, 214, 140, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Floating 3D Shapes */
+.background-shapes {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.shape {
+  position: absolute;
+  opacity: 0.1;
+  filter: blur(40px);
+  background: linear-gradient(135deg, var(--blue), var(--gold));
+  border-radius: 50%;
+}
+
+.shape-1 { width: 300px; height: 300px; top: -100px; left: -100px; animation: float 20s infinite ease-in-out; }
+.shape-2 { width: 250px; height: 250px; top: 20%; right: -50px; animation: float 25s infinite ease-in-out 2s; }
+.shape-3 { width: 200px; height: 200px; bottom: 10%; left: 10%; animation: float 22s infinite ease-in-out 4s; }
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(20px, -30px); }
+  50% { transform: translate(-20px, 20px); }
+  75% { transform: translate(30px, 10px); }
+}
+
+/* Main Container */
+.container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background: rgba(10, 14, 39, 0.7);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--glass-border);
+  padding: 24px 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.logo-mark {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--gold), #a88a2c);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0a0e27;
+  box-shadow: 0 8px 24px rgba(200, 168, 75, 0.2);
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.logo-sub {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.nav-item:hover {
+  background: rgba(200, 168, 75, 0.08);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background: rgba(200, 168, 75, 0.15);
+  border-color: var(--glass-border);
+  color: var(--gold);
+}
+
+.nav-icon {
+  font-size: 18px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Main Content */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(10, 14, 39, 0.3);
+  backdrop-filter: blur(20px);
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.header-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.header-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.campaign-selector {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.campaign-selector:hover {
+  border-color: var(--gold);
+  background: rgba(200, 168, 75, 0.1);
+}
+
+.logout-btn {
+  background: linear-gradient(135deg, var(--gold), #a88a2c);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  color: #0a0e27;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(200, 168, 75, 0.2);
+}
+
+.logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(200, 168, 75, 0.3);
+}
+
+.header-subtitle {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* Content Area */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  auto-rows: max-content;
+}
+
+/* Glass Card */
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(200, 168, 75, 0.1) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.card:hover {
+  border-color: var(--glass-border);
+  background: rgba(26, 31, 58, 0.7);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+/* KPI Card */
+.kpi-card {
+  grid-column: 1;
+}
+
+.kpi-label {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--text-primary), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.kpi-icon {
+  font-size: 24px;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 8px rgba(200, 168, 75, 0.2));
+}
+
+.kpi-trend {
+  font-size: 12px;
+  color: var(--mint);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Chart Container */
+.chart-card {
+  grid-column: 1 / -1;
+  min-height: 300px;
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+}
+
+.chart {
+  width: 100%;
+  height: 240px;
+  position: relative;
+}
+
+/* Glowing Line Chart */
+.chart-line {
+  position: relative;
+  height: 100%;
+}
+
+.chart-line svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 20px rgba(88, 152, 240, 0.3));
+}
+
+.chart-line path {
+  fill: none;
+  stroke: url(#gradient-blue);
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 8px rgba(88, 152, 240, 0.5));
+}
+
+.chart-area {
+  fill: url(#gradient-area);
+  opacity: 0.3;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 168, 75, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(200, 168, 75, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 240px;
+    padding: 16px 12px;
+    gap: 24px;
+  }
+  
+  .header {
+    padding: 16px 20px;
+  }
+  
+  .content {
+    padding: 20px;
+    gap: 16px;
+  }
+  
+  .card {
+    padding: 16px;
+  }
+}
+    </style>
+</head>
+<body>
+
+<div class="background-shapes">
+  <div class="shape shape-1"></div>
+  <div class="shape shape-2"></div>
+  <div class="shape shape-3"></div>
+</div>
+
+<div class="container">
+  
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">A</div>
+      <div class="logo-text">
+        <div class="logo-name">Admiral</div>
+        <div class="logo-sub">Ads Intelligence</div>
+      </div>
+    </div>
+    
+    <div class="nav">
+      <div class="nav-item active">
+        <div class="nav-icon">📊</div>
+        <span>Dashboard</span>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">⚙️</div>
+        <span>Settings</span>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">📈</div>
+        <span>Analytics</span>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon">🔔</div>
+        <span>Alerts</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+    
+    <!-- Header -->
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <div class="header-title">Dashboard</div>
+          <div class="header-subtitle">Real-time Meta Ads Performance</div>
+        </div>
+        <div class="header-controls">
+          <select class="campaign-selector">
+            <option>TeeBox</option>
+            <option>Academy</option>
+            <option>Golfresor</option>
+          </select>
+          <button class="logout-btn">Logga ut</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content">
+      
+      <!-- KPI: CPM -->
+      <div class="card kpi-card">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-label">CPM (Cost Per Mille)</div>
+        <div class="kpi-value">42 SEK</div>
+        <div class="kpi-trend">↓ 3.2% vs. veckan innan</div>
+      </div>
+
+      <!-- KPI: Conversions -->
+      <div class="card kpi-card">
+        <div class="kpi-icon">✓</div>
+        <div class="kpi-label">Conversion Rate</div>
+        <div class="kpi-value">3.2%</div>
+        <div class="kpi-trend">↑ 0.5% vs. veckan innan</div>
+      </div>
+
+      <!-- KPI: ROI -->
+      <div class="card kpi-card">
+        <div class="kpi-icon">📈</div>
+        <div class="kpi-label">Return on Ad Spend</div>
+        <div class="kpi-value">4.2x</div>
+        <div class="kpi-trend">↑ 0.3x vs. veckan innan</div>
+      </div>
+
+      <!-- KPI: Budget -->
+      <div class="card kpi-card">
+        <div class="kpi-icon">💳</div>
+        <div class="kpi-label">Budget Spent</div>
+        <div class="kpi-value">6,500 SEK</div>
+        <div class="kpi-trend">4,500 SEK remaining</div>
+      </div>
+
+      <!-- Chart: Budget Over Time -->
+      <div class="card chart-card">
+        <div class="chart-title">Budget Spend — Last 7 Days</div>
+        <div class="chart">
+          <div class="chart-line">
+            <svg viewBox="0 0 600 200" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <linearGradient id="gradient-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:#5898f0;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#c8a84b;stop-opacity:1" />
+                </linearGradient>
+                <linearGradient id="gradient-area" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:#5898f0;stop-opacity:0.3" />
+                  <stop offset="100%" style="stop-color:#5898f0;stop-opacity:0" />
+                </linearGradient>
+              </defs>
+              <path class="chart-area" d="M 0 120 L 100 100 L 200 110 L 300 80 L 400 90 L 500 70 L 600 60 L 600 200 L 0 200 Z" />
+              <path class="chart-line" d="M 0 120 L 100 100 L 200 110 L 300 80 L 400 90 L 500 70 L 600 60" />
+              <circle cx="0" cy="120" r="4" fill="#5898f0" opacity="0.8" />
+              <circle cx="100" cy="100" r="4" fill="#5898f0" opacity="0.8" />
+              <circle cx="200" cy="110" r="4" fill="#5898f0" opacity="0.8" />
+              <circle cx="300" cy="80" r="4" fill="#5898f0" opacity="0.8" />
+              <circle cx="400" cy="90" r="4" fill="#5898f0" opacity="0.8" />
+              <circle cx="500" cy="70" r="4" fill="#5898f0" opacity="0.8" />
+              <circle cx="600" cy="60" r="4" fill="#5898f0" opacity="0.8" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>
