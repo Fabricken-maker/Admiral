@@ -1,53 +1,42 @@
 [build]
-  command = "npm run migrate && npm run build"
-  functions = "netlify/functions"
+  command = "echo 'Static site - no build needed'"
   publish = "public"
 
-[functions]
-  node_bundler = "esbuild"
-  directory = "netlify/functions"
+[env.production]
+  environment = { BACKEND_URL = "http://187.124.32.19:3000" }
+
+[env.staging]
+  environment = { BACKEND_URL = "http://localhost:3000" }
+
+# Proxy API calls to VPS backend
+[[redirects]]
+  from = "/api/*"
+  to = "http://187.124.32.19:3000/api/:splat"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/auth/*"
-  to = "/.netlify/functions/auth/:splat"
+  to = "http://187.124.32.19:3000/auth/:splat"
   status = 200
+  force = true
 
 [[redirects]]
-  from = "/api/campaigns/*"
-  to = "/.netlify/functions/campaigns/:splat"
+  from = "/health"
+  to = "http://187.124.32.19:3000/health"
   status = 200
+  force = true
 
-[[redirects]]
-  from = "/api/webhook/*"
-  to = "/.netlify/functions/webhook/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/api/admin/*"
-  to = "/.netlify/functions/admin/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
-  status = 200
-
+# SPA routing - all other paths go to index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-[env.production]
-  environment = { NODE_ENV = "production" }
-
-[env.staging]
-  environment = { NODE_ENV = "staging" }
-
-# Edge Functions for middleware
-[[edge_functions]]
-  path = "/auth"
-  function = "auth-middleware"
-
-[[edge_functions]]
-  path = "/api/*"
-  function = "api-middleware"
+# CORS headers
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
