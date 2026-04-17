@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admiral Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f7fa;
+      color: #333;
+    }
+
+    .navbar {
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .navbar h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .navbar-right {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .user-info {
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .user-email {
+      color: #999;
+      font-size: 12px;
+    }
+
+    .logout-btn {
+      padding: 8px 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .logout-btn:hover {
+      background: #5568d3;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .section {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .section h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: #5568d3;
+    }
+
+    button.secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    button.secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    .table th {
+      background: #f5f7fa;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .table td {
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 13px;
+    }
+
+    .table tr:hover {
+      background: #f9f9f9;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status.active {
+      background: #e6f7ed;
+      color: #0a7f3c;
+    }
+
+    .status.paused {
+      background: #fef2e8;
+      color: #b5531d;
+    }
+
+    .status.pending {
+      background: #e8f4f8;
+      color: #0066a1;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+
+    .empty p {
+      margin-bottom: 16px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-close {
+      float: right;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .error {
+      background: #fee;
+      color: #c33;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+
+    .success {
+      background: #efe;
+      color: #3c3;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .success.show {
+      display: block;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f0f0f0;
+      border-top: 2px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <h1>⚓ Admiral Dashboard</h1>
+    <div class="navbar-right">
+      <div class="user-info">
+        <div id="userName">Loading...</div>
+        <div class="user-email" id="userEmail"></div>
+      </div>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Profile Section -->
+    <div class="section">
+      <h2>📊 Account Overview</h2>
+      <div class="buttons">
+        <button onclick="showModal('connectMetaModal')">Connect Meta Ads Account</button>
+        <button class="secondary" onclick="loadCampaigns()">Refresh Campaigns</button>
+      </div>
+      <div id="accountError" class="error"></div>
+      <div id="accountSuccess" class="success"></div>
+      <div id="accountInfo"></div>
+    </div>
+
+    <!-- Meta Accounts Section -->
+    <div class="section">
+      <h2>🔌 Connected Meta Ads Accounts</h2>
+      <div id="metaAccountsError" class="error"></div>
+      <table class="table" id="metaAccountsTable">
+        <thead>
+          <tr>
+            <th>Account Name</th>
+            <th>Account ID</th>
+            <th>Status</th>
+            <th>Connected</th>
+          </tr>
+        </thead>
+        <tbody id="metaAccountsList"></tbody>
+      </table>
+    </div>
+
+    <!-- Campaigns Section -->
+    <div class="section">
+      <h2>📈 Your Campaigns</h2>
+      <div class="buttons">
+        <button onclick="showModal('syncCampaignsModal')">Sync from Meta</button>
+      </div>
+      <div id="campaignsError" class="error"></div>
+      <table class="table" id="campaignsTable">
+        <thead>
+          <tr>
+            <th>Campaign Name</th>
+            <th>Status</th>
+            <th>Daily Budget</th>
+            <th>Objective</th>
+            <th>Updated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="campaignsList"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Connect Meta Modal -->
+  <div id="connectMetaModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="hideModal('connectMetaModal')">&times;</span>
+      <h2>Connect Meta Ads Account</h2>
+      <div id="connectMetaError" class="error"></div>
+      <form onsubmit="connectMetaAccount(event)">
+        <div class="form-group">
+          <label for="accountId">Account ID</label>
+          <input type="text" id="accountId" placeholder="123456789" required>
+        </div>
+        <div class="form-group">
+          <label for="accessToken">Access Token</label>
+          <textarea id="accessToken" placeholder="Paste your Meta access token" required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="accountName">Account Name</label>
+          <input type="text" id="accountName" placeholder="e.g., Main Account">
+        </div>
+        <button type="submit">Connect Account</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sync Campaigns Modal -->
+  <div id="syncCampaignsModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="hideModal('syncCampaignsModal')">&times;</span>
+      <h2>Sync Campaigns from Meta</h2>
+      <div id="syncError" class="error"></div>
+      <form onsubmit="syncCampaignsFromMeta(event)">
+        <div class="form-group">
+          <label for="metaAccountId">Select Meta Account</label>
+          <select id="metaAccountId" required>
+            <option value="">Loading accounts...</option>
+          </select>
+        </div>
+        <button type="submit">Sync Campaigns</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api';
+    let token = null;
+    let currentUser = null;
+
+    // Initialize
+    window.addEventListener('load', () => {
+      token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login.html';
+        return;
+      }
+
+      const user = localStorage.getItem('user');
+      if (user) {
+        currentUser = JSON.parse(user);
+        document.getElementById('userName').textContent = currentUser.company_name;
+        document.getElementById('userEmail').textContent = currentUser.email;
+      }
+
+      loadAccountInfo();
+      loadMetaAccounts();
+      loadCampaigns();
+    });
+
+    function getHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+    }
+
+    async function loadAccountInfo() {
+      try {
+        const response = await fetch(`${API_URL}/auth/profile`, {
+          headers: getHeaders()
+        });
+        const data = await response.json();
+
+        const html = `
+          <p><strong>Company:</strong> ${data.user.company_name}</p>
+          <p><strong>Email:</strong> ${data.user.email}</p>
+          <p><strong>Plan:</strong> <span class="status active">${data.user.subscription_tier}</span></p>
+          <p><strong>Status:</strong> <span class="status active">${data.user.subscription_status}</span></p>
+        `;
+        document.getElementById('accountInfo').innerHTML = html;
+      } catch (err) {
+        showError('account', 'Failed to load account info');
+      }
+    }
+
+    async function loadMetaAccounts() {
+      try {
+        const response = await fetch(`${API_URL}/campaigns/meta-accounts`, {
+          headers: getHeaders()
+        });
+        const data = await response.json();
+
+        const tbody = document.getElementById('metaAccountsList');
+        if (data.accounts.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" class="empty">No connected accounts</td></tr>';
+        } else {
+          tbody.innerHTML = data.accounts.map(acc => `
+            <tr>
+              <td>${acc.account_name}</td>
+              <td>${acc.account_id}</td>
+              <td><span class="status ${acc.is_active ? 'active' : 'paused'}">${acc.is_active ? 'Active' : 'Inactive'}</span></td>
+              <td>${new Date(acc.connected_at).toLocaleDateString()}</td>
+            </tr>
+          `).join('');
+        }
+
+        // Update select dropdown
+        const select = document.getElementById('metaAccountId');
+        select.innerHTML = data.accounts.map(acc => `
+          <option value="${acc.id}">${acc.account_name}</option>
+        `).join('');
+      } catch (err) {
+        showError('metaAccounts', 'Failed to load Meta accounts');
+      }
+    }
+
+    async function loadCampaigns() {
+      try {
+        const response = await fetch(`${API_URL}/campaigns`, {
+          headers: getHeaders()
+        });
+        const data = await response.json();
+
+        const tbody = document.getElementById('campaignsList');
+        if (data.campaigns.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6"><div class="empty">No campaigns yet. Connect a Meta Ads account and sync.</div></td></tr>';
+        } else {
+          tbody.innerHTML = data.campaigns.map(camp => `
+            <tr>
+              <td>${camp.campaign_name}</td>
+              <td><span class="status ${camp.status === 'ACTIVE' ? 'active' : 'paused'}">${camp.status}</span></td>
+              <td>${camp.daily_budget ? camp.daily_budget.toFixed(0) + ' ' + camp.currency : '-'}</td>
+              <td>${camp.objective || '-'}</td>
+              <td>${new Date(camp.updated_at).toLocaleDateString()}</td>
+              <td><button class="secondary" onclick="editCampaign(${camp.id})">Edit</button></td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) {
+        showError('campaigns', 'Failed to load campaigns');
+      }
+    }
+
+    async function connectMetaAccount(e) {
+      e.preventDefault();
+
+      const accountId = document.getElementById('accountId').value;
+      const accessToken = document.getElementById('accessToken').value;
+      const accountName = document.getElementById('accountName').value;
+
+      try {
+        const response = await fetch(`${API_URL}/campaigns/connect-meta`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ account_id: accountId, access_token: accessToken, account_name: accountName })
+        });
+
+        if (response.ok) {
+          hideModal('connectMetaModal');
+          loadMetaAccounts();
+          showSuccess('account', 'Meta account connected successfully!');
+          setTimeout(() => hideError('account'), 3000);
+        } else {
+          const data = await response.json();
+          showError('connectMeta', data.error);
+        }
+      } catch (err) {
+        showError('connectMeta', 'Connection failed: ' + err.message);
+      }
+    }
+
+    async function syncCampaignsFromMeta(e) {
+      e.preventDefault();
+
+      const metaAccountId = document.getElementById('metaAccountId').value;
+
+      try {
+        const response = await fetch(`${API_URL}/campaigns/sync-from-meta`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({ meta_account_id: metaAccountId })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          hideModal('syncCampaignsModal');
+          loadCampaigns();
+          showSuccess('account', data.message);
+          setTimeout(() => hideError('account'), 3000);
+        } else {
+          const data = await response.json();
+          showError('sync', data.error);
+        }
+      } catch (err) {
+        showError('sync', 'Sync failed: ' + err.message);
+      }
+    }
+
+    function editCampaign(id) {
+      alert('Campaign editing coming soon!');
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login.html';
+    }
+
+    function showModal(id) {
+      document.getElementById(id).classList.add('show');
+    }
+
+    function hideModal(id) {
+      document.getElementById(id).classList.remove('show');
+    }
+
+    function showError(id, message) {
+      const el = document.getElementById(id + 'Error');
+      if (el) {
+        el.textContent = message;
+        el.classList.add('show');
+      }
+    }
+
+    function hideError(id) {
+      const el = document.getElementById(id + 'Error');
+      if (el) {
+        el.classList.remove('show');
+      }
+    }
+
+    function showSuccess(id, message) {
+      const el = document.getElementById(id + 'Success');
+      if (el) {
+        el.textContent = message;
+        el.classList.add('show');
+      }
+    }
+
+    // Close modal when clicking outside
+    window.onclick = (event) => {
+      if (event.target.classList.contains('modal')) {
+        event.target.classList.remove('show');
+      }
+    };
+  </script>
+</body>
+</html>

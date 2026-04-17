@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  admiral-backend:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DB_PATH: /data/admiral.db
+      FABRICKEN_DB_PATH: /data/fabricken.db
+      JWT_SECRET: ${JWT_SECRET:-change-in-production}
+      META_APP_SECRET: ${META_APP_SECRET:-}
+      WEBHOOK_VERIFY_TOKEN: ${WEBHOOK_VERIFY_TOKEN:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001}
+    volumes:
+      - ./data:/data
+      - /root/.openclaw/workspace/crm:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - admiral
+
+  # Optional: Reverse proxy (nginx)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./public:/usr/share/nginx/html:ro
+    depends_on:
+      - admiral-backend
+    networks:
+      - admiral
+    restart: unless-stopped
+
+networks:
+  admiral:
+    driver: bridge

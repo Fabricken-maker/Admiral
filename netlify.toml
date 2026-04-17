@@ -1,0 +1,53 @@
+[build]
+  command = "npm run migrate && npm run build"
+  functions = "netlify/functions"
+  publish = "public"
+
+[functions]
+  node_bundler = "esbuild"
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/auth/*"
+  to = "/.netlify/functions/auth/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/campaigns/*"
+  to = "/.netlify/functions/campaigns/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/webhook/*"
+  to = "/.netlify/functions/webhook/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/*"
+  to = "/.netlify/functions/admin/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[env.production]
+  environment = { NODE_ENV = "production" }
+
+[env.staging]
+  environment = { NODE_ENV = "staging" }
+
+# Edge Functions for middleware
+[[edge_functions]]
+  path = "/auth"
+  function = "auth-middleware"
+
+[[edge_functions]]
+  path = "/api/*"
+  function = "api-middleware"
