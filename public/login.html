@@ -68,6 +68,10 @@
             color: #dce3f0;
         }
 
+        .input-group {
+            position: relative;
+        }
+
         input {
             width: 100%;
             padding: 12px 16px;
@@ -82,6 +86,26 @@
         input:focus {
             outline: none;
             border-color: #c8a84b;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #a0a8b3;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: auto;
+            margin: 0;
+            transition: color 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            color: #c8a84b;
         }
 
         .password-group {
@@ -201,35 +225,44 @@
 
                     <div class="form-group password-group active" id="password-login-group">
                         <label for="password">Lösenord</label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            placeholder="Ditt lösenord"
-                            required
-                        >
+                        <div class="input-group">
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                placeholder="Ditt lösenord"
+                                required
+                            >
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password')">👁️</button>
+                        </div>
                     </div>
 
                     <div class="form-group password-group" id="password-register-group">
                         <label for="password-new">Lösenord (minst 6 tecken)</label>
-                        <input 
-                            type="password" 
-                            id="password-new" 
-                            name="password-new" 
-                            placeholder="Välj ett starkt lösenord"
-                            required
-                        >
+                        <div class="input-group">
+                            <input 
+                                type="password" 
+                                id="password-new" 
+                                name="password-new" 
+                                placeholder="Välj ett starkt lösenord"
+                                required
+                            >
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password-new')">👁️</button>
+                        </div>
                     </div>
 
                     <div class="form-group password-group" id="password-confirm-group">
                         <label for="password-confirm">Bekräfta lösenord</label>
-                        <input 
-                            type="password" 
-                            id="password-confirm" 
-                            name="password-confirm" 
-                            placeholder="Bekräfta lösenord"
-                            required
-                        >
+                        <div class="input-group">
+                            <input 
+                                type="password" 
+                                id="password-confirm" 
+                                name="password-confirm" 
+                                placeholder="Bekräfta lösenord"
+                                required
+                            >
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password-confirm')">👁️</button>
+                        </div>
                     </div>
 
                     <button type="submit" id="submit-btn">Logga in</button>
@@ -276,6 +309,12 @@
                 registerGroup.classList.remove('active');
                 confirmGroup.classList.remove('active');
             }
+        }
+
+        function togglePasswordVisibility(fieldId) {
+            const field = document.getElementById(fieldId);
+            const isPassword = field.type === 'password';
+            field.type = isPassword ? 'text' : 'password';
         }
 
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
