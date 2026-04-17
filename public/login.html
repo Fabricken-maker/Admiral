@@ -268,7 +268,7 @@
     </div>
 
     <script>
-        const BACKEND_URL = 'http://187.124.32.19:3000';
+        const BACKEND_URL = '/.netlify/functions'; // Netlify Functions (serverless)
         let isRegisterMode = false;
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -342,7 +342,7 @@
                         throw new Error('Lösenordet måste vara minst 6 tecken');
                     }
 
-                    const response = await fetch(`${BACKEND_URL}/auth/register`, {
+                    const response = await fetch(`${BACKEND_URL}/auth-register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -372,7 +372,7 @@
                         throw new Error('Lösenord är obligatoriskt');
                     }
 
-                    const response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    const response = await fetch(`${BACKEND_URL}/auth-login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, password })
