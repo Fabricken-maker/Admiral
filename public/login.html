@@ -109,11 +109,27 @@
         }
 
         .password-group {
-            display: none;
+            display: none !important;
+            height: 0;
+            overflow: hidden;
+            opacity: 0;
         }
 
         .password-group.active {
-            display: block;
+            display: block !important;
+            height: auto;
+            overflow: visible;
+            opacity: 1;
+        }
+
+        .password-group.active input {
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        .password-group input {
+            display: none !important;
+            visibility: hidden !important;
         }
 
         button {
@@ -245,7 +261,6 @@
                                 id="password-new" 
                                 name="password-new" 
                                 placeholder="Välj ett starkt lösenord"
-                                required
                             >
                             <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password-new')">👁️</button>
                         </div>
@@ -259,7 +274,6 @@
                                 id="password-confirm" 
                                 name="password-confirm" 
                                 placeholder="Bekräfta lösenord"
-                                required
                             >
                             <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password-confirm')">👁️</button>
                         </div>
