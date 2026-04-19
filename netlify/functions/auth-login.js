@@ -63,10 +63,20 @@ export const handler = async (event, context) => {
       };
     }
 
-    // Generate token
+    // Generate token - MUST use .env JWT_SECRET (never hardcode!)
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('CRITICAL: JWT_SECRET not set in environment!');
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Server configuration error' })
+      };
+    }
+
     const token = jwt.sign(
       { id: user.id, email: user.email, subscription_tier: user.subscription_tier },
-      process.env.JWT_SECRET || 'test-secret-key',
+      jwtSecret,
       { expiresIn: '24h' }
     );
 

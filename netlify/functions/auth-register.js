@@ -15,6 +15,15 @@ export const handler = async (event, context) => {
   try {
     const { email, password, company_name } = JSON.parse(event.body);
 
+    // Request validation
+    if (event.httpMethod !== 'POST' && event.httpMethod !== 'OPTIONS') {
+      return {
+        statusCode: 405,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Method not allowed' })
+      };
+    }
+
     if (!email || !password || !company_name) {
       return {
         statusCode: 400,
@@ -53,10 +62,20 @@ export const handler = async (event, context) => {
       created_at: new Date().toISOString()
     };
 
-    // Generate token
+    // Generate token - MUST use .env JWT_SECRET (never hardcode!)
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('CRITICAL: JWT_SECRET not set in environment!');
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Server configuration error' })
+      };
+    }
+
     const token = jwt.sign(
       { id: userId, email, subscription_tier: 'starter' },
-      process.env.JWT_SECRET || 'test-secret-key',
+      jwtSecret,
       { expiresIn: '24h' }
     );
 
