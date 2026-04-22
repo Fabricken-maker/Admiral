@@ -342,7 +342,7 @@
                         throw new Error('Lösenordet måste vara minst 6 tecken');
                     }
 
-                    const response = await fetch(`${BACKEND_URL}/auth-register`, {
+                    const response = await fetch(`${BACKEND_URL}/auth-register-supabase`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -363,7 +363,7 @@
                     setTimeout(() => {
                         localStorage.setItem('token', data.token);
                         localStorage.setItem('user', JSON.stringify(data.user));
-                        window.location.href = '/dashboard-welcome.html';
+                        window.location.href = data.redirect || '/setup-wizard.html';
                     }, 1500);
                 } else {
                     const password = document.getElementById('password-login').value;
@@ -372,7 +372,7 @@
                         throw new Error('Lösenord är obligatoriskt');
                     }
 
-                    const response = await fetch(`${BACKEND_URL}/auth-login`, {
+                    const response = await fetch(`${BACKEND_URL}/auth-login-supabase`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, password })
@@ -389,7 +389,8 @@
                     setTimeout(() => {
                         localStorage.setItem('token', data.token);
                         localStorage.setItem('user', JSON.stringify(data.user));
-                        window.location.href = '/dashboard-welcome.html';
+                        const dest = data.user.setup_completed ? '/dashboard-welcome.html' : '/setup-wizard.html';
+                        window.location.href = dest;
                     }, 1500);
                 }
             } catch (error) {

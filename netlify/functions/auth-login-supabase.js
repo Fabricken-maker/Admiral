@@ -90,7 +90,8 @@ export const handler = async (event, context) => {
       {
         id: user.id,
         email: user.email,
-        subscription_tier: user.subscription_tier
+        subscription_tier: user.subscription_tier,
+        setup_completed: user.setup_completed ?? false
       },
       jwtSecret,
       { expiresIn: '24h' }
@@ -107,7 +108,8 @@ export const handler = async (event, context) => {
           email: user.email,
           company_name: user.company_name,
           subscription_tier: user.subscription_tier,
-          subscription_status: user.subscription_status
+          subscription_status: user.subscription_status,
+          setup_completed: user.setup_completed ?? false
         }
       })
     };

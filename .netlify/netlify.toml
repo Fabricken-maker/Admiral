@@ -1,0 +1,95 @@
+functionsDirectory = "/Users/erikagerup/Admiral/netlify/functions"
+functionsDirectoryOrigin = "default"
+headersOrigin = "config"
+redirectsOrigin = "config"
+plugins = []
+
+[build]
+publish = "/Users/erikagerup/Admiral/public"
+publishOrigin = "config"
+commandOrigin = "config"
+command = "echo 'Static site - no build needed'"
+functions = "/Users/erikagerup/Admiral/netlify/functions"
+
+[build.environment]
+
+[build.processing]
+
+[build.processing.css]
+
+[build.processing.html]
+
+[build.processing.images]
+
+[build.processing.js]
+
+[build.services]
+
+[functions]
+
+[functions."*"]
+node_bundler = "esbuild"
+
+[[headers]]
+for = "/api/*"
+
+[headers.values]
+Access-Control-Allow-Origin = "*"
+Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+[[headers]]
+for = "/auth/*"
+
+[headers.values]
+Access-Control-Allow-Origin = "*"
+Access-Control-Allow-Methods = "POST, OPTIONS"
+Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+[[redirects]]
+from = "/auth/register"
+to = "/.netlify/functions/auth-register-supabase"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/auth/login"
+to = "/.netlify/functions/auth-login-supabase"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/user"
+to = "/.netlify/functions/api-user"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200.0
+force = false
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]

@@ -115,7 +115,8 @@ export const handler = async (event, context) => {
       {
         id: user.id,
         email: user.email,
-        subscription_tier: user.subscription_tier
+        subscription_tier: user.subscription_tier,
+        setup_completed: false
       },
       jwtSecret,
       { expiresIn: '24h' }
@@ -127,11 +128,13 @@ export const handler = async (event, context) => {
       body: JSON.stringify({
         message: 'User registered successfully',
         token,
+        redirect: '/setup-wizard.html',
         user: {
           id: user.id,
           email: user.email,
           company_name: user.company_name,
-          subscription_tier: user.subscription_tier
+          subscription_tier: user.subscription_tier,
+          setup_completed: false
         }
       })
     };

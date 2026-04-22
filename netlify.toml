@@ -23,6 +23,12 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/setup"
+  to = "/.netlify/functions/setup"
+  status = 200
+  force = true
+
 # SPA routing - all other paths go to index.html
 [[redirects]]
   from = "/*"
