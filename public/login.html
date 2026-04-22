@@ -358,12 +358,12 @@
                     }
 
                     const data = await response.json();
-                    messageDiv.textContent = '✓ Konto skapat! Loggar in...';
+                    messageDiv.textContent = '✓ Konto skapat! Omdirigerar...';
                     messageDiv.classList.add('show', 'success');
                     setTimeout(() => {
                         localStorage.setItem('token', data.token);
                         localStorage.setItem('user', JSON.stringify(data.user));
-                        window.location.href = '/dashboard.html';
+                        window.location.href = '/dashboard-welcome.html';
                     }, 1500);
                 } else {
                     const password = document.getElementById('password-login').value;
@@ -389,7 +389,7 @@
                     setTimeout(() => {
                         localStorage.setItem('token', data.token);
                         localStorage.setItem('user', JSON.stringify(data.user));
-                        window.location.href = '/dashboard.html';
+                        window.location.href = '/dashboard-welcome.html';
                     }, 1500);
                 }
             } catch (error) {

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admiral — Dashboard</title>
+    <link rel="stylesheet" href="admiral-tokens.css">
+    <style>
+        *, *::before, *::after { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+
+        body {
+            font-family: -apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
+            background: #060c18;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .app {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* TOPBAR */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.15rem 1.65rem;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            background: rgba(6,12,24,.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #1a3a6e, #0d2248);
+            border: 1px solid rgba(255,255,255,0.18);
+            display: grid;
+            place-items: center;
+            box-shadow: 0 0 16px rgba(44,90,160,0.4);
+        }
+
+        .logo-text {
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: .18em;
+            background: linear-gradient(90deg, #fff 0%, #93c5fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logout-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.20);
+        }
+
+        /* MAIN CONTENT */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* WELCOME MODAL */
+        .welcome-card {
+            background: rgba(12, 24, 46, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(200,168,75,0.3);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .welcome-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .welcome-card h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #f0c040 0%, #4fc3f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-card p {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .wizard-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #d08a08 0%, #f0c040 100%);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.23,1,0.32,1);
+            box-shadow: 0 10px 30px rgba(208,138,8,0.3);
+        }
+
+        .wizard-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(208,138,8,0.4);
+        }
+
+        .wizard-button:active {
+            transform: translateY(-1px);
+        }
+
+        .skip-link {
+            display: block;
+            margin-top: 1.5rem;
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .skip-link:hover {
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* 3D BACKGROUND SHAPES */
+        .shapes {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .sphere {
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        .s-blue {
+            width: 400px;
+            height: 400px;
+            top: -150px;
+            right: -100px;
+            background: radial-gradient(circle at 33% 28%, rgba(200,230,255,.80) 0%, transparent 11%),
+                        radial-gradient(circle at 40% 36%, #5aacff 0%, #1857d4 34%, #082d7e 62%, transparent 100%);
+            opacity: 0.6;
+            animation: float1 12s ease-in-out infinite;
+        }
+
+        .s-gold {
+            width: 320px;
+            height: 320px;
+            bottom: -80px;
+            left: -60px;
+            background: radial-gradient(circle at 33% 30%, rgba(255,240,140,.75) 0%, transparent 11%),
+                        radial-gradient(circle at 40% 38%, #f0b030 0%, #a85c08 35%, transparent 100%);
+            opacity: 0.5;
+            animation: float2 14s ease-in-out infinite;
+        }
+
+        @keyframes float1 {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        @keyframes float2 {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(15px) rotate(-3deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="shapes">
+        <div class="sphere s-blue"></div>
+        <div class="sphere s-gold"></div>
+    </div>
+
+    <div class="app">
+        <main class="main">
+            <!-- TOPBAR -->
+            <div class="topbar">
+                <div class="logo-group">
+                    <div class="logo-icon">⚓</div>
+                    <span class="logo-text">ADMIRAL</span>
+                </div>
+                <div class="user-section">
+                    <span id="user-email" style="color: rgba(255,255,255,0.6); font-size: 14px;"></span>
+                    <button class="logout-btn" onclick="logout()">Logga ut</button>
+                </div>
+            </div>
+
+            <!-- CONTENT -->
+            <div class="content">
+                <div class="welcome-card">
+                    <div class="welcome-icon">🎉</div>
+                    <h1>Välkommen till Admiral!</h1>
+                    <p>Din nya Meta Ads-dashboard är redo. Låt oss ställa in dina första kampanjer på 5 minuter.</p>
+                    
+                    <button class="wizard-button" onclick="startSetupWizard()">
+                        <span>⚙️</span>
+                        <span>Starta inställningar</span>
+                    </button>
+                    
+                    <a class="skip-link" onclick="skipSetup()">Hoppa över för nu →</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Ladda användarinfo från localStorage
+        function initDashboard() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                window.location.href = '/login.html';
+                return;
+            }
+            document.getElementById('user-email').textContent = user.email;
+        }
+
+        function startSetupWizard() {
+            window.location.href = '/setup-wizard.html';
+        }
+
+        function skipSetup() {
+            window.location.href = '/dashboard.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+
+        // Init
+        initDashboard();
+    </script>
+</body>
+</html>
