@@ -164,10 +164,29 @@
 
     .url-input-wrap {
       position: relative;
+      display: flex;
+      gap: 8px;
     }
 
+    .url-confirm-btn {
+      flex-shrink: 0;
+      padding: 0 18px;
+      background: var(--gold);
+      border: none;
+      border-radius: var(--radius);
+      color: #000;
+      font-family: 'Days One', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .url-confirm-btn:hover { background: #d4b255; transform: translateY(-1px); }
+    .url-confirm-btn.done { background: var(--green); }
+
     .url-input {
-      width: 100%;
+      flex: 1;
       padding: 11px 14px;
       background: var(--bg-item);
       border: 1px solid var(--border-md);
@@ -745,8 +764,9 @@
         id="ads-url"
         type="text"
         placeholder="https://business.facebook.com/adsmanager/manage/campaigns?act=123456789&business_id=..."
-        oninput="extractFromUrl(this.value)"
+        onkeydown="if(event.key==='Enter') analyzeUrl()"
       >
+      <button class="url-confirm-btn" id="analyze-btn" onclick="analyzeUrl()">Analysera →</button>
     </div>
     <p class="url-hint">Öppna Meta Ads Manager → kopiera URL:en från adressfältet och klistra in här</p>
     <a class="manual-link" onclick="toggleManual()">Har du inte URL:en? Fyll i ID manuellt →</a>
@@ -1004,7 +1024,10 @@
   let extractedAccountId = '';
 
   // ── URL EXTRACTION ──
-  function extractFromUrl(url) {
+  function analyzeUrl() {
+    const url = document.getElementById('ads-url').value.trim();
+    if (!url) return;
+
     let bmId = '';
     let accountId = '';
 
@@ -1017,13 +1040,17 @@
     extractedBmId = bmId;
     extractedAccountId = accountId;
 
-    if (bmId || accountId) {
-      if (accountId && !document.getElementById('f-account1').value) {
-        document.getElementById('f-account1').value = accountId;
-        updatePreview();
-      }
-      runChecks(bmId, accountId);
+    if (accountId && !document.getElementById('f-account1').value) {
+      document.getElementById('f-account1').value = accountId;
+      updatePreview();
     }
+
+    runChecks(bmId, accountId);
+
+    const btn = document.getElementById('analyze-btn');
+    btn.textContent = (bmId || accountId) ? '✓ Hittad!' : '✗ Ingen ID';
+    btn.classList.toggle('done', !!(bmId || accountId));
+    setTimeout(() => { btn.textContent = 'Analysera →'; btn.classList.remove('done'); }, 2500);
   }
 
   function updateFromManual() {
@@ -1042,7 +1069,7 @@
     try {
       const text = await navigator.clipboard.readText();
       document.getElementById('ads-url').value = text;
-      extractFromUrl(text);
+      analyzeUrl();
     } catch(e) {
       document.getElementById('ads-url').focus();
     }
