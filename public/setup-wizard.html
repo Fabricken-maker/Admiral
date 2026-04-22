@@ -66,26 +66,15 @@
       border: 1px solid rgba(200,168,75,0.4);
       display: grid;
       place-items: center;
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 15px;
-      color: var(--gold);
+      font-size: 17px;
     }
 
     .logo-name {
       font-family: 'Syne', sans-serif;
       font-weight: 800;
       font-size: 15px;
-      letter-spacing: 0.12em;
-      color: var(--text);
-    }
-
-    .logo-sub {
-      font-size: 10px;
       letter-spacing: 0.14em;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      margin-top: 1px;
+      color: var(--text);
     }
 
     .version-badge {
@@ -732,11 +721,8 @@
 
 <header>
   <div class="logo">
-    <div class="logo-icon">A</div>
-    <div>
-      <div class="logo-name">Admiral</div>
-      <div class="logo-sub">by Fabricken</div>
-    </div>
+    <div class="logo-icon">★</div>
+    <div class="logo-name">Admiral</div>
   </div>
   <div class="version-badge">SETUP V 1.0</div>
 </header>
@@ -744,10 +730,10 @@
 <main>
 
   <!-- SNABBKOLL -->
-  <div class="section-label">// Snabbkoll</div>
+  <div class="section-label">// Välkommen</div>
   <div class="quick-card">
-    <h1>Har du vad som krävs?<br><em>Kolla direkt.</em></h1>
-    <p>Klistra in din Ads Manager-URL — vi extraherar ditt konto-ID automatiskt och kollar mot Meta.</p>
+    <h1>Välkommen till Admiral.<br><em>Vi fixar resten.</em></h1>
+    <p>Klistra in din Ads Manager-URL nedan — vi hittar ditt konto automatiskt och visar exakt vad som behöver vara på plats.</p>
 
     <div class="url-label">
       ADS MANAGER URL
@@ -898,7 +884,7 @@
           <li><span class="step-num">1</span><span>Gå till <strong>developers.facebook.com</strong> → My Apps → Create App.</span></li>
           <li><span class="step-num">2</span><span>Välj typ "Business", namnge appen.</span></li>
           <li><span class="step-num">3</span><span>Vänstermeny → Add Products → <strong>Marketing API</strong> → Set Up.</span></li>
-          <li><span class="step-num">4</span><span>Settings → Basic → lägg till <code>fabricken.se</code> i App Domains → Spara.</span></li>
+          <li><span class="step-num">4</span><span>Settings → Basic → lägg till din webbplats i App Domains → Spara.</span></li>
         </ul>
         <a class="action-link" href="https://developers.facebook.com/apps" target="_blank">→ Meta Developer Portal</a>
       </div>
@@ -981,8 +967,8 @@
       <div class="step2-tag">STEG 2 AV 2</div>
       <div class="step2-tag" id="step2-done-badge" style="display:none;border-color:rgba(52,211,153,0.3);color:var(--green);">LÖST</div>
     </div>
-    <h2>Skicka credentials till Fabricken</h2>
-    <p>Fyll i din access token — kopiera sedan allt med ett klick och skicka via Signal.</p>
+    <h2>Koppla ditt Meta-konto</h2>
+    <p>Fyll i din access token — vi tar hand om resten. Dina uppgifter lagras säkert och används bara för att hämta dina kampanjdata.</p>
 
     <div class="form-field">
       <div class="field-label">ACCESS TOKEN (EXPIRERAR SNART)</div>
@@ -1004,38 +990,8 @@
       <input class="form-input" id="f-account3" placeholder="act_456789123" oninput="updatePreview()">
     </div>
 
-    <div class="preview-box">
-      <div class="preview-label">FÖRHANDSVISNING — REDO ATT SKICKAS</div>
-      <div class="preview-row">
-        <span class="preview-key">Token</span>
-        <span class="preview-val" id="prev-token">—</span>
-      </div>
-      <div class="preview-row">
-        <span class="preview-key">Konto 1</span>
-        <span class="preview-val" id="prev-a1">—</span>
-      </div>
-      <div class="preview-row" id="prev-row-a2" style="display:none">
-        <span class="preview-key">Konto 2</span>
-        <span class="preview-val" id="prev-a2">—</span>
-      </div>
-      <div class="preview-row" id="prev-row-a3" style="display:none">
-        <span class="preview-key">Konto 3</span>
-        <span class="preview-val" id="prev-a3">—</span>
-      </div>
-    </div>
-
-    <button class="copy-btn" id="copy-btn" onclick="copyAll()">
-      <span>☐</span> Kopiera allt för Signal/Telegram
-    </button>
-
-    <div class="signal-wrap">
-      <a class="signal-link" href="https://signal.me/#p/+46XXXXXXXXX" target="_blank">
-        Öppna Signal eller Telegram → klistra in → skicka till Erik
-      </a>
-    </div>
-
     <button class="complete-btn" id="complete-btn" onclick="completeSetup()" disabled>
-      SPARA &amp; FORTSÄTT TILL DASHBOARD →
+      ANSLUT MITT KONTO →
     </button>
   </div>
 
@@ -1174,52 +1130,7 @@
   function updatePreview() {
     const token = document.getElementById('f-token').value;
     const a1    = document.getElementById('f-account1').value;
-    const a2    = document.getElementById('f-account2').value;
-    const a3    = document.getElementById('f-account3').value;
-
-    const setVal = (id, val) => {
-      const el = document.getElementById(id);
-      if (val) { el.textContent = val.length > 20 ? val.substring(0, 20) + '…' : val; el.classList.add('filled'); }
-      else { el.textContent = '—'; el.classList.remove('filled'); }
-    };
-
-    setVal('prev-token', token ? token.substring(0,12) + '•••' : '');
-    setVal('prev-a1', a1);
-    setVal('prev-a2', a2);
-    setVal('prev-a3', a3);
-
-    document.getElementById('prev-row-a2').style.display = a2 ? 'flex' : 'none';
-    document.getElementById('prev-row-a3').style.display = a3 ? 'flex' : 'none';
-
     document.getElementById('complete-btn').disabled = !(token && a1);
-  }
-
-  // ── COPY ──
-  function copyAll() {
-    const token = document.getElementById('f-token').value;
-    const a1    = document.getElementById('f-account1').value;
-    const a2    = document.getElementById('f-account2').value;
-    const a3    = document.getElementById('f-account3').value;
-
-    let text = `Admiral Setup — Meta Credentials\n`;
-    text += `──────────────────────────\n`;
-    text += `Token: ${token}\n`;
-    text += `Konto 1: ${a1}\n`;
-    if (a2) text += `Konto 2: ${a2}\n`;
-    if (a3) text += `Konto 3: ${a3}\n`;
-    if (extractedBmId) text += `Business ID: ${extractedBmId}\n`;
-    text += `──────────────────────────\n`;
-    text += `Skickat via Admiral Setup Wizard`;
-
-    navigator.clipboard.writeText(text).then(() => {
-      const btn = document.getElementById('copy-btn');
-      btn.innerHTML = '<span>✓</span> Kopierat!';
-      btn.classList.add('copied');
-      setTimeout(() => {
-        btn.innerHTML = '<span>☐</span> Kopiera allt för Signal/Telegram';
-        btn.classList.remove('copied');
-      }, 2500);
-    });
   }
 
   // ── COMPLETE ──
