@@ -2,28 +2,24 @@
   command = "echo 'Static site - no build needed'"
   publish = "public"
 
-[env.production]
-  environment = { BACKEND_URL = "http://187.124.32.19:3000" }
+[functions]
+  node_bundler = "esbuild"
 
-[env.staging]
-  environment = { BACKEND_URL = "http://localhost:3000" }
-
-# Proxy API calls to VPS backend
 [[redirects]]
-  from = "/api/*"
-  to = "http://187.124.32.19:3000/api/:splat"
+  from = "/auth/register"
+  to = "/.netlify/functions/auth-register-supabase"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/auth/*"
-  to = "http://187.124.32.19:3000/auth/:splat"
+  from = "/auth/login"
+  to = "/.netlify/functions/auth-login-supabase"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/health"
-  to = "http://187.124.32.19:3000/health"
+  from = "/api/user"
+  to = "/.netlify/functions/api-user"
   status = 200
   force = true
 
@@ -33,10 +29,16 @@
   to = "/index.html"
   status = 200
 
-# CORS headers
 [[headers]]
   for = "/api/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+[[headers]]
+  for = "/auth/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "POST, OPTIONS"
     Access-Control-Allow-Headers = "Content-Type, Authorization"
