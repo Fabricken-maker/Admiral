@@ -137,6 +137,30 @@ force = true
 [redirects.headers]
 
 [[redirects]]
+from = "/api/meta/oauth/start"
+to = "/.netlify/functions/meta-oauth-start"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/meta/oauth/callback"
+to = "/.netlify/functions/meta-oauth-callback"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
 from = "/api/reports"
 to = "/.netlify/functions/api-reports"
 status = 200.0

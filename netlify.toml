@@ -48,6 +48,18 @@
   force = true
 
 [[redirects]]
+  from = "/api/meta/oauth/start"
+  to = "/.netlify/functions/meta-oauth-start"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/meta/oauth/callback"
+  to = "/.netlify/functions/meta-oauth-callback"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/reports"
   to = "/.netlify/functions/api-reports"
   status = 200

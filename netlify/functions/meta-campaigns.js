@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { getMetaToken } from './lib/get-meta-token.js';
 
 const cors = {
   'Content-Type': 'application/json',
@@ -11,12 +12,19 @@ export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors };
 
   const auth = (event.headers.authorization || '').replace('Bearer ', '');
-  try { jwt.verify(auth, process.env.JWT_SECRET); }
-  catch { return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Unauthorized' }) }; }
+  let userId;
+  try {
+    const decoded = jwt.verify(auth, process.env.JWT_SECRET);
+    userId = decoded.id;
+  } catch { return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Unauthorized' }) }; }
 
-  const token = process.env.META_ACCESS_TOKEN;
+  let token;
+  try {
+    token = await getMetaToken(userId);
+  } catch (err) {
+    return { statusCode: 403, headers: cors, body: JSON.stringify({ error: err.message, meta_not_connected: true }) };
+  }
 
-  // Accept optional ad_account_id to filter; otherwise fetch all accounts first
   const accountId = event.queryStringParameters?.ad_account_id;
 
   try {
@@ -25,10 +33,7 @@ export const handler = async (event) => {
     if (accountId) {
       accountIds = [accountId];
     } else {
-      // Fetch all ad accounts
-      const meRes = await fetch(
-        `https://graph.facebook.com/v25.0/me/adaccounts?fields=id&limit=50&access_token=${token}`
-      );
+      const meRes = await fetch(`https://graph.facebook.com/v25.0/me/adaccounts?fields=id&limit=50&access_token=${token}`);
       const meData = await meRes.json();
       if (meData.error) throw new Error(meData.error.message);
       accountIds = (meData.data || []).map(a => a.id);
@@ -60,23 +65,11 @@ export const handler = async (event) => {
       for (const c of (campData.data || [])) {
         if (c.status === 'DELETED' || c.status === 'ARCHIVED') continue;
         const ins = insightMap[c.id] || { spend: 0, revenue: 0, purchases: 0, roas: 0 };
-        allCampaigns.push({
-          id: c.id,
-          name: c.name,
-          status: c.status,
-          objective: c.objective || '',
-          ad_account_id: actId,
-          spend: ins.spend,
-          revenue: ins.revenue,
-          conversions: ins.purchases,
-          roas: ins.roas
-        });
+        allCampaigns.push({ id: c.id, name: c.name, status: c.status, objective: c.objective || '', ad_account_id: actId, spend: ins.spend, revenue: ins.revenue, conversions: ins.purchases, roas: ins.roas });
       }
     }));
 
-    // Sort by spend desc
     allCampaigns.sort((a, b) => b.spend - a.spend);
-
     return { statusCode: 200, headers: cors, body: JSON.stringify({ campaigns: allCampaigns }) };
   } catch (err) {
     return { statusCode: 500, headers: cors, body: JSON.stringify({ error: err.message }) };

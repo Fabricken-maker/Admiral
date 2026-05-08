@@ -3,11 +3,33 @@
  * Justerar ad set-budgetar baserat på ROAS + pacing mot månadsplan
  */
 import { createClient } from '@supabase/supabase-js';
+import { getMetaToken } from './lib/get-meta-token.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
+async function withRetry(fn, label, maxAttempts = 3) {
+  let lastErr;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxAttempts) {
+        await new Promise(r => setTimeout(r, 1000 * 2 ** (attempt - 1)));
+      }
+    }
+  }
+  await supabase.from('health_reports').insert({
+    report_date: new Date().toISOString().split('T')[0],
+    severity: 'critical',
+    category: 'meta_api',
+    message: `budget-adjust misslyckades efter ${maxAttempts} försök: ${label}`,
+    details: { error: lastErr?.message }
+  });
+  throw lastErr;
+}
+
 export const handler = async () => {
-  const token = process.env.META_ACCESS_TOKEN;
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
 
@@ -15,7 +37,7 @@ export const handler = async () => {
     // Hämta alla aktiva budgetplaner för nuvarande månad
     const { data: plans, error } = await supabase
       .from('budget_plans')
-      .select('*, ad_set_allocations(*)')
+      .select('*, ad_set_allocations(*), user_id')
       .eq('status', 'active')
       .lte('month_start', today)
       .gte('month_end', today);
@@ -27,24 +49,35 @@ export const handler = async () => {
 
     for (const plan of plans) {
       try {
+        // Hämta kundens egna Meta-token
+        const token = await getMetaToken(plan.user_id);
+
         const monthEnd = new Date(plan.month_end);
         const daysLeft = Math.max(1, Math.ceil((monthEnd - now) / 86400000));
 
         // Hämta faktisk spend hittills via Meta insights
-        const spendRes = await fetch(
-          `https://graph.facebook.com/v25.0/${plan.campaign_id}/insights?fields=spend&date_preset=this_month&access_token=${token}`
-        );
-        const spendData = await spendRes.json();
+        const spendData = await withRetry(async () => {
+          const r = await fetch(
+            `https://graph.facebook.com/v25.0/${plan.campaign_id}/insights?fields=spend&date_preset=this_month&access_token=${token}`
+          );
+          const d = await r.json();
+          if (d.error) throw new Error(d.error.message);
+          return d;
+        }, `spend fetch campaign ${plan.campaign_id}`);
         const totalSpentSEK = parseFloat(spendData.data?.[0]?.spend || 0);
 
         const budgetLeft = plan.monthly_budget - totalSpentSEK;
         const newDailyTotal = Math.max(0, budgetLeft / daysLeft);
 
         // Hämta ROAS per ad set för smart fördelning
-        const adsetInsightRes = await fetch(
-          `https://graph.facebook.com/v25.0/${plan.campaign_id}/insights?level=adset&fields=adset_id,spend,action_values&date_preset=last_7d&access_token=${token}`
-        );
-        const adsetInsightData = await adsetInsightRes.json();
+        const adsetInsightData = await withRetry(async () => {
+          const r = await fetch(
+            `https://graph.facebook.com/v25.0/${plan.campaign_id}/insights?level=adset&fields=adset_id,spend,action_values&date_preset=last_7d&access_token=${token}`
+          );
+          const d = await r.json();
+          if (d.error) throw new Error(d.error.message);
+          return d;
+        }, `adset insights campaign ${plan.campaign_id}`);
 
         // Bygg ROAS-map per ad set
         const roasMap = {};
@@ -67,14 +100,19 @@ export const handler = async () => {
           return { ...as, new_daily_cents: newDailyBudgetCents, roas };
         });
 
-        // Uppdatera Meta API för varje ad set
+        // Uppdatera Meta API för varje ad set (med retry)
         await Promise.all(
           updatedAllocs.map(as =>
-            fetch(`https://graph.facebook.com/v25.0/${as.ad_set_id}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ daily_budget: as.new_daily_cents, access_token: token })
-            })
+            withRetry(async () => {
+              const r = await fetch(`https://graph.facebook.com/v25.0/${as.ad_set_id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ daily_budget: as.new_daily_cents, access_token: token })
+              });
+              const d = await r.json();
+              if (d.error) throw new Error(d.error.message);
+              return d;
+            }, `update adset ${as.ad_set_id}`)
           )
         );
 

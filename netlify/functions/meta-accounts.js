@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { getMetaToken } from './lib/get-meta-token.js';
 
 const corsHeaders = {
   'Content-Type': 'application/json',
@@ -10,22 +11,23 @@ const corsHeaders = {
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: corsHeaders };
 
-  // Verify JWT
   const auth = event.headers.authorization || '';
-  const token = auth.replace('Bearer ', '');
+  let userId;
   try {
-    jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(auth.replace('Bearer ', ''), process.env.JWT_SECRET);
+    userId = decoded.id;
   } catch {
     return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 
-  const accessToken = process.env.META_ACCESS_TOKEN;
-  if (!accessToken) {
-    return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: 'META_ACCESS_TOKEN not configured' }) };
+  let accessToken;
+  try {
+    accessToken = await getMetaToken(userId);
+  } catch (err) {
+    return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ error: err.message, meta_not_connected: true }) };
   }
 
   try {
-    // Fetch ad accounts
     const accountsRes = await fetch(
       `https://graph.facebook.com/v25.0/me/adaccounts?fields=id,name,currency,account_status,spend_cap,amount_spent&access_token=${accessToken}`
     );
@@ -35,7 +37,6 @@ export const handler = async (event) => {
       return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: accountsData.error.message }) };
     }
 
-    // For each active account, fetch basic spend insight (last 30 days)
     const accounts = await Promise.all(
       accountsData.data.map(async (acc) => {
         try {
@@ -61,22 +62,12 @@ export const handler = async (event) => {
             conversions
           };
         } catch {
-          return {
-            id: acc.id,
-            name: acc.name,
-            currency: acc.currency,
-            status: acc.account_status === 1 ? 'active' : 'inactive',
-            spend: 0, impressions: 0, clicks: 0, cpm: 0, conversions: 0
-          };
+          return { id: acc.id, name: acc.name, currency: acc.currency, status: acc.account_status === 1 ? 'active' : 'inactive', spend: 0, impressions: 0, clicks: 0, cpm: 0, conversions: 0 };
         }
       })
     );
 
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: JSON.stringify({ accounts })
-    };
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ accounts }) };
   } catch (err) {
     return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
   }
