@@ -1,308 +1,1484 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admiral - Dashboard</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admiral — Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            min-height: 100vh;
-            color: #dce3f0;
-        }
+    :root {
+      --bg:          #060c18;
+      --sb-bg:       #091422;
+      --panel-bg:    rgba(12, 24, 46, 0.75);
+      --border:      rgba(255,255,255,0.07);
+      --border-hover:rgba(255,255,255,0.14);
+      --blue:        #1a6ae0;
+      --blue-bright: #4fc3f7;
+      --gold:        #d08a08;
+      --gold-bright: #f0c040;
+      --green:       #34d399;
+      --red:         #f87171;
+      --t60:  rgba(255,255,255,0.60);
+      --t40:  rgba(255,255,255,0.40);
+      --t20:  rgba(255,255,255,0.20);
+      --t10:  rgba(255,255,255,0.10);
+      --t07:  rgba(255,255,255,0.07);
+      --t04:  rgba(255,255,255,0.04);
+    }
 
-        .navbar {
-            background: rgba(10, 14, 39, 0.9);
-            border-bottom: 1px solid rgba(200, 168, 75, 0.2);
-            padding: 16px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    html, body { height: 100%; overflow: hidden; }
 
-        .navbar-brand {
-            font-size: 24px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #c8a84b 0%, #5898f0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
+    body {
+      font-family: -apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: #fff;
+      -webkit-font-smoothing: antialiased;
+    }
 
-        .navbar-user {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-        }
+    /* ─── FLOATING 3-D SHAPES ─────────────────────────────── */
+    .shapes {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
 
-        .user-email {
-            font-size: 14px;
-            color: #a0a8b3;
-        }
+    .sphere { position: absolute; border-radius: 50%; }
 
-        .logout-btn {
-            padding: 8px 16px;
-            background: rgba(255, 68, 68, 0.2);
-            color: #ff4444;
-            border: 1px solid rgba(255, 68, 68, 0.3);
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
+    .s-blue-xl {
+      width: 480px; height: 480px;
+      top: -210px; right: -130px;
+      background:
+        radial-gradient(circle at 33% 28%, rgba(200,230,255,.90) 0%, transparent 11%),
+        radial-gradient(circle at 40% 36%, #5aacff 0%, #1857d4 34%, #082d7e 62%, #020b22 100%);
+      box-shadow: 0 0 180px rgba(28,100,230,.45), inset -50px -35px 90px rgba(0,0,0,.65);
+      opacity: .88;
+      animation: floatA 9s ease-in-out infinite;
+    }
 
-        .logout-btn:hover {
-            background: rgba(255, 68, 68, 0.3);
-        }
+    .s-gold-lg {
+      width: 340px; height: 340px;
+      bottom: -130px; right: 160px;
+      background:
+        radial-gradient(circle at 33% 30%, rgba(255,240,140,.85) 0%, transparent 11%),
+        radial-gradient(circle at 40% 38%, #f0b030 0%, #a85c08 35%, #582400 62%, #180800 100%);
+      box-shadow: 0 0 120px rgba(210,130,15,.42), inset -35px -28px 70px rgba(0,0,0,.65);
+      opacity: .78;
+      animation: floatB 11s ease-in-out infinite 1.5s;
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
+    .s-blue-md {
+      width: 230px; height: 230px;
+      top: 55%; left: -70px;
+      background:
+        radial-gradient(circle at 35% 30%, rgba(155,210,255,.78) 0%, transparent 13%),
+        radial-gradient(circle at 42% 38%, #3a8ae8 0%, #0c3d9c 42%, #051858 66%, #010412 100%);
+      box-shadow: 0 0 90px rgba(18,74,200,.38), inset -24px -20px 48px rgba(0,0,0,.60);
+      opacity: .62;
+      animation: floatA 13s ease-in-out infinite 3s;
+    }
 
-        .header {
-            margin-bottom: 40px;
-        }
+    .s-gold-sm {
+      width: 110px; height: 110px;
+      top: 32%; right: 9%;
+      background:
+        radial-gradient(circle at 33% 30%, rgba(255,235,120,.78) 0%, transparent 13%),
+        radial-gradient(circle at 40% 38%, #de9818 0%, #884008 42%, #381400 68%, #080200 100%);
+      box-shadow: 0 0 55px rgba(190,110,10,.38), inset -14px -12px 28px rgba(0,0,0,.60);
+      opacity: .58;
+      animation: floatB 7s ease-in-out infinite 0.5s;
+    }
 
-        .header h1 {
-            font-size: 32px;
-            margin-bottom: 8px;
-        }
+    .gem { position: absolute; }
 
-        .header p {
-            color: #a0a8b3;
-            font-size: 16px;
-        }
+    .gem-gold {
+      width: 76px; height: 86px;
+      top: 13%; right: 21%;
+      background: linear-gradient(145deg, #f5ce50 0%, #c07808 42%, #783200 80%, #1c0800 100%);
+      clip-path: polygon(50% 0%, 84% 24%, 100% 58%, 76% 100%, 24% 100%, 0% 58%, 16% 24%);
+      box-shadow: 0 10px 45px rgba(210,128,8,.42);
+      opacity: .72;
+      animation: floatA 10s ease-in-out infinite 2s;
+    }
 
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
+    .gem-blue-a {
+      width: 52px; height: 58px;
+      bottom: 28%; left: 7%;
+      background: linear-gradient(145deg, #78baff 0%, #185cc8 42%, #07185c 80%, #010410 100%);
+      clip-path: polygon(50% 0%, 84% 24%, 100% 58%, 76% 100%, 24% 100%, 0% 58%, 16% 24%);
+      box-shadow: 0 8px 32px rgba(18,74,200,.42);
+      opacity: .62;
+      animation: floatB 8s ease-in-out infinite 4s;
+    }
 
-        .kpi-card {
-            background: rgba(26, 31, 58, 0.8);
-            border: 1px solid rgba(200, 168, 75, 0.2);
-            border-radius: 12px;
-            padding: 24px;
-            backdrop-filter: blur(10px);
-        }
+    .gem-blue-b {
+      width: 38px; height: 43px;
+      top: 22%; left: 14%;
+      background: linear-gradient(145deg, #5aa8fa 0%, #0e3cc0 42%, #031048 80%, #000208 100%);
+      clip-path: polygon(50% 0%, 100% 38%, 80% 100%, 20% 100%, 0% 38%);
+      box-shadow: 0 6px 22px rgba(14,60,180,.42);
+      opacity: .54;
+      animation: floatA 12s ease-in-out infinite 6s;
+    }
 
-        .kpi-label {
-            font-size: 12px;
-            color: #a0a8b3;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
+    @keyframes floatA {
+      0%,100% { transform: translateY(0px) rotate(0deg); }
+      50%      { transform: translateY(-18px) rotate(4deg); }
+    }
+    @keyframes floatB {
+      0%,100% { transform: translateY(0px) rotate(0deg); }
+      50%      { transform: translateY(-12px) rotate(-3deg); }
+    }
 
-        .kpi-value {
-            font-size: 32px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #c8a84b 0%, #5898f0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 12px;
-        }
+    /* ─── APP SHELL ───────────────────────────────────────── */
+    .app {
+      display: flex;
+      height: 100vh;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
 
-        .kpi-change {
-            font-size: 13px;
-            color: #3dd68c;
-        }
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
 
-        .loading {
-            text-align: center;
-            padding: 60px 20px;
-            color: #a0a8b3;
-        }
+    /* Topbar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.15rem 1.65rem;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+      background: rgba(6,12,24,.5);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
 
-        .error {
-            background: rgba(255, 68, 68, 0.2);
-            color: #ff4444;
-            border: 1px solid rgba(255, 68, 68, 0.3);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
+    .topbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
 
-        .feature-list {
-            background: rgba(26, 31, 58, 0.8);
-            border: 1px solid rgba(200, 168, 75, 0.2);
-            border-radius: 12px;
-            padding: 30px;
-            margin-top: 40px;
-        }
+    .tl-icon {
+      width: 32px; height: 32px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #1a3a6e, #0d2248);
+      border: 1px solid rgba(255,255,255,0.18);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 16px rgba(44,90,160,0.4);
+    }
 
-        .feature-list h2 {
-            margin-bottom: 20px;
-            font-size: 20px;
-        }
+    .tl-wordmark {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: .18em;
+      background: linear-gradient(90deg, #fff 0%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
 
-        .feature-item {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid rgba(200, 168, 75, 0.1);
-        }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
 
-        .feature-item:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
+    .tb-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--t07);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--t60);
+      transition: all .2s;
+      position: relative;
+    }
 
-        .feature-icon {
-            color: #3dd68c;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
+    .tb-btn:hover { background: var(--t10); color: #fff; border-color: var(--border-hover); }
 
-        .feature-text {
-            font-size: 14px;
-            color: #a0a8b3;
-        }
-    </style>
+    .notif-dot {
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #ef4444;
+      border: 1px solid var(--sb-bg);
+    }
+
+    .user-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.28rem 0.55rem 0.28rem 0.28rem;
+      border-radius: 8px;
+      background: var(--t07);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+    }
+
+    .user-btn:hover { background: var(--t10); border-color: var(--border-hover); }
+
+    .user-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: #0d1a2e;
+      border: 1px solid var(--border-hover);
+      border-radius: 10px;
+      padding: 6px;
+      min-width: 180px;
+      z-index: 100;
+      box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    }
+
+    .user-btn:hover .user-dropdown,
+    .user-btn.open .user-dropdown { display: block; }
+
+    .dd-email {
+      font-size: .70rem;
+      color: var(--t40);
+      padding: 6px 10px 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dd-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 7px 10px;
+      border-radius: 7px;
+      font-size: .78rem;
+      color: var(--t60);
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .dd-item:hover { background: var(--t07); color: #fff; }
+    .dd-item.danger { color: var(--red); }
+    .dd-item.danger:hover { background: rgba(248,113,113,.1); }
+
+    .user-av {
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #2c5aa0, #4fc3f7);
+      display: grid;
+      place-items: center;
+      font-size: .70rem;
+      font-weight: 700;
+    }
+
+    .user-chev { font-size: .58rem; color: var(--t40); }
+
+    /* Scroll area */
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem 1.65rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .scroll-area::-webkit-scrollbar { width: 4px; }
+    .scroll-area::-webkit-scrollbar-track { background: transparent; }
+    .scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+
+    /* ─── KPI CARDS ───────────────────────────────────────── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.9rem;
+    }
+
+    .kpi {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 1rem 1.1rem 0.85rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all .28s cubic-bezier(.23,1,.32,1);
+      cursor: default;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .kpi:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 35px rgba(0,0,0,.35);
+    }
+
+    .kpi-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.7rem;
+    }
+
+    .kpi-ico {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+    }
+
+    .kpi:nth-child(1) .kpi-ico { background: rgba(212,140,8,.15); border: 1px solid rgba(212,140,8,.28); }
+    .kpi:nth-child(2) .kpi-ico { background: rgba(79,195,247,.15); border: 1px solid rgba(79,195,247,.28); }
+    .kpi:nth-child(3) .kpi-ico { background: rgba(26,106,224,.15); border: 1px solid rgba(26,106,224,.28); }
+    .kpi:nth-child(4) .kpi-ico { background: rgba(52,211,153,.15); border: 1px solid rgba(52,211,153,.28); }
+
+    .kpi-badge {
+      font-size: .68rem;
+      font-weight: 700;
+      padding: .16rem .42rem;
+      border-radius: 100px;
+    }
+
+    .kpi-badge.up   { color: var(--green); background: rgba(52,211,153,.12); }
+    .kpi-badge.down { color: var(--red);   background: rgba(248,113,113,.12); }
+
+    .kpi-val {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      margin-bottom: .18rem;
+    }
+
+    .kpi-lbl {
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      color: var(--t40);
+      font-weight: 600;
+      margin-bottom: .7rem;
+    }
+
+    .sparkline-svg { width: 100%; height: 28px; display: block; }
+
+    /* ─── PANEL BASE ──────────────────────────────────────── */
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 1.1rem 1.3rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .9rem;
+    }
+
+    .panel-title { font-size: .92rem; font-weight: 700; }
+
+    .period-sel {
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .25rem .65rem;
+      background: var(--t07);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: .72rem;
+      color: var(--t60);
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .period-sel:hover { background: var(--t10); color: #fff; }
+
+    .more-btn {
+      background: none;
+      border: none;
+      color: var(--t40);
+      cursor: pointer;
+      font-size: .85rem;
+      padding: .2rem .4rem;
+      border-radius: 5px;
+      transition: all .2s;
+    }
+
+    .more-btn:hover { background: var(--t07); color: var(--t60); }
+
+    /* ─── PERFORMANCE INSIGHTS ────────────────────────────── */
+    .insights-inner {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 1.2rem;
+    }
+
+    .chart-subtitle {
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--t60);
+      margin-bottom: .7rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .legend-inline { display: flex; gap: .7rem; }
+
+    .legend-dot-inline {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: .66rem;
+      color: var(--t40);
+    }
+
+    .ld { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+
+    /* ─── ACCOUNTS PANEL ─────────────────────────────────── */
+    .acc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: .75rem;
+    }
+
+    .acc-card {
+      background: var(--t04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .85rem 1rem;
+      transition: all .2s;
+      cursor: pointer;
+    }
+
+    .acc-card:hover { border-color: var(--border-hover); background: var(--t07); }
+    .acc-card.selected { border-color: var(--blue); background: rgba(26,106,224,.12); }
+
+    .acc-name {
+      font-size: .82rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: .28rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .acc-id {
+      font-size: .62rem;
+      color: var(--t40);
+      margin-bottom: .6rem;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .acc-stats {
+      display: flex;
+      gap: .6rem;
+      flex-wrap: wrap;
+    }
+
+    .acc-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .acc-stat-val {
+      font-size: .80rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .acc-stat-lbl {
+      font-size: .58rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--t40);
+    }
+
+    .acc-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: .62rem;
+      font-weight: 600;
+      color: var(--green);
+      margin-bottom: .55rem;
+    }
+
+    .acc-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 4px rgba(52,211,153,.8);
+      animation: pulseGreen 2.5s ease-in-out infinite;
+    }
+
+    .acc-loading {
+      color: var(--t40);
+      font-size: .80rem;
+      padding: .5rem 0;
+    }
+
+    .acc-error {
+      color: var(--red);
+      font-size: .78rem;
+      padding: .5rem 0;
+    }
+
+    .chart-box { position: relative; height: 175px; }
+
+    /* ─── BOTTOM ROW ──────────────────────────────────────── */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 62fr 38fr;
+      gap: 1.1rem;
+    }
+
+    /* Campaign table */
+    .camp-tbl-wrap { overflow-x: auto; }
+    .camp-tbl { width: 100%; border-collapse: collapse; min-width: 560px; }
+
+    .camp-tbl th {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      color: var(--t40);
+      font-weight: 600;
+      padding: .35rem .5rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .camp-tbl td {
+      padding: .6rem .5rem;
+      font-size: .80rem;
+      border-bottom: 1px solid var(--t04);
+      color: rgba(255,255,255,.78);
+      vertical-align: middle;
+    }
+
+    .camp-tbl tr:last-child td { border-bottom: none; }
+    .camp-tbl tr:hover td { background: var(--t04); }
+
+    .camp-cell { display: flex; align-items: center; gap: .55rem; }
+
+    .camp-av {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .camp-info .nm { font-size: .80rem; font-weight: 600; color: #fff; line-height: 1.2; }
+    .camp-info .sm { font-size: .65rem; color: var(--t40); }
+
+    .sdot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 5px rgba(52,211,153,.7);
+      display: inline-block;
+      margin-right: 4px;
+      animation: pulseGreen 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulseGreen {
+      0%,100% { opacity:1; box-shadow: 0 0 5px rgba(52,211,153,.7); }
+      50%      { opacity:.6; box-shadow: 0 0 9px rgba(52,211,153,1); }
+    }
+
+    .st-txt { font-size: .74rem; color: var(--green); font-weight: 600; }
+
+    .status-toggle {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: .25rem .55rem; border-radius: 20px; border: none;
+      font-size: .72rem; font-weight: 600; cursor: pointer;
+      transition: all .2s; background: transparent;
+    }
+    .status-toggle.active { color: var(--green); border: 1px solid rgba(52,211,153,.3); }
+    .status-toggle.active:hover { background: rgba(52,211,153,.12); }
+    .status-toggle.paused { color: var(--gold-bright); border: 1px solid rgba(240,192,64,.3); }
+    .status-toggle.paused:hover { background: rgba(240,192,64,.12); }
+    .status-toggle:disabled { opacity: .5; cursor: default; }
+
+    .mini-bars { display: flex; align-items: flex-end; gap: 2px; height: 20px; }
+    .mb { width: 5px; border-radius: 2px 2px 0 0; }
+
+    .v-pos { color: var(--green); font-weight: 700; }
+
+    /* Audience panel */
+    .aud-chart-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: .8rem;
+      position: relative;
+    }
+
+    .aud-legend { display: grid; grid-template-columns: 1fr 1fr; gap: .38rem .9rem; }
+
+    .aud-li {
+      display: flex;
+      align-items: center;
+      gap: .38rem;
+      font-size: .73rem;
+      color: var(--t60);
+    }
+
+    .al-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .al-pct { margin-left: auto; font-weight: 700; color: #fff; }
+
+    /* ─── BUDGET MODAL ────────────────────────────────────── */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: #0d1a2e;
+      border: 1px solid var(--border-hover);
+      border-radius: 16px;
+      padding: 1.8rem;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.6);
+      animation: modalIn .25s cubic-bezier(.23,1,.32,1);
+    }
+
+    @keyframes modalIn {
+      from { opacity:0; transform: translateY(16px) scale(.97); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .modal-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: .3rem;
+    }
+
+    .modal-sub {
+      font-size: .75rem;
+      color: var(--t40);
+      margin-bottom: 1.4rem;
+    }
+
+    .form-group { margin-bottom: 1rem; }
+
+    .form-label {
+      display: block;
+      font-size: .70rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--t40);
+      font-weight: 600;
+      margin-bottom: .4rem;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--t07);
+      border: 1px solid var(--border-hover);
+      border-radius: 8px;
+      padding: .6rem .85rem;
+      color: #fff;
+      font-size: .85rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .form-input:focus { border-color: var(--blue-bright); }
+
+    .form-select {
+      width: 100%;
+      background: var(--t07);
+      border: 1px solid var(--border-hover);
+      border-radius: 8px;
+      padding: .6rem .85rem;
+      color: #fff;
+      font-size: .85rem;
+      font-family: inherit;
+      outline: none;
+      appearance: none;
+      cursor: pointer;
+    }
+
+    .modal-summary {
+      background: var(--t04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .8rem 1rem;
+      margin-bottom: 1.2rem;
+      font-size: .78rem;
+      color: var(--t60);
+      line-height: 1.7;
+    }
+
+    .modal-summary strong { color: #fff; }
+
+    .modal-actions { display: flex; gap: .6rem; }
+
+    .btn-primary {
+      flex: 1;
+      padding: .65rem;
+      background: var(--blue);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: .85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .btn-primary:hover { background: #1e5bc0; }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+    .btn-ghost {
+      padding: .65rem 1rem;
+      background: var(--t07);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--t60);
+      font-size: .85rem;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .btn-ghost:hover { background: var(--t10); color: #fff; }
+
+    /* Budget badge on campaign row */
+    .budget-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: .65rem;
+      font-weight: 700;
+      padding: .15rem .5rem;
+      border-radius: 100px;
+      background: rgba(26,106,224,.15);
+      border: 1px solid rgba(26,106,224,.3);
+      color: var(--blue-bright);
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .budget-badge:hover { background: rgba(26,106,224,.25); }
+    .budget-badge.active { background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.3); color: var(--green); }
+
+    /* ─── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width: 920px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .insights-inner { grid-template-columns: 1fr; }
+      .bottom-row { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
-    <div class="navbar">
-        <div class="navbar-brand">Admiral</div>
-        <div class="navbar-user">
-            <span class="user-email" id="user-email"></span>
-            <button class="logout-btn" onclick="logout()">Logga ut</button>
-        </div>
+
+  <div class="shapes">
+    <div class="sphere s-blue-xl"></div>
+    <div class="sphere s-gold-lg"></div>
+    <div class="sphere s-blue-md"></div>
+    <div class="sphere s-gold-sm"></div>
+    <div class="gem gem-gold"></div>
+    <div class="gem gem-blue-a"></div>
+    <div class="gem gem-blue-b"></div>
+  </div>
+
+  <!-- ── BUDGET MODAL ─────────────────────────────────────── -->
+  <div class="modal-backdrop" id="budget-modal">
+    <div class="modal">
+      <div class="modal-title">⚡ Aktivera Admiral-budget</div>
+      <div class="modal-sub" id="modal-campaign-name">Kampanj</div>
+
+      <div class="form-group">
+        <label class="form-label">Annonskonto</label>
+        <select class="form-select" id="modal-account">
+          <option value="">Väljer konto…</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Månadsbudget (SEK)</label>
+        <input class="form-input" id="modal-budget" type="number" min="500" step="100" placeholder="ex. 10 000" oninput="updateModalSummary()">
+      </div>
+
+      <div class="modal-summary" id="modal-summary" style="display:none">
+        Admiral fördelar <strong id="sum-daily">—</strong>/dag jämnt över <strong id="sum-days">—</strong> dagar.
+        Budgeten justeras dagligen baserat på ROAS per annonsgrupp.
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeBudgetModal()">Avbryt</button>
+        <button class="btn-primary" id="modal-confirm" onclick="confirmBudget()" disabled>Aktivera →</button>
+      </div>
     </div>
+  </div>
 
-    <div class="container">
-        <div class="header">
-            <h1>Din Dashboard</h1>
-            <p>Välkommen till Admiral! Din Meta Ads Intelligence Center.</p>
+  <div class="app">
+    <main class="main">
+
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="topbar-logo">
+          <div class="tl-icon">
+            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="10" cy="10" r="2.2" fill="#f0c040"/>
+              <circle cx="10" cy="2"  r="1.5" fill="#93c5fd"/>
+              <circle cx="18" cy="10" r="1.5" fill="#93c5fd"/>
+              <circle cx="10" cy="18" r="1.5" fill="#93c5fd"/>
+              <circle cx="2"  cy="10" r="1.5" fill="#93c5fd"/>
+              <circle cx="15.2" cy="4.8"  r="1.2" fill="#60a5fa"/>
+              <circle cx="15.2" cy="15.2" r="1.2" fill="#60a5fa"/>
+              <circle cx="4.8"  cy="15.2" r="1.2" fill="#60a5fa"/>
+              <circle cx="4.8"  cy="4.8"  r="1.2" fill="#60a5fa"/>
+              <line x1="10" y1="10" x2="10" y2="3.5"  stroke="#f0c040" stroke-width="1" stroke-opacity=".75"/>
+              <line x1="10" y1="10" x2="16.5" y2="10" stroke="#f0c040" stroke-width="1" stroke-opacity=".75"/>
+              <line x1="10" y1="10" x2="10" y2="16.5" stroke="#f0c040" stroke-width="1" stroke-opacity=".75"/>
+              <line x1="10" y1="10" x2="3.5" y2="10"  stroke="#f0c040" stroke-width="1" stroke-opacity=".75"/>
+              <line x1="10" y1="10" x2="14.4" y2="5.6"  stroke="#93c5fd" stroke-width=".8" stroke-opacity=".55"/>
+              <line x1="10" y1="10" x2="14.4" y2="14.4" stroke="#93c5fd" stroke-width=".8" stroke-opacity=".55"/>
+              <line x1="10" y1="10" x2="5.6"  y2="14.4" stroke="#93c5fd" stroke-width=".8" stroke-opacity=".55"/>
+              <line x1="10" y1="10" x2="5.6"  y2="5.6"  stroke="#93c5fd" stroke-width=".8" stroke-opacity=".55"/>
+            </svg>
+          </div>
+          <span class="tl-wordmark">ADMIRAL</span>
+        </div>
+        <div class="topbar-right">
+          <div class="tb-btn">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <rect x="2" y="2" width="12" height="13" rx="1.5"/>
+              <line x1="5" y1="1" x2="5" y2="4"/>
+              <line x1="11" y1="1" x2="11" y2="4"/>
+              <line x1="2" y1="7" x2="14" y2="7"/>
+            </svg>
+          </div>
+          <div class="tb-btn" style="position:relative">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <path d="M8 1a5 5 0 0 1 5 5c0 4 1.5 5 1.5 5H1.5S3 10 3 6a5 5 0 0 1 5-5z"/>
+              <path d="M6.3 14a1.8 1.8 0 0 0 3.4 0"/>
+            </svg>
+            <span class="notif-dot"></span>
+          </div>
+          <div class="tb-btn">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="7" cy="7" r="5"/>
+              <line x1="11" y1="11" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <div class="user-btn" id="user-btn" onclick="toggleDropdown()">
+            <div class="user-av" id="user-av">—</div>
+            <span class="user-chev">▾</span>
+            <div class="user-dropdown" id="user-dropdown">
+              <div class="dd-email" id="dd-email"></div>
+              <button class="dd-item danger" onclick="logout()">Logga ut</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable content -->
+      <div class="scroll-area">
+
+        <!-- KPI ROW -->
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-head">
+              <div class="kpi-ico">💰</div>
+              <span class="kpi-badge up">↑ +14,3%</span>
+            </div>
+            <div class="kpi-val">17 850 kr</div>
+            <div class="kpi-lbl">Total Spend</div>
+            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sg1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#d08a08" stop-opacity=".45"/>
+                  <stop offset="100%" stop-color="#d08a08" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,22 L20,19 L40,21 L60,15 L80,11 L100,8 L120,4" stroke="#d08a08" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path d="M0,22 L20,19 L40,21 L60,15 L80,11 L100,8 L120,4 L120,28 L0,28Z" fill="url(#sg1)"/>
+            </svg>
+          </div>
+
+          <div class="kpi">
+            <div class="kpi-head">
+              <div class="kpi-ico">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#4fc3f7" stroke-width="1.5">
+                  <ellipse cx="8" cy="8" rx="7" ry="4"/>
+                  <circle cx="8" cy="8" r="2" fill="#4fc3f7" stroke="none"/>
+                </svg>
+              </div>
+              <span class="kpi-badge up">↑ +8,1%</span>
+            </div>
+            <div class="kpi-val">423 K</div>
+            <div class="kpi-lbl">Visningar</div>
+            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sg2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#4fc3f7" stop-opacity=".40"/>
+                  <stop offset="100%" stop-color="#4fc3f7" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,23 L20,20 L40,22 L60,16 L80,18 L100,11 L120,7" stroke="#4fc3f7" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path d="M0,23 L20,20 L40,22 L60,16 L80,18 L100,11 L120,7 L120,28 L0,28Z" fill="url(#sg2)"/>
+            </svg>
+          </div>
+
+          <div class="kpi">
+            <div class="kpi-head">
+              <div class="kpi-ico">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#1a6ae0" stroke-width="1.5" stroke-linecap="round">
+                  <path d="M3 3 L9 8 L6 10 L11 13" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <span class="kpi-badge up">↑ +5,2%</span>
+            </div>
+            <div class="kpi-val">13 740</div>
+            <div class="kpi-lbl">Klick</div>
+            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sg3" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#1a6ae0" stop-opacity=".42"/>
+                  <stop offset="100%" stop-color="#1a6ae0" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,25 L20,22 L40,24 L60,19 L80,14 L100,12 L120,8" stroke="#1a6ae0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path d="M0,25 L20,22 L40,24 L60,19 L80,14 L100,12 L120,8 L120,28 L0,28Z" fill="url(#sg3)"/>
+            </svg>
+          </div>
+
+          <div class="kpi">
+            <div class="kpi-head">
+              <div class="kpi-ico">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="#34d399">
+                  <path d="M2 9l4 4 8-8" stroke="#34d399" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <span class="kpi-badge up">↑ +18,4%</span>
+            </div>
+            <div class="kpi-val">189</div>
+            <div class="kpi-lbl">Konverteringar</div>
+            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sg4" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#34d399" stop-opacity=".40"/>
+                  <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,27 L20,24 L40,26 L60,20 L80,16 L100,10 L120,5" stroke="#34d399" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path d="M0,27 L20,24 L40,26 L60,20 L80,16 L100,10 L120,5 L120,28 L0,28Z" fill="url(#sg4)"/>
+            </svg>
+          </div>
         </div>
 
-        <div id="error-message" class="error" style="display: none;"></div>
-        <div id="loading" class="loading">Laddar dashboard...</div>
-
-        <div id="content" style="display: none;">
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Totalt Spend</div>
-                    <div class="kpi-value" id="total-spend">-</div>
-                    <div class="kpi-change">Denna månad</div>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-label">Genomsnittligt CPM</div>
-                    <div class="kpi-value" id="avg-cpm">-</div>
-                    <div class="kpi-change">Kostnad per 1000 visningar</div>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-label">Conversion Rate</div>
-                    <div class="kpi-value" id="conversion-rate">-</div>
-                    <div class="kpi-change">Andel konverteringar</div>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-label">ROI</div>
-                    <div class="kpi-value" id="roi">-</div>
-                    <div class="kpi-change">Return on Investment</div>
-                </div>
-            </div>
-
-            <div class="feature-list">
-                <h2>Nästa Steg</h2>
-                <div class="feature-item">
-                    <div class="feature-icon">📊</div>
-                    <div class="feature-text">
-                        <strong>Anslut ditt Meta Ads-konto</strong> - Gå till setup-wizard för att koppla ditt Meta Ads Manager-konto och börja se dina kampanjer i realtid.
-                    </div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">⚙️</div>
-                    <div class="feature-text">
-                        <strong>Konfigurera din profil</strong> - Uppdatera din e-post, lösenord och andra inställningar.
-                    </div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">🔗</div>
-                    <div class="feature-text">
-                        <strong>Synka kampanjer</strong> - Admiral hämtar dina kampanjer från Meta Ads och uppdaterar dem i realtid.
-                    </div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">📈</div>
-                    <div class="feature-text">
-                        <strong>Analysera data</strong> - Se detaljerad analys av CPM, Conversions, ROAS och mer.
-                    </div>
-                </div>
-            </div>
+        <!-- META ACCOUNTS -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Annonskonton — Meta Ads</span>
+            <button class="more-btn" onclick="loadAccounts()" title="Uppdatera">↻</button>
+          </div>
+          <div id="acc-grid" class="acc-grid">
+            <div class="acc-loading">Hämtar annonskonton…</div>
+          </div>
         </div>
-    </div>
 
-    <script>
-        const BACKEND_URL = '/.netlify/functions'; // Netlify Functions
+        <!-- PERFORMANCE INSIGHTS -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Performance Insights</span>
+            <div class="period-sel">Jan–Apr 2026 ▾</div>
+          </div>
+          <div class="insights-inner">
+            <div>
+              <div class="chart-subtitle">ROAS</div>
+              <div class="chart-box"><canvas id="roasChart"></canvas></div>
+            </div>
+            <div>
+              <div class="chart-subtitle">
+                Utgift vs. Intäkt
+                <div class="legend-inline">
+                  <span class="legend-dot-inline"><span class="ld" style="background:#1a6ae0"></span> Spend</span>
+                  <span class="legend-dot-inline"><span class="ld" style="background:#d08a08"></span> Intäkt</span>
+                </div>
+              </div>
+              <div class="chart-box"><canvas id="spendChart"></canvas></div>
+            </div>
+          </div>
+        </div>
 
-        async function loadDashboard() {
-            const token = localStorage.getItem('token');
+        <!-- BOTTOM ROW -->
+        <div class="bottom-row">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Toppkampanjer</span>
+              <button class="more-btn" onclick="loadCampaigns()" title="Uppdatera">↻</button>
+            </div>
+            <div class="camp-tbl-wrap">
+            <table class="camp-tbl">
+              <thead>
+                <tr>
+                  <th>Kampanjnamn</th>
+                  <th>Status</th>
+                  <th>Spend 30d</th>
+                  <th>ROAS</th>
+                  <th>Konv.</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="camp-tbody">
+                <tr><td colspan="6" style="color:var(--t40);text-align:center;padding:1.2rem">Hämtar kampanjer…</td></tr>
+              </tbody>
+            </table>
+            </div>
+          </div>
 
-            if (!token) {
-                window.location.href = '/login.html';
-                return;
-            }
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Målgruppsfördelning</span>
+              <button class="more-btn">•••</button>
+            </div>
+            <div class="aud-chart-wrap">
+              <canvas id="audChart" style="max-height:145px;"></canvas>
+            </div>
+            <div class="aud-legend">
+              <div class="aud-li">
+                <div class="al-dot" style="background:#1a6ae0"></div>
+                Ålder
+                <span class="al-pct">40%</span>
+              </div>
+              <div class="aud-li">
+                <div class="al-dot" style="background:#4fc3f7"></div>
+                Kön
+                <span class="al-pct">30%</span>
+              </div>
+              <div class="aud-li">
+                <div class="al-dot" style="background:#d08a08"></div>
+                Intressen
+                <span class="al-pct">20%</span>
+              </div>
+              <div class="aud-li">
+                <div class="al-dot" style="background:#f0c040"></div>
+                Geografi
+                <span class="al-pct">10%</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            try {
-                // Hämta användardata
-                const userResponse = await fetch(`${BACKEND_URL}/api-user`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+      </div>
+    </main>
+  </div>
 
-                if (!userResponse.ok) {
-                    throw new Error('Kunde inte ladda användardata');
-                }
+  <script>
+    // ── AUTH ──────────────────────────────────────────────────
+    (function() {
+      const token = localStorage.getItem('token');
+      if (!token) { window.location.href = '/'; return; }
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const email = user.email || '';
+        const initials = email.slice(0, 2).toUpperCase() || 'AD';
+        document.getElementById('user-av').textContent = initials;
+        document.getElementById('dd-email').textContent = email;
+      } catch(e) {}
+    })();
 
-                const user = await userResponse.json();
-                document.getElementById('user-email').textContent = user.email;
+    async function loadAccounts() {
+      const grid = document.getElementById('acc-grid');
+      grid.innerHTML = '<div class="acc-loading">Hämtar annonskonton…</div>';
+      try {
+        const res = await fetch('/api/meta/accounts', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Fel vid hämtning');
 
-                // Mock-data för kampanjer
-                const mockData = {
-                    totalSpend: '45 000 SEK',
-                    avgCPM: '42 kr',
-                    conversionRate: '3.2%',
-                    roi: '4.2x'
-                };
+        grid.innerHTML = data.accounts.map(acc => `
+          <div class="acc-card" onclick="selectAccount('${acc.id}', this)">
+            <div class="acc-status"><span class="acc-dot"></span>${acc.status === 'active' ? 'Aktiv' : 'Inaktiv'}</div>
+            <div class="acc-name">${acc.name}</div>
+            <div class="acc-id">${acc.id}</div>
+            <div class="acc-stats">
+              <div class="acc-stat">
+                <span class="acc-stat-val">${acc.spend.toLocaleString('sv-SE', {maximumFractionDigits:0})} ${acc.currency}</span>
+                <span class="acc-stat-lbl">Spend 30d</span>
+              </div>
+              <div class="acc-stat">
+                <span class="acc-stat-val">${acc.impressions > 999 ? (acc.impressions/1000).toFixed(0)+'K' : acc.impressions}</span>
+                <span class="acc-stat-lbl">Visningar</span>
+              </div>
+              <div class="acc-stat">
+                <span class="acc-stat-val">${acc.clicks.toLocaleString('sv-SE')}</span>
+                <span class="acc-stat-lbl">Klick</span>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch(e) {
+        grid.innerHTML = `<div class="acc-error">Kunde inte hämta konton: ${e.message}</div>`;
+      }
+    }
 
-                document.getElementById('total-spend').textContent = mockData.totalSpend;
-                document.getElementById('avg-cpm').textContent = mockData.avgCPM;
-                document.getElementById('conversion-rate').textContent = mockData.conversionRate;
-                document.getElementById('roi').textContent = mockData.roi;
+    function toggleDropdown() {
+      document.getElementById('user-btn').classList.toggle('open');
+    }
 
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('content').style.display = 'block';
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error-message').style.display = 'block';
-                document.getElementById('error-message').textContent = error.message;
-            }
+    document.addEventListener('click', function(e) {
+      const btn = document.getElementById('user-btn');
+      if (!btn.contains(e.target)) btn.classList.remove('open');
+    });
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/';
+    }
+
+    loadAccounts();
+
+    // ── BUDGET MODAL ─────────────────────────────────────────
+    let _activeCampaignId = null;
+    let _activeCampaignName = null;
+
+    function openBudgetModal(name, campaignId, adAccountId) {
+      _activeCampaignId = campaignId;
+      _activeCampaignName = name;
+      document.getElementById('modal-campaign-name').textContent = name;
+      document.getElementById('modal-budget').value = '';
+      document.getElementById('modal-summary').style.display = 'none';
+      document.getElementById('modal-confirm').disabled = true;
+
+      const select = document.getElementById('modal-account');
+      select.innerHTML = '';
+
+      if (adAccountId) {
+        // Account is known from campaign — pre-select it
+        const opt = document.createElement('option');
+        opt.value = adAccountId;
+        opt.textContent = adAccountId;
+        select.appendChild(opt);
+      } else {
+        // Fallback: populate from loaded account cards
+        select.innerHTML = '<option value="">Välj annonskonto…</option>';
+        document.querySelectorAll('.acc-card').forEach(card => {
+          const id = card.querySelector('.acc-id')?.textContent;
+          const nm = card.querySelector('.acc-name')?.textContent;
+          if (id && nm) {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = `${nm} (${id})`;
+            select.appendChild(opt);
+          }
+        });
+      }
+
+      document.getElementById('budget-modal').classList.add('open');
+    }
+
+    function closeBudgetModal() {
+      document.getElementById('budget-modal').classList.remove('open');
+    }
+
+    document.getElementById('budget-modal').addEventListener('click', e => {
+      if (e.target === document.getElementById('budget-modal')) closeBudgetModal();
+    });
+
+    function updateModalSummary() {
+      const budget = parseFloat(document.getElementById('modal-budget').value);
+      const confirm = document.getElementById('modal-confirm');
+      const summary = document.getElementById('modal-summary');
+
+      if (!budget || budget < 500) { summary.style.display = 'none'; confirm.disabled = true; return; }
+
+      const now = new Date();
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const daysLeft = Math.max(1, Math.ceil((monthEnd - now) / 86400000));
+      const daily = (budget / daysLeft).toFixed(0);
+
+      document.getElementById('sum-daily').textContent = `${parseInt(daily).toLocaleString('sv-SE')} kr`;
+      document.getElementById('sum-days').textContent = daysLeft;
+      summary.style.display = 'block';
+      confirm.disabled = !document.getElementById('modal-account').value;
+    }
+
+    document.getElementById('modal-account').addEventListener('change', updateModalSummary);
+
+    async function confirmBudget() {
+      const budget = parseFloat(document.getElementById('modal-budget').value);
+      const accountId = document.getElementById('modal-account').value;
+      const btn = document.getElementById('modal-confirm');
+
+      if (!budget || !accountId || !_activeCampaignId) return;
+
+      btn.textContent = 'Aktiverar…';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/budget/activate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            campaign_id: _activeCampaignId,
+            campaign_name: _activeCampaignName,
+            ad_account_id: accountId,
+            monthly_budget: budget,
+            currency: 'SEK'
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Aktivering misslyckades');
+
+        // Update badge to show active
+        document.querySelectorAll('.budget-badge').forEach(b => {
+          if (b.getAttribute('onclick')?.includes(_activeCampaignId)) {
+            b.textContent = `⚡ ${(budget/1000).toFixed(0)}k/mån`;
+            b.classList.add('active');
+            b.onclick = null;
+          }
+        });
+
+        closeBudgetModal();
+        alert(`✅ Admiral aktiverat!\n${data.adsets_updated} annonsgrupper uppdaterade\nDaglig budget: ${parseFloat(data.daily_budget_sek).toLocaleString('sv-SE')} kr`);
+      } catch (e) {
+        alert(`❌ ${e.message}`);
+        btn.textContent = 'Aktivera →';
+        btn.disabled = false;
+      }
+    }
+
+    // ── CAMPAIGNS ────────────────────────────────────────────
+    const STATUS_COLORS = { ACTIVE: '#34d399', PAUSED: '#f0c040', ARCHIVED: '#f87171' };
+    const STATUS_LABELS = { ACTIVE: 'Aktiv', PAUSED: 'Pausad', ARCHIVED: 'Arkiverad' };
+
+    let _selectedAccountId = null;
+
+    function selectAccount(accountId, el) {
+      if (_selectedAccountId === accountId) {
+        // Klick igen = avmarkera och visa alla
+        _selectedAccountId = null;
+        document.querySelectorAll('.acc-card').forEach(c => c.classList.remove('selected'));
+      } else {
+        _selectedAccountId = accountId;
+        document.querySelectorAll('.acc-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+      }
+      loadCampaigns(_selectedAccountId);
+    }
+
+    async function loadCampaigns(adAccountId) {
+      const tbody = document.getElementById('camp-tbody');
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--t40);text-align:center;padding:1.2rem">Hämtar kampanjer…</td></tr>';
+
+      const url = adAccountId
+        ? `/api/meta/campaigns?ad_account_id=${adAccountId}`
+        : '/api/meta/campaigns';
+
+      try {
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Fel');
+
+        const campaigns = data.campaigns || [];
+        if (!campaigns.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="color:var(--t40);text-align:center;padding:1.2rem">Inga kampanjer hittades</td></tr>';
+          return;
         }
 
-        function logout() {
-            localStorage.removeItem('token');
-            window.location.href = '/';
-        }
+        const colors = ['#4fc3f7','#f0c040','#34d399','#f87171','#a78bfa','#fb923c'];
+        tbody.innerHTML = campaigns.slice(0, 10).map((c, i) => {
+          const col = colors[i % colors.length];
+          const initials = c.name.split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
+          const isActive = c.status === 'ACTIVE';
+          const isPaused = c.status === 'PAUSED';
+          const toggleClass = isActive ? 'active' : isPaused ? 'paused' : 'paused';
+          const toggleLabel = isActive ? '● Aktiv' : isPaused ? '⏸ Pausad' : c.status;
+          const nextStatus = isActive ? 'PAUSED' : 'ACTIVE';
+          const nextLabel = isActive ? 'Pausa' : 'Aktivera';
+          const roas = c.roas > 0 ? `${c.roas.toFixed(1)}×` : '—';
+          const roasClass = c.roas >= 2 ? 'v-pos' : '';
+          const spend = c.spend > 0 ? `${Math.round(c.spend).toLocaleString('sv-SE')} kr` : '—';
+          return `<tr>
+            <td>
+              <div class="camp-cell">
+                <div class="camp-av" style="background:${col}22;border:1px solid ${col}44;color:${col};font-size:.62rem;font-weight:700">${initials}</div>
+                <div class="camp-info">
+                  <div class="nm">${c.name}</div>
+                  <div class="sm">${c.objective || ''}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <button class="status-toggle ${toggleClass}" id="st-${c.id}"
+                onclick="toggleCampaignStatus('${c.id}', '${nextStatus}', this)"
+                title="${nextLabel} kampanj">
+                ${toggleLabel}
+              </button>
+            </td>
+            <td>${spend}</td>
+            <td class="${roasClass}">${roas}</td>
+            <td>${c.conversions > 0 ? Math.round(c.conversions) : '—'}</td>
+            <td><span class="budget-badge" onclick="openBudgetModal('${c.name.replace(/'/g,"\\'")}','${c.id}','${c.ad_account_id}')">+ Budget</span></td>
+          </tr>`;
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);text-align:center;padding:1.2rem">Kunde inte hämta kampanjer: ${e.message}</td></tr>`;
+      }
+    }
 
-        // Load dashboard on page load
-        loadDashboard();
-    </script>
+    loadCampaigns();
+
+    async function toggleCampaignStatus(campaignId, newStatus, btn) {
+      btn.disabled = true;
+      btn.textContent = '…';
+      try {
+        const res = await fetch('/api/meta/campaign/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ campaign_id: campaignId, status: newStatus })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Fel');
+
+        // Update button to reflect new state
+        const isNowActive = newStatus === 'ACTIVE';
+        btn.className = `status-toggle ${isNowActive ? 'active' : 'paused'}`;
+        btn.textContent = isNowActive ? '● Aktiv' : '⏸ Pausad';
+        btn.title = isNowActive ? 'Pausa kampanj' : 'Aktivera kampanj';
+        btn.onclick = () => toggleCampaignStatus(campaignId, isNowActive ? 'PAUSED' : 'ACTIVE', btn);
+      } catch (e) {
+        alert(`❌ ${e.message}`);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ── CHARTS ───────────────────────────────────────────────
+    Chart.defaults.color       = 'rgba(255,255,255,0.42)';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+    Chart.defaults.font.family = "-apple-system,'Inter','Segoe UI',sans-serif";
+    Chart.defaults.font.size   = 10.5;
+
+    const labels = ['Jan','Feb','Mar','Apr','Maj','Jun'];
+
+    const rCtx  = document.getElementById('roasChart').getContext('2d');
+    const rGrad = rCtx.createLinearGradient(0, 0, 0, 175);
+    rGrad.addColorStop(0,   'rgba(26,106,224,.50)');
+    rGrad.addColorStop(0.65,'rgba(26,106,224,.10)');
+    rGrad.addColorStop(1,   'rgba(26,106,224,.00)');
+
+    new Chart(rCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label:'ROAS', data:[2.1,2.8,3.4,3.2,3.9,4.1], borderColor:'#4fc3f7', borderWidth:2.2, backgroundColor:rGrad, pointBackgroundColor:'#4fc3f7', pointBorderColor:'#0c1c38', pointBorderWidth:2, pointRadius:4, pointHoverRadius:6, tension:0.42, fill:true },
+          { label:'Glow', data:[2.1,2.8,3.4,3.2,3.9,4.1], borderColor:'rgba(79,195,247,.22)', borderWidth:8, backgroundColor:'transparent', pointRadius:0, tension:0.42, fill:false },
+          { label:'Mål 3×', data:[3,3,3,3,3,3], borderColor:'rgba(212,140,8,.45)', borderWidth:1.4, borderDash:[5,4], pointRadius:0, tension:0, fill:false }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        animation:{ duration:1200, easing:'easeOutQuart' },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{ backgroundColor:'rgba(10,20,40,.96)', borderColor:'rgba(255,255,255,.12)', borderWidth:1, padding:10,
+            callbacks:{ label: c => c.dataset.label==='Glow' ? '' : ` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}×` },
+            filter: i => i.datasetIndex === 0
+          }
+        },
+        scales:{
+          x:{ grid:{ color:'rgba(255,255,255,.05)' }, ticks:{ color:'rgba(255,255,255,.38)', padding:4 } },
+          y:{ min:0, max:6, grid:{ color:'rgba(255,255,255,.05)' }, ticks:{ color:'rgba(255,255,255,.38)', stepSize:2, callback: v => v+'×', padding:4 } }
+        },
+        interaction:{ mode:'index', intersect:false }
+      }
+    });
+
+    new Chart(document.getElementById('spendChart').getContext('2d'), {
+      type:'bar',
+      data:{
+        labels,
+        datasets:[
+          { label:'Spend', data:[11500,14200,16800,17850,null,null], backgroundColor:'rgba(26,106,224,.72)', borderRadius:4, barPercentage:.65, categoryPercentage:.75 },
+          { label:'Intäkt', data:[25300,39800,60500,67800,null,null], backgroundColor:'rgba(208,138,8,.72)', borderRadius:4, barPercentage:.65, categoryPercentage:.75 }
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        animation:{ duration:1200, easing:'easeOutQuart' },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{ backgroundColor:'rgba(10,20,40,.96)', borderColor:'rgba(255,255,255,.12)', borderWidth:1, padding:10,
+            callbacks:{ label: c => ` ${c.dataset.label}: ${(c.parsed.y/1000).toFixed(0)}k kr` }
+          }
+        },
+        scales:{
+          x:{ grid:{ display:false }, ticks:{ color:'rgba(255,255,255,.38)', padding:4 } },
+          y:{ grid:{ color:'rgba(255,255,255,.05)' }, ticks:{ color:'rgba(255,255,255,.38)', callback: v => v ? (v/1000)+'k' : '0', padding:4 } }
+        }
+      }
+    });
+
+    new Chart(document.getElementById('audChart').getContext('2d'), {
+      type:'doughnut',
+      data:{
+        labels:['Ålder','Kön','Intressen','Geografi'],
+        datasets:[{ data:[40,30,20,10], backgroundColor:['rgba(26,106,224,.88)','rgba(79,195,247,.88)','rgba(208,138,8,.88)','rgba(240,192,64,.88)'], borderColor:['#0c1c38','#0c1c38','#0c1c38','#0c1c38'], borderWidth:2, hoverOffset:7 }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:true, cutout:'62%',
+        animation:{ duration:1200, easing:'easeOutQuart' },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{ backgroundColor:'rgba(10,20,40,.96)', borderColor:'rgba(255,255,255,.12)', borderWidth:1, padding:10,
+            callbacks:{ label: c => ` ${c.label}: ${c.parsed}%` }
+          }
+        }
+      }
+    });
+  </script>
 </body>
 </html>

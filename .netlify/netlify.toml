@@ -27,6 +27,9 @@ functions = "/Users/erikagerup/Admiral/netlify/functions"
 
 [functions]
 
+[functions.budget-adjust]
+schedule = "0 6 * * *"
+
 [functions."*"]
 node_bundler = "esbuild"
 
@@ -73,6 +76,78 @@ force = true
 [[redirects]]
 from = "/api/user"
 to = "/.netlify/functions/api-user"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/setup"
+to = "/.netlify/functions/setup"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/meta/accounts"
+to = "/.netlify/functions/meta-accounts"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/meta/adsets"
+to = "/.netlify/functions/meta-adsets"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/meta/campaigns"
+to = "/.netlify/functions/meta-campaigns"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/meta/campaign/update"
+to = "/.netlify/functions/meta-campaign-update"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/budget/activate"
+to = "/.netlify/functions/budget-activate"
 status = 200.0
 force = true
 

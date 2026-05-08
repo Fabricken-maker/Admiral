@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admiral — Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #060c18;
+      --sb-bg:       #091422;
+      --panel-bg:    rgba(12, 24, 46, 0.75);
+      --border:      rgba(255,255,255,0.07);
+      --border-hover:rgba(255,255,255,0.14);
+      --blue:        #1a6ae0;
+      --blue-bright: #4fc3f7;
+      --gold:        #d08a08;
+      --gold-bright: #f0c040;
+      --green:       #34d399;
+      --red:         #f87171;
+      --t60:  rgba(255,255,255,0.60);
+      --t40:  rgba(255,255,255,0.40);
+      --t20:  rgba(255,255,255,0.20);
+      --t10:  rgba(255,255,255,0.10);
+      --t07:  rgba(255,255,255,0.07);
+      --t04:  rgba(255,255,255,0.04);
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: -apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: #fff;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── FLOATING 3-D SHAPES ─────────────────────────────── */
+    .shapes {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    /* Sphere helper mixin via CSS custom props */
+    .sphere {
+      position: absolute;
+      border-radius: 50%;
+    }
+
+    /* Large blue sphere — top right */
+    .s-blue-xl {
+      width: 480px; height: 480px;
+      top: -210px; right: -130px;
+      background:
+        radial-gradient(circle at 33% 28%, rgba(200,230,255,.90) 0%, transparent 11%),
+        radial-gradient(circle at 40% 36%, #5aacff 0%, #1857d4 34%, #082d7e 62%, #020b22 100%);
+      box-shadow: 0 0 180px rgba(28,100,230,.45), inset -50px -35px 90px rgba(0,0,0,.65);
+      opacity: .88;
+      animation: floatA 9s ease-in-out infinite;
+    }
+
+    /* Medium gold sphere — bottom right */
+    .s-gold-lg {
+      width: 340px; height: 340px;
+      bottom: -130px; right: 160px;
+      background:
+        radial-gradient(circle at 33% 30%, rgba(255,240,140,.85) 0%, transparent 11%),
+        radial-gradient(circle at 40% 38%, #f0b030 0%, #a85c08 35%, #582400 62%, #180800 100%);
+      box-shadow: 0 0 120px rgba(210,130,15,.42), inset -35px -28px 70px rgba(0,0,0,.65);
+      opacity: .78;
+      animation: floatB 11s ease-in-out infinite 1.5s;
+    }
+
+    /* Medium blue sphere — mid left */
+    .s-blue-md {
+      width: 230px; height: 230px;
+      top: 55%; left: -70px;
+      background:
+        radial-gradient(circle at 35% 30%, rgba(155,210,255,.78) 0%, transparent 13%),
+        radial-gradient(circle at 42% 38%, #3a8ae8 0%, #0c3d9c 42%, #051858 66%, #010412 100%);
+      box-shadow: 0 0 90px rgba(18,74,200,.38), inset -24px -20px 48px rgba(0,0,0,.60);
+      opacity: .62;
+      animation: floatA 13s ease-in-out infinite 3s;
+    }
+
+    /* Small gold sphere — mid right */
+    .s-gold-sm {
+      width: 110px; height: 110px;
+      top: 32%; right: 9%;
+      background:
+        radial-gradient(circle at 33% 30%, rgba(255,235,120,.78) 0%, transparent 13%),
+        radial-gradient(circle at 40% 38%, #de9818 0%, #884008 42%, #381400 68%, #080200 100%);
+      box-shadow: 0 0 55px rgba(190,110,10,.38), inset -14px -12px 28px rgba(0,0,0,.60);
+      opacity: .58;
+      animation: floatB 7s ease-in-out infinite 0.5s;
+    }
+
+    /* Gem / faceted polyhedra */
+    .gem {
+      position: absolute;
+    }
+
+    .gem-gold {
+      width: 76px; height: 86px;
+      top: 13%; right: 21%;
+      background: linear-gradient(145deg, #f5ce50 0%, #c07808 42%, #783200 80%, #1c0800 100%);
+      clip-path: polygon(50% 0%, 84% 24%, 100% 58%, 76% 100%, 24% 100%, 0% 58%, 16% 24%);
+      box-shadow: 0 10px 45px rgba(210,128,8,.42);
+      opacity: .72;
+      animation: floatA 10s ease-in-out infinite 2s;
+    }
+
+    .gem-blue-a {
+      width: 52px; height: 58px;
+      bottom: 28%; left: 7%;
+      background: linear-gradient(145deg, #78baff 0%, #185cc8 42%, #07185c 80%, #010410 100%);
+      clip-path: polygon(50% 0%, 84% 24%, 100% 58%, 76% 100%, 24% 100%, 0% 58%, 16% 24%);
+      box-shadow: 0 8px 32px rgba(18,74,200,.42);
+      opacity: .62;
+      animation: floatB 8s ease-in-out infinite 4s;
+    }
+
+    .gem-blue-b {
+      width: 38px; height: 43px;
+      top: 22%; left: 14%;
+      background: linear-gradient(145deg, #5aa8fa 0%, #0e3cc0 42%, #031048 80%, #000208 100%);
+      clip-path: polygon(50% 0%, 100% 38%, 80% 100%, 20% 100%, 0% 38%);
+      box-shadow: 0 6px 22px rgba(14,60,180,.42);
+      opacity: .54;
+      animation: floatA 12s ease-in-out infinite 6s;
+    }
+
+    @keyframes floatA {
+      0%,100% { transform: translateY(0px) rotate(0deg); }
+      50%      { transform: translateY(-18px) rotate(4deg); }
+    }
+    @keyframes floatB {
+      0%,100% { transform: translateY(0px) rotate(0deg); }
+      50%      { transform: translateY(-12px) rotate(-3deg); }
+    }
+
+    /* ─── APP SHELL ───────────────────────────────────────── */
+    .app {
+      display: flex;
+      height: 100vh;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    /* sidebar removed */
+
+    /* ─── MAIN ────────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Topbar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.15rem 1.65rem;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+      background: rgba(6,12,24,.5);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .topbar-title { font-size: 1.35rem; font-weight: 700; display: none; }
+
+    /* Logo in topbar (replaces sidebar) */
+    .topbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .tl-icon {
+      width: 32px; height: 32px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #1a3a6e, #0d2248);
+      border: 1px solid rgba(255,255,255,0.18);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 16px rgba(44,90,160,0.4);
+    }
+
+    .tl-wordmark {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: .18em;
+      background: linear-gradient(90deg, #fff 0%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .tb-btn {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--t07);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--t60);
+      transition: all .2s;
+      position: relative;
+    }
+
+    .tb-btn:hover { background: var(--t10); color: #fff; border-color: var(--border-hover); }
+
+    .notif-dot {
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #ef4444;
+      border: 1px solid var(--sb-bg);
+    }
+
+    .user-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.28rem 0.55rem 0.28rem 0.28rem;
+      border-radius: 8px;
+      background: var(--t07);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .user-btn:hover { background: var(--t10); border-color: var(--border-hover); }
+
+    .user-av {
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #2c5aa0, #4fc3f7);
+      display: grid;
+      place-items: center;
+      font-size: .70rem;
+      font-weight: 700;
+    }
+
+    .user-chev { font-size: .58rem; color: var(--t40); }
+
+    /* Scroll area */
+    .scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem 1.65rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .scroll-area::-webkit-scrollbar { width: 4px; }
+    .scroll-area::-webkit-scrollbar-track { background: transparent; }
+    .scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+
+    /* ─── KPI CARDS ───────────────────────────────────────── */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.9rem;
+    }
+
+    .kpi {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 1rem 1.1rem 0.85rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all .28s cubic-bezier(.23,1,.32,1);
+      cursor: default;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .kpi:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 35px rgba(0,0,0,.35);
+    }
+
+    .kpi-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.7rem;
+    }
+
+    .kpi-ico {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+    }
+
+    .kpi:nth-child(1) .kpi-ico { background: rgba(212,140,8,.15); border: 1px solid rgba(212,140,8,.28); }
+    .kpi:nth-child(2) .kpi-ico { background: rgba(79,195,247,.15); border: 1px solid rgba(79,195,247,.28); }
+    .kpi:nth-child(3) .kpi-ico { background: rgba(26,106,224,.15); border: 1px solid rgba(26,106,224,.28); }
+    .kpi:nth-child(4) .kpi-ico { background: rgba(52,211,153,.15); border: 1px solid rgba(52,211,153,.28); }
+
+    .kpi-badge {
+      font-size: .68rem;
+      font-weight: 700;
+      padding: .16rem .42rem;
+      border-radius: 100px;
+    }
+
+    .kpi-badge.up   { color: var(--green); background: rgba(52,211,153,.12); }
+    .kpi-badge.down { color: var(--red);   background: rgba(248,113,113,.12); }
+
+    .kpi-val {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      margin-bottom: .18rem;
+    }
+
+    .kpi-lbl {
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      color: var(--t40);
+      font-weight: 600;
+      margin-bottom: .7rem;
+    }
+
+    .sparkline-svg {
+      width: 100%;
+      height: 28px;
+      display: block;
+    }
+
+    /* ─── PANEL BASE ──────────────────────────────────────── */
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 1.1rem 1.3rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .9rem;
+    }
+
+    .panel-title {
+      font-size: .92rem;
+      font-weight: 700;
+    }
+
+    .period-sel {
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+      padding: .25rem .65rem;
+      background: var(--t07);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: .72rem;
+      color: var(--t60);
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .period-sel:hover { background: var(--t10); color: #fff; }
+
+    .more-btn {
+      background: none;
+      border: none;
+      color: var(--t40);
+      cursor: pointer;
+      font-size: .85rem;
+      padding: .2rem .4rem;
+      border-radius: 5px;
+      transition: all .2s;
+    }
+
+    .more-btn:hover { background: var(--t07); color: var(--t60); }
+
+    /* ─── PERFORMANCE INSIGHTS ────────────────────────────── */
+    .insights-inner {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 1.2rem;
+    }
+
+    .chart-subtitle {
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--t60);
+      margin-bottom: .7rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .legend-inline {
+      display: flex;
+      gap: .7rem;
+    }
+
+    .legend-dot-inline {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: .66rem;
+      color: var(--t40);
+    }
+
+    .ld {
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .chart-box {
+      position: relative;
+      height: 175px;
+    }
+
+    /* ─── BOTTOM ROW ──────────────────────────────────────── */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 62fr 38fr;
+      gap: 1.1rem;
+    }
+
+    /* Campaign table */
+    .camp-tbl {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .camp-tbl th {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .10em;
+      color: var(--t40);
+      font-weight: 600;
+      padding: .35rem .5rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .camp-tbl td {
+      padding: .6rem .5rem;
+      font-size: .80rem;
+      border-bottom: 1px solid var(--t04);
+      color: rgba(255,255,255,.78);
+      vertical-align: middle;
+    }
+
+    .camp-tbl tr:last-child td { border-bottom: none; }
+    .camp-tbl tr:hover td { background: var(--t04); }
+
+    .camp-cell {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+    }
+
+    .camp-av {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .camp-info .nm {
+      font-size: .80rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.2;
+    }
+
+    .camp-info .sm {
+      font-size: .65rem;
+      color: var(--t40);
+    }
+
+    .sdot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 5px rgba(52,211,153,.7);
+      display: inline-block;
+      margin-right: 4px;
+      animation: pulseGreen 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulseGreen {
+      0%,100% { opacity:1; box-shadow: 0 0 5px rgba(52,211,153,.7); }
+      50%      { opacity:.6; box-shadow: 0 0 9px rgba(52,211,153,1); }
+    }
+
+    .st-txt { font-size: .74rem; color: var(--green); font-weight: 600; }
+
+    .mini-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 20px;
+    }
+
+    .mb {
+      width: 5px;
+      border-radius: 2px 2px 0 0;
+    }
+
+    .v-pos { color: var(--green); font-weight: 700; }
+
+    /* Audience panel */
+    .aud-chart-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: .8rem;
+      position: relative;
+    }
+
+    .aud-legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .38rem .9rem;
+    }
+
+    .aud-li {
+      display: flex;
+      align-items: center;
+      gap: .38rem;
+      font-size: .73rem;
+      color: var(--t60);
+    }
+
+    .al-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .al-pct {
+      margin-left: auto;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* ─── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width: 920px) {
+      .sidebar { display: none; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .insights-inner { grid-template-columns: 1fr; }
+      .bottom-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── BACKGROUND 3D SHAPES ─────────────────────────────── -->
+  <div class="shapes">
+    <div class="sphere s-blue-xl"></div>
+    <div class="sphere s-gold-lg"></div>
+    <div class="sphere s-blue-md"></div>
+    <div class="sphere s-gold-sm"></div>
+    <div class="gem gem-gold"></div>
+    <div class="gem gem-blue-a"></div>
+    <div class="gem gem-blue-b"></div>
+  </div>
+
+  <div class="app">
+
+    <!-- ── MAIN ──────────────────────────────────────────────── -->
+    <main class="main">
+
+      <!-- Topbar -->
+      <div class="topbar">
+        <!-- Logo in topbar -->
+        <div class="topbar-logo">
+          <div class="tl-icon">
+            <svg width="17" height="17" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="10" cy="10" r="2.2" fill="#f0c040"/>
+              <circle cx="10" cy="2"  r="1.5" fill="#93c5fd"/>
+              <circle cx="18" cy="10" r="1.5" fill="#93c5fd"/>
+              <circle cx="10" cy="18" r="1.5" fill="#93c5fd"/>
+              <circle cx="2"  cy="10" r="1.5" fill="#93c5fd"/>
+              <circle cx="15.2" cy="4.8"  r="1.2" fill="#60a5fa"/>
+              <circle cx="15.2" cy="15.2" r="1.2" fill="#60a5fa"/>
+              <circle cx="4.8"  cy="15.2" r="1.2" fill="#60a5fa"/>
+              <circle cx="4.8"  cy="4.8"  r="1.2" fill="#60a5fa"/>
+              <line x1="10" y1="10" x2="10" y2="3.5"  stroke="#f0c040" stroke-width="1" stroke-opacity=".75"/>
+              <line x1="10" y1="10" x2="16.5" y2="10" stroke="#f0c040" stroke-width="1" stroke-opacity=".75"/>
+              <line x1="10" y1="10" x2="10" y2="16.5" stroke="#f0c040" stroke-width="1" stroke-opacity=".75"/>
+              <line x1="10" y1="10" x2="3.5" y2="10"  stroke="#f0c040" stroke-width="1" stroke-opacity=".75"/>
+              <line x1="10" y1="10" x2="14.4" y2="5.6"  stroke="#93c5fd" stroke-width=".8" stroke-opacity=".55"/>
+              <line x1="10" y1="10" x2="14.4" y2="14.4" stroke="#93c5fd" stroke-width=".8" stroke-opacity=".55"/>
+              <line x1="10" y1="10" x2="5.6"  y2="14.4" stroke="#93c5fd" stroke-width=".8" stroke-opacity=".55"/>
+              <line x1="10" y1="10" x2="5.6"  y2="5.6"  stroke="#93c5fd" stroke-width=".8" stroke-opacity=".55"/>
+            </svg>
+          </div>
+          <span class="tl-wordmark">ADMIRAL</span>
+        </div>
+        <div class="topbar-right">
+          <div class="user-btn">
+            <div class="user-av">EA</div>
+            <span class="user-chev">▾</span>
+          </div>
+          <div class="tb-btn">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <rect x="2" y="2" width="12" height="13" rx="1.5"/>
+              <line x1="5" y1="1" x2="5" y2="4"/>
+              <line x1="11" y1="1" x2="11" y2="4"/>
+              <line x1="2" y1="7" x2="14" y2="7"/>
+            </svg>
+          </div>
+          <div class="tb-btn" style="position:relative">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <path d="M8 1a5 5 0 0 1 5 5c0 4 1.5 5 1.5 5H1.5S3 10 3 6a5 5 0 0 1 5-5z"/>
+              <path d="M6.3 14a1.8 1.8 0 0 0 3.4 0"/>
+            </svg>
+            <span class="notif-dot"></span>
+          </div>
+          <div class="tb-btn">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <circle cx="7" cy="7" r="5"/>
+              <line x1="11" y1="11" x2="15" y2="15"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable content -->
+      <div class="scroll-area">
+
+        <!-- KPI ROW -->
+        <div class="kpi-row">
+
+          <div class="kpi">
+            <div class="kpi-head">
+              <div class="kpi-ico">💰</div>
+              <span class="kpi-badge up">↑ +14,3%</span>
+            </div>
+            <div class="kpi-val">17 850 kr</div>
+            <div class="kpi-lbl">Total Spend</div>
+            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sg1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#d08a08" stop-opacity=".45"/>
+                  <stop offset="100%" stop-color="#d08a08" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,22 L20,19 L40,21 L60,15 L80,11 L100,8 L120,4" stroke="#d08a08" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path d="M0,22 L20,19 L40,21 L60,15 L80,11 L100,8 L120,4 L120,28 L0,28Z" fill="url(#sg1)"/>
+            </svg>
+          </div>
+
+          <div class="kpi">
+            <div class="kpi-head">
+              <div class="kpi-ico">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#4fc3f7" stroke-width="1.5">
+                  <ellipse cx="8" cy="8" rx="7" ry="4"/>
+                  <circle cx="8" cy="8" r="2" fill="#4fc3f7" stroke="none"/>
+                </svg>
+              </div>
+              <span class="kpi-badge up">↑ +8,1%</span>
+            </div>
+            <div class="kpi-val">423 K</div>
+            <div class="kpi-lbl">Visningar</div>
+            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sg2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#4fc3f7" stop-opacity=".40"/>
+                  <stop offset="100%" stop-color="#4fc3f7" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,23 L20,20 L40,22 L60,16 L80,18 L100,11 L120,7" stroke="#4fc3f7" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path d="M0,23 L20,20 L40,22 L60,16 L80,18 L100,11 L120,7 L120,28 L0,28Z" fill="url(#sg2)"/>
+            </svg>
+          </div>
+
+          <div class="kpi">
+            <div class="kpi-head">
+              <div class="kpi-ico">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#1a6ae0" stroke-width="1.5" stroke-linecap="round">
+                  <path d="M3 3 L9 8 L6 10 L11 13" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <span class="kpi-badge up">↑ +5,2%</span>
+            </div>
+            <div class="kpi-val">13 740</div>
+            <div class="kpi-lbl">Klick</div>
+            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sg3" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#1a6ae0" stop-opacity=".42"/>
+                  <stop offset="100%" stop-color="#1a6ae0" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,25 L20,22 L40,24 L60,19 L80,14 L100,12 L120,8" stroke="#1a6ae0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path d="M0,25 L20,22 L40,24 L60,19 L80,14 L100,12 L120,8 L120,28 L0,28Z" fill="url(#sg3)"/>
+            </svg>
+          </div>
+
+          <div class="kpi">
+            <div class="kpi-head">
+              <div class="kpi-ico">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="#34d399">
+                  <path d="M2 9l4 4 8-8" stroke="#34d399" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <span class="kpi-badge up">↑ +18,4%</span>
+            </div>
+            <div class="kpi-val">189</div>
+            <div class="kpi-lbl">Konverteringar</div>
+            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sg4" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#34d399" stop-opacity=".40"/>
+                  <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,27 L20,24 L40,26 L60,20 L80,16 L100,10 L120,5" stroke="#34d399" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path d="M0,27 L20,24 L40,26 L60,20 L80,16 L100,10 L120,5 L120,28 L0,28Z" fill="url(#sg4)"/>
+            </svg>
+          </div>
+
+        </div>
+        <!-- /KPI ROW -->
+
+        <!-- PERFORMANCE INSIGHTS -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Performance Insights</span>
+            <div class="period-sel">Jan–Apr 2026 ▾</div>
+          </div>
+          <div class="insights-inner">
+            <div>
+              <div class="chart-subtitle">ROAS</div>
+              <div class="chart-box"><canvas id="roasChart"></canvas></div>
+            </div>
+            <div>
+              <div class="chart-subtitle">
+                Utgift vs. Intäkt
+                <div class="legend-inline">
+                  <span class="legend-dot-inline"><span class="ld" style="background:#1a6ae0"></span> Spend</span>
+                  <span class="legend-dot-inline"><span class="ld" style="background:#d08a08"></span> Intäkt</span>
+                </div>
+              </div>
+              <div class="chart-box"><canvas id="spendChart"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM ROW -->
+        <div class="bottom-row">
+
+          <!-- Campaigns table -->
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Toppkampanjer</span>
+              <button class="more-btn">•••</button>
+            </div>
+            <table class="camp-tbl">
+              <thead>
+                <tr>
+                  <th>Kampanjnamn</th>
+                  <th>Status</th>
+                  <th>Trend</th>
+                  <th>Spend</th>
+                  <th>ROAS</th>
+                  <th>CPA</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="camp-cell">
+                      <div class="camp-av" style="background:rgba(79,195,247,.15);border:1px solid rgba(79,195,247,.28)">⛳</div>
+                      <div class="camp-info">
+                        <div class="nm">DB Golf</div>
+                        <div class="sm">Vårresurser · IG + FB</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="sdot"></span><span class="st-txt">Aktiv</span></td>
+                  <td>
+                    <div class="mini-bars">
+                      <div class="mb" style="height:7px;background:linear-gradient(#4fc3f7,#1a6ae0)"></div>
+                      <div class="mb" style="height:11px;background:linear-gradient(#4fc3f7,#1a6ae0)"></div>
+                      <div class="mb" style="height:9px;background:linear-gradient(#4fc3f7,#1a6ae0)"></div>
+                      <div class="mb" style="height:14px;background:linear-gradient(#4fc3f7,#1a6ae0)"></div>
+                      <div class="mb" style="height:13px;background:linear-gradient(#4fc3f7,#1a6ae0)"></div>
+                      <div class="mb" style="height:18px;background:linear-gradient(#4fc3f7,#1a6ae0)"></div>
+                    </div>
+                  </td>
+                  <td>7 120 kr</td>
+                  <td class="v-pos">3,4×</td>
+                  <td>41 kr</td>
+                  <td><button class="more-btn">•••</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="camp-cell">
+                      <div class="camp-av" style="background:rgba(240,192,64,.15);border:1px solid rgba(240,192,64,.28)">🎯</div>
+                      <div class="camp-info">
+                        <div class="nm">AimPoint Express</div>
+                        <div class="sm">Lead Gen · FB</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="sdot"></span><span class="st-txt">Aktiv</span></td>
+                  <td>
+                    <div class="mini-bars">
+                      <div class="mb" style="height:13px;background:linear-gradient(#f0c040,#d08a08)"></div>
+                      <div class="mb" style="height:9px;background:linear-gradient(#f0c040,#d08a08)"></div>
+                      <div class="mb" style="height:15px;background:linear-gradient(#f0c040,#d08a08)"></div>
+                      <div class="mb" style="height:17px;background:linear-gradient(#f0c040,#d08a08)"></div>
+                      <div class="mb" style="height:13px;background:linear-gradient(#f0c040,#d08a08)"></div>
+                      <div class="mb" style="height:20px;background:linear-gradient(#f0c040,#d08a08)"></div>
+                    </div>
+                  </td>
+                  <td>6 280 kr</td>
+                  <td class="v-pos">4,1×</td>
+                  <td>81 kr</td>
+                  <td><button class="more-btn">•••</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="camp-cell">
+                      <div class="camp-av" style="background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.28)">✈️</div>
+                      <div class="camp-info">
+                        <div class="nm">Golfresor Paket</div>
+                        <div class="sm">Katalog + CTA · IG + FB</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="sdot"></span><span class="st-txt">Aktiv</span></td>
+                  <td>
+                    <div class="mini-bars">
+                      <div class="mb" style="height:6px;background:linear-gradient(#34d399,#059669)"></div>
+                      <div class="mb" style="height:9px;background:linear-gradient(#34d399,#059669)"></div>
+                      <div class="mb" style="height:13px;background:linear-gradient(#34d399,#059669)"></div>
+                      <div class="mb" style="height:11px;background:linear-gradient(#34d399,#059669)"></div>
+                      <div class="mb" style="height:16px;background:linear-gradient(#34d399,#059669)"></div>
+                      <div class="mb" style="height:20px;background:linear-gradient(#34d399,#059669)"></div>
+                    </div>
+                  </td>
+                  <td>4 450 kr</td>
+                  <td class="v-pos">5,2×</td>
+                  <td>32 kr</td>
+                  <td><button class="more-btn">•••</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Audience Distribution -->
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Målgruppsfördelning</span>
+              <button class="more-btn">•••</button>
+            </div>
+            <div class="aud-chart-wrap">
+              <canvas id="audChart" style="max-height:145px;"></canvas>
+            </div>
+            <div class="aud-legend">
+              <div class="aud-li">
+                <div class="al-dot" style="background:#1a6ae0"></div>
+                Ålder
+                <span class="al-pct">40%</span>
+              </div>
+              <div class="aud-li">
+                <div class="al-dot" style="background:#4fc3f7"></div>
+                Kön
+                <span class="al-pct">30%</span>
+              </div>
+              <div class="aud-li">
+                <div class="al-dot" style="background:#d08a08"></div>
+                Intressen
+                <span class="al-pct">20%</span>
+              </div>
+              <div class="aud-li">
+                <div class="al-dot" style="background:#f0c040"></div>
+                Geografi
+                <span class="al-pct">10%</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /bottom-row -->
+
+      </div><!-- /scroll-area -->
+    </main>
+
+  </div><!-- /app -->
+
+  <script>
+    Chart.defaults.color          = 'rgba(255,255,255,0.42)';
+    Chart.defaults.borderColor    = 'rgba(255,255,255,0.06)';
+    Chart.defaults.font.family    = "-apple-system,'Inter','Segoe UI',sans-serif";
+    Chart.defaults.font.size      = 10.5;
+
+    const labels = ['Jan','Feb','Mar','Apr','Maj','Jun'];
+
+    /* ── ROAS AREA CHART ─────────────────────── */
+    const rCtx = document.getElementById('roasChart').getContext('2d');
+
+    const rGrad = rCtx.createLinearGradient(0, 0, 0, 175);
+    rGrad.addColorStop(0,   'rgba(26,106,224,.50)');
+    rGrad.addColorStop(0.65,'rgba(26,106,224,.10)');
+    rGrad.addColorStop(1,   'rgba(26,106,224,.00)');
+
+    const rGlow = rCtx.createLinearGradient(0, 0, 0, 175);
+    rGlow.addColorStop(0,   'rgba(79,195,247,.18)');
+    rGlow.addColorStop(1,   'rgba(79,195,247,.00)');
+
+    new Chart(rCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'ROAS',
+            data: [2.1, 2.8, 3.4, 3.2, 3.9, 4.1],
+            borderColor: '#4fc3f7',
+            borderWidth: 2.2,
+            backgroundColor: rGrad,
+            pointBackgroundColor: '#4fc3f7',
+            pointBorderColor: '#0c1c38',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            tension: 0.42,
+            fill: true,
+          },
+          {
+            label: 'Glow',
+            data: [2.1, 2.8, 3.4, 3.2, 3.9, 4.1],
+            borderColor: 'rgba(79,195,247,.22)',
+            borderWidth: 8,
+            backgroundColor: 'transparent',
+            pointRadius: 0,
+            tension: 0.42,
+            fill: false,
+          },
+          {
+            label: 'Mål 3×',
+            data: [3,3,3,3,3,3],
+            borderColor: 'rgba(212,140,8,.45)',
+            borderWidth: 1.4,
+            borderDash: [5, 4],
+            pointRadius: 0,
+            tension: 0,
+            fill: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 1200, easing: 'easeOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(10,20,40,.96)',
+            borderColor: 'rgba(255,255,255,.12)',
+            borderWidth: 1,
+            padding: 10,
+            callbacks: {
+              label: c => c.dataset.label === 'Glow' ? '' : ` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}×`
+            },
+            filter: i => i.datasetIndex === 0
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,.05)' },
+            ticks: { color: 'rgba(255,255,255,.38)', padding: 4 }
+          },
+          y: {
+            min: 0, max: 6,
+            grid: { color: 'rgba(255,255,255,.05)' },
+            ticks: {
+              color: 'rgba(255,255,255,.38)',
+              stepSize: 2,
+              callback: v => v + '×',
+              padding: 4
+            }
+          }
+        },
+        interaction: { mode: 'index', intersect: false }
+      }
+    });
+
+    /* ── SPEND vs INTÄKT BAR CHART ───────────── */
+    const sCtx = document.getElementById('spendChart').getContext('2d');
+
+    new Chart(sCtx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Spend',
+            data: [11500, 14200, 16800, 17850, null, null],
+            backgroundColor: 'rgba(26,106,224,.72)',
+            borderRadius: 4,
+            barPercentage: .65,
+            categoryPercentage: .75,
+          },
+          {
+            label: 'Intäkt',
+            data: [25300, 39800, 60500, 67800, null, null],
+            backgroundColor: 'rgba(208,138,8,.72)',
+            borderRadius: 4,
+            barPercentage: .65,
+            categoryPercentage: .75,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 1200, easing: 'easeOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(10,20,40,.96)',
+            borderColor: 'rgba(255,255,255,.12)',
+            borderWidth: 1,
+            padding: 10,
+            callbacks: {
+              label: c => ` ${c.dataset.label}: ${(c.parsed.y/1000).toFixed(0)}k kr`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: 'rgba(255,255,255,.38)', padding: 4 }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,.05)' },
+            ticks: {
+              color: 'rgba(255,255,255,.38)',
+              callback: v => v ? (v/1000)+'k' : '0',
+              padding: 4
+            }
+          }
+        }
+      }
+    });
+
+    /* ── AUDIENCE DOUGHNUT ───────────────────── */
+    const aCtx = document.getElementById('audChart').getContext('2d');
+
+    new Chart(aCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Ålder','Kön','Intressen','Geografi'],
+        datasets: [{
+          data: [40, 30, 20, 10],
+          backgroundColor: [
+            'rgba(26,106,224,.88)',
+            'rgba(79,195,247,.88)',
+            'rgba(208,138,8,.88)',
+            'rgba(240,192,64,.88)'
+          ],
+          borderColor: ['#0c1c38','#0c1c38','#0c1c38','#0c1c38'],
+          borderWidth: 2,
+          hoverOffset: 7,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '62%',
+        animation: { duration: 1200, easing: 'easeOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(10,20,40,.96)',
+            borderColor: 'rgba(255,255,255,.12)',
+            borderWidth: 1,
+            padding: 10,
+            callbacks: {
+              label: c => ` ${c.label}: ${c.parsed}%`
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

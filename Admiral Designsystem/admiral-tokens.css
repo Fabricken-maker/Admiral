@@ -1,0 +1,389 @@
+/*
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║           ADMIRAL DESIGN TOKENS  —  v1.0.0                  ║
+ * ║  Single source of truth för Admiral Dashboard + Setup-app    ║
+ * ║  Importera denna fil FÖRST i alla Admiral CSS-filer          ║
+ * ╚══════════════════════════════════════════════════════════════╝
+ *
+ *  Struktur:
+ *    1. Primitive tokens  (råa värden — ändra sällan)
+ *    2. Semantic tokens   (ändamålsbestämda alias — använd alltid dessa)
+ *    3. Component tokens  (per-komponent overrides)
+ *    4. Motion tokens     (animationer & transitions)
+ *    5. Glassmorfism      (blur + transparens-lager)
+ *    6. Audit-noteringar  (TODO-listan från v1-granskning)
+ */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   1. PRIMITIVE TOKENS
+   Ändra inte direkt i kod — använd semantiska alias nedan.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root {
+
+  /* ── Blue scale ────────────────────────────────────────────── */
+  --admiral-blue-50:  #e8f1fd;   /* Mycket ljus — hover-tints */
+  --admiral-blue-100: #bdd5f9;
+  --admiral-blue-200: #93c5fd;   /* Wordmark-gradient slut, nod-ikoner */
+  --admiral-blue-300: #60a5fa;   /* Diagonala noder i logo */
+  --admiral-blue-400: #4fc3f7;   /* Bright accent, sparklines, chart-linje */
+  --admiral-blue-500: #1a6ae0;   /* Primary action blue */
+  --admiral-blue-600: #2c5aa0;   /* Mid-tone — user-avatar gradient start */
+  --admiral-blue-700: #1a3a6e;   /* Logo-box gradient start */
+  --admiral-blue-800: #0d2248;   /* Logo-box gradient slut */
+  --admiral-blue-900: #091422;   /* Topbar/surface-bakgrund */
+  --admiral-blue-950: #060c18;   /* App-bakgrund (mörkast) */
+
+  /* ── Gold scale ─────────────────────────────────────────────── */
+  --admiral-gold-50:  #fefce8;
+  --admiral-gold-100: #fde68a;   /* Gradient highlight */
+  --admiral-gold-200: #f0c040;   /* Bright gold — logo-center, wordmark-ends */
+  --admiral-gold-300: #f5ce50;   /* Gem highlight */
+  --admiral-gold-400: #d08a08;   /* Primary gold — sparkline, bar chart */
+  --admiral-gold-500: #c07808;   /* Mid gold */
+  --admiral-gold-600: #a85c08;   /* Sphere mid-tone */
+  --admiral-gold-700: #783200;   /* Sphere shadow */
+  --admiral-gold-800: #582400;   /* Deep shadow */
+  --admiral-gold-900: #1c0800;   /* Nästan svart guld */
+
+  /* ── Neutral / White alpha ──────────────────────────────────── */
+  --admiral-white:      #ffffff;
+  --admiral-white-80:   rgba(255, 255, 255, 0.80);
+  --admiral-white-60:   rgba(255, 255, 255, 0.60);
+  --admiral-white-40:   rgba(255, 255, 255, 0.40);
+  --admiral-white-20:   rgba(255, 255, 255, 0.20);
+  --admiral-white-18:   rgba(255, 255, 255, 0.18);  /* Border på logo-box */
+  --admiral-white-14:   rgba(255, 255, 255, 0.14);  /* Border hover-state */
+  --admiral-white-12:   rgba(255, 255, 255, 0.12);  /* Scrollbar thumb */
+  --admiral-white-10:   rgba(255, 255, 255, 0.10);
+  --admiral-white-07:   rgba(255, 255, 255, 0.07);  /* Subtle bg / default border */
+  --admiral-white-04:   rgba(255, 255, 255, 0.04);  /* Zebra-stripe i tabell */
+
+  /* ── Status colors ──────────────────────────────────────────── */
+  --admiral-green:      #34d399;
+  --admiral-green-glow: rgba(52, 211, 153, 0.70);
+  --admiral-green-bg:   rgba(52, 211, 153, 0.12);
+  --admiral-red:        #f87171;
+  --admiral-red-bg:     rgba(248, 113, 113, 0.12);
+  --admiral-orange:     #fb923c;   /* Varning — ej använd i v1, reserverad */
+  --admiral-notif-red:  #ef4444;   /* Notification dot */
+
+  /* ── Spacing scale (4px base) ───────────────────────────────── */
+  --admiral-space-px:   1px;
+  --admiral-space-0:    0;
+  --admiral-space-1:    0.25rem;   /*  4px */
+  --admiral-space-2:    0.5rem;    /*  8px */
+  --admiral-space-3:    0.75rem;   /* 12px */
+  --admiral-space-4:    1rem;      /* 16px */
+  --admiral-space-5:    1.25rem;   /* 20px */
+  --admiral-space-6:    1.5rem;    /* 24px */
+  --admiral-space-7:    1.75rem;   /* 28px — content padding */
+  --admiral-space-8:    2rem;      /* 32px */
+  --admiral-space-10:   2.5rem;    /* 40px */
+  --admiral-space-12:   3rem;      /* 48px */
+
+  /* ── Border radius ──────────────────────────────────────────── */
+  --admiral-radius-xs:  2px;    /* Scrollbar, mini-bar tops */
+  --admiral-radius-sm:  5px;    /* Micro-buttons (more-btn) */
+  --admiral-radius-md:  7px;    /* Period-selector */
+  --admiral-radius-lg:  8px;    /* Icon-buttons, badges, user-btn */
+  --admiral-radius-xl:  9px;    /* Logo-icon */
+  --admiral-radius-2xl: 13px;   /* Panels, KPI-kort */
+  --admiral-radius-full:100px;  /* Pills, status-badges */
+
+  /* ── Typography scale ───────────────────────────────────────── */
+  --admiral-font-stack: -apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
+
+  /* Font sizes */
+  --admiral-text-2xs:   0.65rem;  /* 10.4px — sub-labels, chip-text */
+  --admiral-text-xs:    0.68rem;  /* 10.9px — badges, kpi-labels */
+  --admiral-text-sm:    0.72rem;  /* 11.5px — secondary labels */
+  --admiral-text-base:  0.80rem;  /* 12.8px — table body, small body */
+  --admiral-text-md:    0.85rem;  /* 13.6px — nav, more-btn */
+  --admiral-text-lg:    0.92rem;  /* 14.7px — panel titles */
+  --admiral-text-xl:    1.00rem;  /* 16px   — wordmark */
+  --admiral-text-2xl:   1.35rem;  /* 21.6px — topbar title */
+  --admiral-text-3xl:   1.45rem;  /* 23.2px — KPI values */
+
+  /* Font weights */
+  --admiral-weight-semibold: 600;
+  --admiral-weight-bold:     700;
+  --admiral-weight-extrabold:800;
+
+  /* Letter spacing */
+  --admiral-tracking-tight:  -0.02em;  /* Stora siffror (KPI values) */
+  --admiral-tracking-normal:  0;
+  --admiral-tracking-wide:    0.04em;
+  --admiral-tracking-wider:   0.10em;  /* Uppercase labels */
+  --admiral-tracking-widest:  0.18em;  /* Wordmark */
+
+  /* ── Shadows ────────────────────────────────────────────────── */
+  --admiral-shadow-sm:      0 4px 12px rgba(0, 0, 0, 0.25);
+  --admiral-shadow-md:      0 10px 35px rgba(0, 0, 0, 0.35);  /* Hover-state på KPI */
+  --admiral-shadow-lg:      0 16px 48px rgba(0, 0, 0, 0.45);
+
+  --admiral-glow-blue-sm:   0 0 16px  rgba(28, 100, 230, 0.40);
+  --admiral-glow-blue-md:   0 0 90px  rgba(18,  74, 200, 0.38);
+  --admiral-glow-blue-lg:   0 0 180px rgba(28, 100, 230, 0.45);
+
+  --admiral-glow-gold-sm:   0 0 55px  rgba(190, 110,  10, 0.38);
+  --admiral-glow-gold-md:   0 0 120px rgba(210, 130,  15, 0.42);
+
+  --admiral-glow-green-sm:  0 0 5px   rgba(52,  211, 153, 0.70);
+  --admiral-glow-green-md:  0 0 9px   rgba(52,  211, 153, 1.00);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   2. SEMANTIC TOKENS
+   Dessa är de du refererar till i komponent-CSS.
+   Byt ut primitiver HÄR om du t.ex. gör light mode.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root {
+
+  /* Bakgrunder */
+  --color-bg:           var(--admiral-blue-950);   /* App root */
+  --color-surface:      var(--admiral-blue-900);   /* Topbar, elevated surfaces */
+  --color-panel:        rgba(12, 24, 46, 0.75);    /* KPI-kort, panels (glassmorfism) */
+
+  /* Borders */
+  --color-border:       var(--admiral-white-07);   /* Default border */
+  --color-border-hover: var(--admiral-white-14);   /* Hover-state border */
+  --color-border-logo:  var(--admiral-white-18);   /* Logo box border */
+
+  /* Text */
+  --color-text-primary:   var(--admiral-white);
+  --color-text-secondary: var(--admiral-white-60);
+  --color-text-muted:     var(--admiral-white-40);
+  --color-text-subtle:    var(--admiral-white-20);
+
+  /* Brand */
+  --color-brand-blue:     var(--admiral-blue-500);   /* Primär blå */
+  --color-brand-blue-dim: var(--admiral-blue-600);   /* Mörkare blå — gradienter */
+  --color-brand-cyan:     var(--admiral-blue-400);   /* Ljusblå accent */
+  --color-brand-gold:     var(--admiral-gold-400);   /* Primär guld */
+  --color-brand-gold-dim: var(--admiral-gold-500);   /* Mörkare guld */
+  --color-brand-gold-bright: var(--admiral-gold-200); /* Ljus guld — center-nod */
+
+  /* Semantisk status */
+  --color-success:      var(--admiral-green);
+  --color-success-bg:   var(--admiral-green-bg);
+  --color-success-glow: var(--admiral-green-glow);
+  --color-error:        var(--admiral-red);
+  --color-error-bg:     var(--admiral-red-bg);
+  --color-notif:        var(--admiral-notif-red);
+
+  /* Interaktiva ytor */
+  --color-interactive-bg:       var(--admiral-white-07);
+  --color-interactive-bg-hover: var(--admiral-white-10);
+  --color-zebra:                var(--admiral-white-04);
+
+  /* Spacing aliases */
+  --space-page-x:   var(--admiral-space-7);    /* Horisontell content-padding */
+  --space-panel:    var(--admiral-space-4);    /* Panel intern padding */
+  --space-gap-md:   var(--admiral-space-4);    /* Grid gap, mellanrum */
+  --space-gap-sm:   0.9rem;                    /* Kompakt gap (KPI-grid) */
+  --space-gap-lg:   var(--admiral-space-5);    /* Stor gap */
+
+  /* Shadows & glow aliases */
+  --shadow-card-hover:  var(--admiral-shadow-md);
+  --glow-logo:          var(--admiral-glow-blue-sm);
+  --glow-active-dot:    var(--admiral-glow-green-sm);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   3. COMPONENT TOKENS
+   Ändra beteende per komponent utan att röra primitiver.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root {
+
+  /* Panel */
+  --panel-bg:           var(--color-panel);
+  --panel-border:       var(--color-border);
+  --panel-border-radius:var(--admiral-radius-2xl);
+  --panel-padding-x:    var(--admiral-space-5);     /* 1.25rem → 1.3rem i v1 */
+  --panel-padding-y:    var(--admiral-space-4);     /* 1rem → 1.1rem i v1 */
+  --panel-blur:         12px;
+
+  /* KPI Card (ärver panel, override nedan) */
+  --kpi-value-size:     var(--admiral-text-3xl);
+  --kpi-label-size:     var(--admiral-text-xs);
+  --kpi-badge-size:     var(--admiral-text-xs);
+  --kpi-icon-size:      32px;
+  --kpi-icon-radius:    var(--admiral-radius-lg);
+  --kpi-sparkline-h:    28px;
+
+  /* Icon tints per KPI-typ */
+  --kpi-tint-gold:    rgba(212, 140,  8, 0.15);
+  --kpi-tint-cyan:    rgba( 79, 195,247, 0.15);
+  --kpi-tint-blue:    rgba( 26, 106,224, 0.15);
+  --kpi-tint-green:   rgba( 52, 211,153, 0.15);
+  --kpi-border-gold:  rgba(212, 140,  8, 0.28);
+  --kpi-border-cyan:  rgba( 79, 195,247, 0.28);
+  --kpi-border-blue:  rgba( 26, 106,224, 0.28);
+  --kpi-border-green: rgba( 52, 211,153, 0.28);
+
+  /* Topbar */
+  --topbar-bg:          rgba(6, 12, 24, 0.50);
+  --topbar-blur:        10px;
+  --topbar-padding-x:   var(--space-page-x);
+  --topbar-padding-y:   1.15rem;
+  --topbar-btn-size:    32px;
+  --topbar-btn-radius:  var(--admiral-radius-lg);
+
+  /* Logo / Wordmark */
+  --logo-icon-size:     32px;
+  --logo-icon-radius:   var(--admiral-radius-xl);
+  --logo-icon-gradient: linear-gradient(135deg, var(--admiral-blue-700), var(--admiral-blue-800));
+
+  /* Table */
+  --table-head-size:    var(--admiral-text-2xs);
+  --table-body-size:    var(--admiral-text-base);
+  --table-row-border:   var(--color-zebra);
+  --table-head-border:  var(--color-border);
+  --table-avatar-size:  30px;
+  --table-avatar-radius:var(--admiral-radius-lg);
+
+  /* Chart */
+  --chart-height-main:  175px;
+  --chart-grid-color:   rgba(255, 255, 255, 0.05);
+  --chart-tick-color:   rgba(255, 255, 255, 0.38);
+  --chart-tooltip-bg:   rgba(10, 20, 40, 0.96);
+
+  /* Donut */
+  --donut-cutout:       62%;
+  --donut-border-color: var(--color-panel);  /* Match bakgrund för "luft" */
+
+  /* Scrollbar */
+  --scrollbar-width:    4px;
+  --scrollbar-radius:   var(--admiral-radius-xs);
+  --scrollbar-thumb:    var(--admiral-white-12);
+
+  /* Status dot (pulserende grön) */
+  --status-dot-size:    6px;
+  --status-dot-color:   var(--color-success);
+  --status-dot-glow:    var(--color-success-glow);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   4. MOTION TOKENS
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root {
+
+  /* Easing-kurvor */
+  --ease-spring:  cubic-bezier(0.23, 1, 0.32, 1);  /* Hover-lift, "bouncy" */
+  --ease-smooth:  ease-in-out;
+  --ease-out:     ease-out;
+
+  /* Durationer */
+  --duration-fast:    0.20s;   /* Färg/opacity-hover */
+  --duration-base:    0.28s;   /* Kort-hover (translateY + shadow) */
+  --duration-slow:    0.35s;   /* Längre transitions */
+  --duration-chart:   1.20s;   /* Chart-animering vid load */
+
+  /* Float-animationer (3D-sfärer) */
+  --float-duration-a: 9s;    /* Primär float (sfär XL, gem-guld) */
+  --float-duration-b: 11s;   /* Sekundär float (sfär guld) */
+  --float-lift-a:     -18px; /* Vertikal förflyttning float A */
+  --float-lift-b:     -12px; /* Vertikal förflyttning float B */
+  --float-rotate-a:   4deg;
+  --float-rotate-b:   -3deg;
+
+  /* Pulse-animation (status-dot) */
+  --pulse-duration:   2.5s;
+
+  /* Transition helpers — används inline i komponenter */
+  --transition-fast:  all var(--duration-fast) ease;
+  --transition-base:  all var(--duration-base) var(--ease-spring);
+  --transition-slow:  all var(--duration-slow) var(--ease-spring);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   5. GLASSMORFISM-LAGER
+   Tre nivåer av djup — ju högre elevation, desto mer blur + ljusare border.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root {
+  /* Elevation 0 — subtilt element (period-sel, icon-btn) */
+  --glass-0-bg:     var(--admiral-white-07);
+  --glass-0-border: var(--admiral-white-07);
+  --glass-0-blur:   0px;    /* Inget blur — nästlade glaseffekter är dyra */
+
+  /* Elevation 1 — Panel / KPI-kort */
+  --glass-1-bg:     rgba(12, 24, 46, 0.75);
+  --glass-1-border: var(--admiral-white-07);
+  --glass-1-blur:   12px;
+
+  /* Elevation 2 — Topbar (sticky, alltid ovanpå) */
+  --glass-2-bg:     rgba(6, 12, 24, 0.50);
+  --glass-2-border: var(--admiral-white-07);
+  --glass-2-blur:   10px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   6. AUDIT — KVARVARANDE TEKNISK SKULD (v1.0 → v1.1)
+   Dessa hardkodade värden hittades i admiral-dashboard.html
+   och BÖR migreras till tokens i nästa release.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  HIGH — Bryter token-kontrakt:
+  ──────────────────────────────
+  [ ] rgba(255,255,255,.78)  i camp-tbl td
+      → Ska vara var(--admiral-white-80) eller ny --admiral-white-78
+
+  [ ] #ef4444  i .notif-dot
+      → Ska vara var(--color-notif)
+
+  [ ] rgba(6,12,24,.5) i .topbar background
+      → Ska vara var(--topbar-bg) [nytt token, se ovan]
+
+  [ ] rgba(52,211,153,.7/.12) i .kpi-badge.up och .sdot
+      → Ska vara var(--color-success-bg) / var(--color-success-glow)
+
+  MEDIUM — Inkonsekvenser i skalan:
+  ──────────────────────────────────
+  [ ] Border-radius 5px (.more-btn) — saknas i radius-skalan
+      → Lagt till som --admiral-radius-sm: 5px ✓ (fixad i tokens)
+
+  [ ] .panel padding 1.1rem × 1.3rem — matchar inte --admiral-space-4/5
+      → Justera till space-4/5 (16px/20px) i v1.1
+
+  [ ] .kpi padding 1rem × 1.1rem — inkonsekvent med panel
+      → Standardisera till identiska padding-tokens
+
+  [ ] Gap-värden: 0.9rem, 1.1rem, 1.2rem, 1.25rem används blandvis
+      → Konsolidera till --space-gap-sm/md/lg
+
+  LOW — Saknade states:
+  ──────────────────────
+  [ ] KPI-kort saknar focus-ring (tangentbordsnavigering)
+  [ ] .camp-tbl saknar focus-visible state på rader
+  [ ] period-sel saknar active/pressed-state
+  [ ] Inga disabled-varianter definierade för badges/buttons
+
+  FRAMTIDA TOKENS (Admiral Setup-app):
+  ──────────────────────────────────────
+  [ ] --color-bg-light / --color-panel-light  (light mode)
+  [ ] --admiral-purple-*  (eventuell tredje accent — LinkedIn-kampanjer?)
+  [ ] --zindex-topbar / --zindex-shapes / --zindex-modal
+  [ ] --breakpoint-sm/md/lg  (responsiva brytpunkter)
+
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/*
+ * ANVÄNDNING — importera i din CSS:
+ *
+ *   @import url('./admiral-tokens.css');
+ *
+ *   .min-panel {
+ *     background: var(--glass-1-bg);
+ *     backdrop-filter: blur(var(--panel-blur));
+ *     border: 1px solid var(--panel-border);
+ *     border-radius: var(--panel-border-radius);
+ *     padding: var(--panel-padding-y) var(--panel-padding-x);
+ *     transition: var(--transition-base);
+ *   }
+ *
+ *   .min-panel:hover {
+ *     border-color: var(--color-border-hover);
+ *     box-shadow: var(--shadow-card-hover);
+ *     transform: translateY(-2px);
+ *   }
+ */

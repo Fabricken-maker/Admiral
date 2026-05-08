@@ -29,6 +29,39 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/meta/accounts"
+  to = "/.netlify/functions/meta-accounts"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/meta/adsets"
+  to = "/.netlify/functions/meta-adsets"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/meta/campaigns"
+  to = "/.netlify/functions/meta-campaigns"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/meta/campaign/update"
+  to = "/.netlify/functions/meta-campaign-update"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/budget/activate"
+  to = "/.netlify/functions/budget-activate"
+  status = 200
+  force = true
+
+[functions."budget-adjust"]
+  schedule = "0 6 * * *"
+
 # SPA routing - all other paths go to index.html
 [[redirects]]
   from = "/*"

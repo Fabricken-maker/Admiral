@@ -378,7 +378,10 @@
       place-items: center;
       transition: all 0.2s;
       background: var(--bg-item);
+      cursor: pointer;
     }
+
+    .check-box:hover { border-color: var(--gold); }
 
     .check-box.done {
       background: var(--green);
@@ -743,7 +746,12 @@
     <div class="logo-icon">★</div>
     <div class="logo-name">Admiral</div>
   </div>
-  <div class="version-badge">SETUP V 1.0</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="version-badge">SETUP V 1.0</div>
+    <button id="admin-skip-btn" onclick="adminSkip()" style="display:none;padding:6px 14px;background:rgba(200,168,75,0.15);border:1px solid rgba(200,168,75,0.4);color:#c8a84b;border-radius:8px;font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;letter-spacing:0.05em;">
+      Hoppa över setup →
+    </button>
+  </div>
 </header>
 
 <main>
@@ -821,7 +829,7 @@
 
     <div class="check-item" id="item-bm">
       <div class="check-item-header" onclick="toggleItem('bm')">
-        <div class="check-box" id="box-bm"></div>
+        <div class="check-box" id="box-bm" onclick="manualToggle('bm',event)"></div>
         <div class="check-info">
           <div class="check-title">Meta Business Manager</div>
           <div class="check-desc">Företagskonto som samlar alla Meta-tillgångar.</div>
@@ -842,7 +850,7 @@
 
     <div class="check-item" id="item-account">
       <div class="check-item-header" onclick="toggleItem('account')">
-        <div class="check-box" id="box-account"></div>
+        <div class="check-box" id="box-account" onclick="manualToggle('account',event)"></div>
         <div class="check-info">
           <div class="check-title">Annonskonto (Ad Account)</div>
           <div class="check-desc">Aktivt annonskonto kopplat till ditt BM.</div>
@@ -864,7 +872,7 @@
 
     <div class="check-item" id="item-page">
       <div class="check-item-header" onclick="toggleItem('page')">
-        <div class="check-box" id="box-page"></div>
+        <div class="check-box" id="box-page" onclick="manualToggle('page',event)"></div>
         <div class="check-info">
           <div class="check-title">Facebook-sida kopplad</div>
           <div class="check-desc">Behövs för annonser och page insights.</div>
@@ -890,7 +898,7 @@
 
     <div class="check-item" id="item-app">
       <div class="check-item-header" onclick="toggleItem('app')">
-        <div class="check-box" id="box-app"></div>
+        <div class="check-box" id="box-app" onclick="manualToggle('app',event)"></div>
         <div class="check-info">
           <div class="check-title">Meta App skapad</div>
           <div class="check-desc">Developer Portal — Marketing API aktiverat.</div>
@@ -912,7 +920,7 @@
 
     <div class="check-item" id="item-token">
       <div class="check-item-header" onclick="toggleItem('token')">
-        <div class="check-box" id="box-token"></div>
+        <div class="check-box" id="box-token" onclick="manualToggle('token',event)"></div>
         <div class="check-info">
           <div class="check-title">Access Token genererad</div>
           <div class="check-desc">Graph API Explorer — expirerar 1–2h, skicka direkt!</div>
@@ -939,7 +947,7 @@
 
     <div class="check-item" id="item-pixel">
       <div class="check-item-header" onclick="toggleItem('pixel')">
-        <div class="check-box" id="box-pixel"></div>
+        <div class="check-box" id="box-pixel" onclick="manualToggle('pixel',event)"></div>
         <div class="check-info">
           <div class="check-title">Meta Pixel installerad</div>
           <div class="check-desc">Spårar konverteringar — ROAS och retargeting.</div>
@@ -961,7 +969,7 @@
 
     <div class="check-item" id="item-capi">
       <div class="check-item-header" onclick="toggleItem('capi')">
-        <div class="check-box" id="box-capi"></div>
+        <div class="check-box" id="box-capi" onclick="manualToggle('capi',event)"></div>
         <div class="check-info">
           <div class="check-title">Conversions API (CAPI)</div>
           <div class="check-desc">Server-side spårning — täcker det ad-blockers döljer.</div>
@@ -1018,6 +1026,20 @@
 </main>
 
 <script>
+  // Admin check — show skip button if logged in as admin
+  (function() {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || localStorage.getItem('admiral_user') || '{}');
+      if (user.email === 'admin@admiralai.se') {
+        document.getElementById('admin-skip-btn').style.display = 'block';
+      }
+    } catch(e) {}
+  })();
+
+  function adminSkip() {
+    window.location.href = '/dashboard-welcome.html';
+  }
+
   // State
   const checked = { bm: false, account: false, page: false, app: false, token: false, pixel: false, capi: false };
   let extractedBmId = '';
@@ -1090,6 +1112,13 @@
 
     updateCounts();
     updateAlert(hasBm, hasAccount);
+  }
+
+  function manualToggle(id, event) {
+    event.stopPropagation();
+    setCheck(id, !checked[id]);
+    updateCounts();
+    updateAlert(checked.bm, checked.account);
   }
 
   function setCheck(id, value) {
