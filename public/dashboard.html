@@ -629,6 +629,21 @@
     .mini-bars { display: flex; align-items: flex-end; gap: 2px; height: 20px; }
     .mb { width: 5px; border-radius: 2px 2px 0 0; }
 
+    .report-item {
+      display: flex; align-items: flex-start; gap: .7rem;
+      padding: .6rem 0; border-bottom: 1px solid var(--t04);
+      font-size: .8rem;
+    }
+    .report-item:last-child { border-bottom: none; }
+    .report-badge {
+      flex-shrink: 0; padding: .18rem .45rem; border-radius: 20px;
+      font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .report-badge.critical { background: rgba(248,113,113,.15); color: var(--red); border: 1px solid rgba(248,113,113,.3); }
+    .report-badge.warning  { background: rgba(240,192,64,.12);  color: var(--gold-bright); border: 1px solid rgba(240,192,64,.3); }
+    .report-badge.info     { background: rgba(52,211,153,.10);  color: var(--green); border: 1px solid rgba(52,211,153,.25); }
+    .report-msg { color: rgba(255,255,255,.78); line-height: 1.4; }
+
     .v-pos { color: var(--green); font-weight: 700; }
 
     /* Audience panel */
@@ -1005,6 +1020,15 @@
           </div>
         </div>
 
+        <!-- DAILY REPORT -->
+        <div class="panel" id="report-panel" style="display:none">
+          <div class="panel-head">
+            <span class="panel-title">Daglig rapport</span>
+            <span id="report-date" style="font-size:.7rem;color:var(--t40)"></span>
+          </div>
+          <div id="report-list"></div>
+        </div>
+
         <!-- META ACCOUNTS -->
         <div class="panel">
           <div class="panel-head">
@@ -1169,6 +1193,7 @@
     }
 
     loadAccounts();
+    loadDailyReport();
 
     // ── BUDGET MODAL ─────────────────────────────────────────
     let _activeCampaignId = null;
@@ -1366,6 +1391,40 @@
     }
 
     loadCampaigns();
+
+    async function loadDailyReport() {
+      try {
+        const res = await fetch('/api/reports', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.reports?.length) return;
+
+        const panel = document.getElementById('report-panel');
+        const list  = document.getElementById('report-list');
+        const dateEl = document.getElementById('report-date');
+
+        dateEl.textContent = data.date;
+        panel.style.display = 'block';
+
+        const criticals = data.reports.filter(r => r.severity === 'critical').length;
+        const warnings  = data.reports.filter(r => r.severity === 'warning').length;
+
+        // Show only non-info if there are issues; show all if clean
+        const toShow = (criticals + warnings > 0)
+          ? data.reports.filter(r => r.severity !== 'info')
+          : data.reports;
+
+        list.innerHTML = toShow.map(r => `
+          <div class="report-item">
+            <span class="report-badge ${r.severity}">${r.severity === 'critical' ? '⚠ Kritisk' : r.severity === 'warning' ? '! Varning' : '✓ OK'}</span>
+            <span class="report-msg">${r.message}</span>
+          </div>
+        `).join('');
+      } catch (e) {
+        // Silently fail — report panel just stays hidden
+      }
+    }
 
     async function toggleCampaignStatus(campaignId, newStatus, btn) {
       btn.disabled = true;

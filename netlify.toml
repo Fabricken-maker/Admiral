@@ -48,6 +48,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/reports"
+  to = "/.netlify/functions/api-reports"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/meta/campaign/update"
   to = "/.netlify/functions/meta-campaign-update"
   status = 200
@@ -61,6 +67,9 @@
 
 [functions."budget-adjust"]
   schedule = "0 6 * * *"
+
+[functions."nightly-health-check"]
+  schedule = "0 7 * * *"
 
 # SPA routing - all other paths go to index.html
 [[redirects]]
