@@ -993,34 +993,35 @@
   <div class="step2-card">
     <div class="step2-header">
       <div class="step2-tag">STEG 2 AV 2</div>
-      <div class="step2-tag" id="step2-done-badge" style="display:none;border-color:rgba(52,211,153,0.3);color:var(--green);">LÖST</div>
+      <div class="step2-tag" id="step2-done-badge" style="display:none;border-color:rgba(52,211,153,0.3);color:var(--green);">KOPPLAT ✓</div>
     </div>
     <h2>Koppla ditt Meta-konto</h2>
-    <p>Fyll i din access token — vi tar hand om resten. Dina uppgifter lagras säkert och används bara för att hämta dina kampanjdata.</p>
+    <p>Logga in med Facebook — Admiral får säker åtkomst till dina annonskonton. Inga lösenord lagras, bara en krypterad API-token.</p>
 
-    <div class="form-field">
-      <div class="field-label">ACCESS TOKEN (EXPIRERAR SNART)</div>
-      <input class="form-input" id="f-token" type="password" placeholder="EAArtq0qr..." oninput="updatePreview()">
+    <!-- Error banner -->
+    <div id="meta-error" style="display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:var(--red);line-height:1.5;"></div>
+
+    <!-- Not connected -->
+    <div id="connect-section">
+      <button class="complete-btn" id="connect-btn" onclick="connectMeta()">
+        <span id="connect-label">Koppla Meta-konto via Facebook →</span>
+      </button>
+      <p style="margin-top:12px;font-size:11.5px;color:var(--text-dim);text-align:center;line-height:1.5;">
+        Admiral begär bara: <code style="font-size:11px;background:var(--bg-item);padding:1px 5px;border-radius:4px;color:var(--cyan);">ads_management</code> · <code style="font-size:11px;background:var(--bg-item);padding:1px 5px;border-radius:4px;color:var(--cyan);">ads_read</code> · <code style="font-size:11px;background:var(--bg-item);padding:1px 5px;border-radius:4px;color:var(--cyan);">business_management</code>
+      </p>
     </div>
 
-    <div class="form-field">
-      <div class="field-label">AD ACCOUNT ID — KONTO 1</div>
-      <input class="form-input" id="f-account1" placeholder="act_123456789" oninput="updatePreview()">
+    <!-- Connected -->
+    <div id="connected-section" style="display:none;">
+      <div style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);border-radius:10px;padding:18px;margin-bottom:16px;text-align:center;">
+        <div style="font-size:28px;margin-bottom:8px;">✓</div>
+        <div style="font-weight:600;color:var(--green);margin-bottom:4px;">Meta-konto kopplat!</div>
+        <div style="font-size:12px;color:var(--text-dim);">Admiral kan nu hämta och hantera dina kampanjer.</div>
+      </div>
+      <button class="complete-btn" onclick="window.location.href='/dashboard.html'">
+        Gå till Admiral Dashboard →
+      </button>
     </div>
-
-    <div class="form-field">
-      <div class="field-label">AD ACCOUNT ID — KONTO 2 <span style="color:var(--text-dim);font-size:9px;">(VALFRITT)</span></div>
-      <input class="form-input" id="f-account2" placeholder="act_987654321" oninput="updatePreview()">
-    </div>
-
-    <div class="form-field">
-      <div class="field-label">AD ACCOUNT ID — KONTO 3 <span style="color:var(--text-dim);font-size:9px;">(VALFRITT)</span></div>
-      <input class="form-input" id="f-account3" placeholder="act_456789123" oninput="updatePreview()">
-    </div>
-
-    <button class="complete-btn" id="complete-btn" onclick="completeSetup()" disabled>
-      ANSLUT MITT KONTO →
-    </button>
   </div>
 
 </main>
@@ -1182,39 +1183,55 @@
     }
   }
 
-  // ── PREVIEW ──
-  function updatePreview() {
-    const token = document.getElementById('f-token').value;
-    const a1    = document.getElementById('f-account1').value;
-    document.getElementById('complete-btn').disabled = !(token && a1);
-  }
+  // ── META OAUTH ──
+  async function connectMeta() {
+    const btn = document.getElementById('connect-btn');
+    const label = document.getElementById('connect-label');
+    const admiralToken = localStorage.getItem('admiral_token') || localStorage.getItem('token');
 
-  // ── COMPLETE ──
-  async function completeSetup() {
-    const token = localStorage.getItem('admiral_token');
-    const data = {
-      access_token: document.getElementById('f-token').value,
-      ad_account_id: document.getElementById('f-account1').value,
-      ad_account_id_2: document.getElementById('f-account2').value,
-      ad_account_id_3: document.getElementById('f-account3').value,
-      business_manager_id: extractedBmId,
-    };
+    if (!admiralToken) {
+      window.location.href = '/';
+      return;
+    }
+
+    label.textContent = 'Öppnar Meta…';
+    btn.disabled = true;
 
     try {
-      const res = await fetch('/api/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(data)
+      const res = await fetch('/api/meta/oauth/start', {
+        headers: { 'Authorization': `Bearer ${admiralToken}` }
       });
-      if (res.ok) {
-        window.location.href = '/dashboard-welcome.html';
-      } else {
-        window.location.href = '/dashboard-welcome.html';
-      }
-    } catch(e) {
-      window.location.href = '/dashboard-welcome.html';
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Kunde inte starta OAuth');
+      window.location.href = data.url;
+    } catch (e) {
+      showError(e.message);
+      label.textContent = 'Koppla Meta-konto via Facebook →';
+      btn.disabled = false;
     }
   }
+
+  function showError(msg) {
+    const el = document.getElementById('meta-error');
+    el.textContent = '⚠ ' + msg;
+    el.style.display = 'block';
+  }
+
+  // ── CHECK CALLBACK PARAMS ──
+  (function checkCallback() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('meta_connected') === '1') {
+      document.getElementById('connect-section').style.display = 'none';
+      document.getElementById('connected-section').style.display = 'block';
+      document.getElementById('step2-done-badge').style.display = 'block';
+      // Clean URL
+      window.history.replaceState({}, '', '/setup-wizard.html');
+    }
+    if (params.get('meta_error')) {
+      showError(decodeURIComponent(params.get('meta_error')));
+      window.history.replaceState({}, '', '/setup-wizard.html');
+    }
+  })();
 </script>
 </body>
 </html>
