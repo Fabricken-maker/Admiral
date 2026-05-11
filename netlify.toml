@@ -77,6 +77,12 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/meta/verify-pixel"
+  to = "/.netlify/functions/meta-verify-pixel"
+  status = 200
+  force = true
+
 [functions."budget-adjust"]
   schedule = "0 6 * * *"
 

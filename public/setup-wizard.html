@@ -961,9 +961,22 @@
           <li><span class="step-num">1</span><span>BM → <strong>Events Manager</strong> → Datakällor → Lägg till.</span></li>
           <li><span class="step-num">2</span><span>Välj "Meta Pixel" → ge det ett namn.</span></li>
           <li><span class="step-num">3</span><span>Installera via <strong>Google Tag Manager</strong> eller manuell kod på din webbplats.</span></li>
-          <li><span class="step-num">4</span><span>Verifiera med Meta Pixel Helper (Chrome-tillägg).</span></li>
+          <li><span class="step-num">4</span><span>Kopiera ditt <strong>Pixel-ID</strong> från Events Manager och klistra in nedan.</span></li>
         </ul>
-        <a class="action-link" href="https://business.facebook.com/events_manager" target="_blank">→ Events Manager</a>
+        <a class="action-link" href="https://business.facebook.com/events_manager" target="_blank" style="margin-bottom:14px;display:inline-flex;">→ Events Manager</a>
+
+        <div class="steps-label" style="margin-top:14px;">— VERIFIERA DITT PIXEL-ID</div>
+        <div class="url-input-wrap" style="margin-bottom:8px;">
+          <input
+            class="url-input"
+            id="pixel-id-input"
+            type="text"
+            placeholder="123456789012345"
+            onkeydown="if(event.key==='Enter') verifyPixel()"
+          >
+          <button class="url-confirm-btn" id="pixel-verify-btn" onclick="verifyPixel()">Verifiera →</button>
+        </div>
+        <div id="pixel-result" style="display:none;font-size:12.5px;line-height:1.5;margin-top:6px;"></div>
       </div>
     </div>
 
@@ -1215,6 +1228,57 @@
     const el = document.getElementById('meta-error');
     el.textContent = '⚠ ' + msg;
     el.style.display = 'block';
+  }
+
+  // ── PIXEL VERIFICATION ──
+  async function verifyPixel() {
+    const pixelId = document.getElementById('pixel-id-input').value.trim();
+    if (!pixelId) return;
+
+    const btn = document.getElementById('pixel-verify-btn');
+    const result = document.getElementById('pixel-result');
+
+    btn.textContent = 'Verifierar…';
+    btn.disabled = true;
+    result.style.display = 'none';
+
+    const admiralToken = localStorage.getItem('admiral_token') || localStorage.getItem('token');
+    if (!admiralToken) {
+      result.innerHTML = '<span style="color:var(--amber)">⚠ Koppla Meta-konto i Steg 2 — sedan kan vi verifiera pixeln automatiskt</span>';
+      result.style.display = 'block';
+      btn.textContent = 'Verifiera →';
+      btn.disabled = false;
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/meta/verify-pixel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${admiralToken}` },
+        body: JSON.stringify({ pixelId })
+      });
+      const data = await res.json();
+
+      if (res.ok && data.verified) {
+        result.innerHTML = `<span style="color:var(--green)">✓ Pixel verifierad: <strong>${data.pixelName}</strong> (ID: ${data.pixelId})</span>`;
+        result.style.display = 'block';
+        btn.textContent = '✓ Verifierad!';
+        btn.classList.add('done');
+        setCheck('pixel', true);
+        updateCounts();
+        updateAlert(checked.bm, checked.account);
+      } else {
+        result.innerHTML = `<span style="color:var(--red)">✗ ${data.error || 'Pixel ej hittad — kontrollera ID:et'}</span>`;
+        result.style.display = 'block';
+        btn.textContent = 'Verifiera →';
+        btn.disabled = false;
+      }
+    } catch {
+      result.innerHTML = '<span style="color:var(--red)">✗ Nätverksfel — försök igen</span>';
+      result.style.display = 'block';
+      btn.textContent = 'Verifiera →';
+      btn.disabled = false;
+    }
   }
 
   // ── CHECK CALLBACK PARAMS ──
