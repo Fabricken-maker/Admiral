@@ -80,6 +80,42 @@
     <div class="panel-title">Kunder</div>
     <div id="table-wrap"><div class="loading">Hämtar kunder…</div></div>
   </div>
+
+  <!-- MCP API-nycklar -->
+  <div class="panel" style="margin-top:1.2rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="panel-title" style="margin-bottom:0">MCP API-nycklar</div>
+      <button onclick="showCreateKey()" style="padding:.3rem .85rem;background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:.75rem;font-weight:700;cursor:pointer">+ Ny nyckel</button>
+    </div>
+
+    <!-- Skapa nyckel-formulär -->
+    <div id="key-form" style="display:none;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:.6rem;align-items:end">
+        <div>
+          <label style="font-size:.68rem;color:var(--t40);display:block;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.08em">Namn</label>
+          <input id="key-name" placeholder="t.ex. Mitt CRM" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;padding:.45rem .7rem;color:#fff;font-size:.8rem;outline:none"/>
+        </div>
+        <div>
+          <label style="font-size:.68rem;color:var(--t40);display:block;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.08em">Scope</label>
+          <select id="key-scope" style="width:100%;background:rgba(20,30,50,.9);border:1px solid var(--border);border-radius:7px;padding:.45rem .7rem;color:#fff;font-size:.8rem;outline:none">
+            <option value="admin">Admin (full åtkomst)</option>
+            <option value="customer">Kund (egna data)</option>
+          </select>
+        </div>
+        <button onclick="createKey()" style="padding:.45rem 1rem;background:var(--green);border:none;border-radius:7px;color:#060c18;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap">Skapa</button>
+      </div>
+    </div>
+
+    <!-- Nyckel visas en gång -->
+    <div id="key-reveal" style="display:none;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.25);border-radius:10px;padding:1rem;margin-bottom:1rem">
+      <div style="font-size:.72rem;color:var(--green);font-weight:700;margin-bottom:.4rem">✓ Nyckel skapad — spara den nu, den visas bara en gång</div>
+      <code id="key-value" style="font-size:.78rem;color:#fff;word-break:break-all;display:block;background:rgba(0,0,0,.3);padding:.6rem .8rem;border-radius:6px;margin-bottom:.5rem"></code>
+      <button onclick="copyKey()" style="padding:.25rem .7rem;background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.3);border-radius:5px;color:var(--green);font-size:.7rem;font-weight:600;cursor:pointer">Kopiera</button>
+      <button onclick="document.getElementById('key-reveal').style.display='none'" style="padding:.25rem .7rem;background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--t40);font-size:.7rem;font-weight:600;cursor:pointer;margin-left:.4rem">Stäng</button>
+    </div>
+
+    <div id="keys-wrap"><div class="loading">Hämtar nycklar…</div></div>
+  </div>
 </div>
 
 <script>
@@ -195,6 +231,82 @@
   }
 
   loadCustomers();
+  loadKeys();
+
+  // ── MCP API-nycklar ────────────────────────────────────────────────────────
+  function showCreateKey() {
+    const f = document.getElementById('key-form');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  }
+
+  async function loadKeys() {
+    try {
+      const res = await fetch('/api/mcp/keys', { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      const keys = data.keys || [];
+
+      if (!keys.length) {
+        document.getElementById('keys-wrap').innerHTML = '<div class="loading">Inga nycklar skapade än.</div>';
+        return;
+      }
+
+      document.getElementById('keys-wrap').innerHTML = `
+        <table>
+          <thead><tr>
+            <th>Namn</th><th>Prefix</th><th>Scope</th><th>Senast använd</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${keys.map(k => `<tr>
+              <td style="font-weight:600">${k.name}</td>
+              <td><code style="font-size:.72rem;color:rgba(255,255,255,.5)">${k.key_prefix}</code></td>
+              <td>${k.scope === 'admin'
+                ? '<span class="badge badge-green">Admin</span>'
+                : '<span class="badge badge-gold">Kund</span>'}</td>
+              <td style="color:rgba(255,255,255,.4)">${k.last_used_at ? new Date(k.last_used_at).toLocaleDateString('sv-SE') : '—'}</td>
+              <td>${k.active ? '<span class="badge badge-green">Aktiv</span>' : '<span class="badge badge-gray">Inaktiv</span>'}</td>
+              <td>${k.active ? `<button class="action-btn btn-terminate" onclick="revokeKey(${k.id})">Återkalla</button>` : ''}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`;
+    } catch (e) {
+      document.getElementById('keys-wrap').innerHTML = `<div class="loading" style="color:#f87171">Fel: ${e.message}</div>`;
+    }
+  }
+
+  async function createKey() {
+    const name  = document.getElementById('key-name').value.trim();
+    const scope = document.getElementById('key-scope').value;
+    if (!name) { alert('Ange ett namn för nyckeln'); return; }
+
+    try {
+      const res = await fetch('/api/mcp/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ name, scope })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      document.getElementById('key-value').textContent = data.api_key;
+      document.getElementById('key-reveal').style.display = 'block';
+      document.getElementById('key-form').style.display = 'none';
+      document.getElementById('key-name').value = '';
+      loadKeys();
+    } catch (e) { alert('Fel: ' + e.message); }
+  }
+
+  function copyKey() {
+    const val = document.getElementById('key-value').textContent;
+    navigator.clipboard.writeText(val).then(() => alert('Kopierat!'));
+  }
+
+  async function revokeKey(id) {
+    if (!confirm('Återkalla nyckeln? Integrationer som använder den slutar fungera direkt.')) return;
+    try {
+      await fetch(`/api/mcp/keys?id=${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      loadKeys();
+    } catch (e) { alert('Fel: ' + e.message); }
+  }
 </script>
 </body>
 </html>

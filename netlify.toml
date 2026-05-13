@@ -101,6 +101,18 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/mcp"
+  to = "/.netlify/functions/mcp"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/mcp/keys"
+  to = "/.netlify/functions/mcp-keygen"
+  status = 200
+  force = true
+
 [functions."budget-adjust"]
   schedule = "0 6 * * *"
 

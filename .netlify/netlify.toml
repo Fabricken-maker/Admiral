@@ -245,6 +245,30 @@ force = true
 [redirects.headers]
 
 [[redirects]]
+from = "/api/mcp"
+to = "/.netlify/functions/mcp"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/mcp/keys"
+to = "/.netlify/functions/mcp-keygen"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
 from = "/*"
 to = "/index.html"
 status = 200.0
