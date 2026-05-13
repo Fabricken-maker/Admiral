@@ -72,10 +72,32 @@
   <div class="stats-row" id="stats-row">
     <div class="stat-card"><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Kunder totalt</div></div>
     <div class="stat-card"><div class="stat-val" id="s-connected">—</div><div class="stat-lbl">Meta kopplat</div></div>
-    <div class="stat-card"><div class="stat-val" id="s-plans">—</div><div class="stat-lbl">Aktiva budgetar</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-plans">—</div><div class="stat-lbl">Aktiva kampanjer</div></div>
     <div class="stat-card"><div class="stat-val" id="s-budget">—</div><div class="stat-lbl">Total månadsbudget</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-spent">—</div><div class="stat-lbl">Spenderat</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-pacing">—</div><div class="stat-lbl">Snitt pacing</div></div>
   </div>
 
+  <!-- Kampanjöversikt -->
+  <div class="panel" style="margin-bottom:1.2rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+      <div class="panel-title" style="margin-bottom:0">Alla kampanjer</div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <select id="camp-filter-status" onchange="renderCampaigns()" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;padding:.3rem .6rem;color:#fff;font-size:.75rem;outline:none">
+          <option value="all">Alla statusar</option>
+          <option value="active">Aktiva</option>
+          <option value="paused">Pausade</option>
+          <option value="completed">Avslutade</option>
+        </select>
+        <input id="camp-search" oninput="renderCampaigns()" placeholder="Sök kund eller kampanj…" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;padding:.3rem .7rem;color:#fff;font-size:.75rem;outline:none;width:180px"/>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <div id="camp-wrap"><div class="loading">Hämtar kampanjer…</div></div>
+    </div>
+  </div>
+
+  <!-- Kundöversikt -->
   <div class="panel">
     <div class="panel-title">Kunder</div>
     <div id="table-wrap"><div class="loading">Hämtar kunder…</div></div>
@@ -168,9 +190,6 @@
       // Stats
       document.getElementById('s-total').textContent = customers.length;
       document.getElementById('s-connected').textContent = customers.filter(c => c.meta_connected).length;
-      document.getElementById('s-plans').textContent = customers.reduce((s, c) => s + c.active_plans, 0);
-      const totalBudget = customers.reduce((s, c) => s + c.total_budget, 0);
-      document.getElementById('s-budget').textContent = totalBudget > 0 ? Math.round(totalBudget).toLocaleString('sv-SE') + ' kr' : '—';
 
       if (!customers.length) {
         document.getElementById('table-wrap').innerHTML = '<div class="loading">Inga kunder än.</div>';
@@ -259,9 +278,107 @@
     }
   }
 
+  loadCampaigns();
   loadCustomers();
   loadInvites();
   loadKeys();
+
+  // ── Kampanjöversikt ───────────────────────────────────────────────────────
+  let allCampaigns = [];
+
+  async function loadCampaigns() {
+    try {
+      const res = await fetch('/api/admin/campaigns', { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      allCampaigns = data.campaigns || [];
+      const s = data.summary || {};
+
+      document.getElementById('s-plans').textContent  = s.active ?? '—';
+      document.getElementById('s-budget').textContent = s.total_budget > 0 ? Math.round(s.total_budget).toLocaleString('sv-SE') + ' kr' : '—';
+      document.getElementById('s-spent').textContent  = s.total_spent  > 0 ? Math.round(s.total_spent).toLocaleString('sv-SE')  + ' kr' : '—';
+      document.getElementById('s-pacing').textContent = s.avg_pacing != null ? s.avg_pacing + '%' : '—';
+
+      renderCampaigns();
+    } catch (e) {
+      document.getElementById('camp-wrap').innerHTML = `<div class="loading" style="color:#f87171">Fel: ${e.message}</div>`;
+    }
+  }
+
+  function renderCampaigns() {
+    const statusFilter = document.getElementById('camp-filter-status').value;
+    const search = (document.getElementById('camp-search').value || '').toLowerCase();
+
+    const filtered = allCampaigns.filter(c => {
+      if (statusFilter !== 'all' && c.status !== statusFilter) return false;
+      if (search && !c.campaign_name.toLowerCase().includes(search) && !c.customer_name.toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+    if (!filtered.length) {
+      document.getElementById('camp-wrap').innerHTML = '<div class="loading">Inga kampanjer matchar filtret.</div>';
+      return;
+    }
+
+    document.getElementById('camp-wrap').innerHTML = `
+      <table style="min-width:780px">
+        <thead><tr>
+          <th>Kund</th>
+          <th>Kampanj</th>
+          <th>Status</th>
+          <th style="text-align:right">Budget</th>
+          <th style="text-align:right">Spenderat</th>
+          <th style="text-align:right">Kvar</th>
+          <th style="text-align:center">Pacing</th>
+          <th style="text-align:center">ROAS</th>
+          <th style="text-align:center">Dagar kvar</th>
+        </tr></thead>
+        <tbody>
+          ${filtered.map(c => {
+            const statusBadge = c.status === 'active'    ? '<span class="badge badge-green">Aktiv</span>'
+                              : c.status === 'paused'    ? '<span class="badge badge-gold">Pausad</span>'
+                              : c.status === 'completed' ? '<span class="badge badge-gray">Klar</span>'
+                              : `<span class="badge badge-gray">${c.status}</span>`;
+
+            const pacingColor = c.pacing_pct == null ? 'rgba(255,255,255,.3)'
+                              : c.pacing_pct > 135   ? '#f87171'
+                              : c.pacing_pct < 65    ? '#f0c040'
+                              : '#34d399';
+            const pacingTxt = c.pacing_pct != null ? `<span style="color:${pacingColor};font-weight:700">${c.pacing_pct}%</span>` : '<span style="color:rgba(255,255,255,.25)">—</span>';
+
+            const roasTxt = c.avg_roas != null
+              ? `<span style="color:${c.avg_roas >= 2 ? '#34d399' : c.avg_roas >= 1 ? '#f0c040' : '#f87171'};font-weight:600">${c.avg_roas.toFixed(1)}x</span>`
+              : '<span style="color:rgba(255,255,255,.25)">—</span>';
+
+            const daysLeft = c.days_left > 0
+              ? `<span style="color:${c.days_left <= 3 ? '#f87171' : 'rgba(255,255,255,.4)'}">${c.days_left}d</span>`
+              : '<span style="color:rgba(255,255,255,.25)">—</span>';
+
+            const customerStatus = c.customer_status !== 'active'
+              ? ` <span class="badge badge-red" style="font-size:.55rem">${c.customer_status}</span>` : '';
+
+            return `<tr>
+              <td>
+                <div style="font-weight:600;font-size:.82rem">${c.customer_name}${customerStatus}</div>
+                <div style="font-size:.7rem;color:rgba(255,255,255,.35)">${c.customer_email}</div>
+              </td>
+              <td style="font-size:.82rem;max-width:180px">
+                <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.campaign_name}">${c.campaign_name}</div>
+                <div style="font-size:.68rem;color:rgba(255,255,255,.3)">${c.ad_sets} annonsgrupp${c.ad_sets !== 1 ? 'er' : ''}</div>
+              </td>
+              <td>${statusBadge}</td>
+              <td style="text-align:right;font-size:.82rem">${c.monthly_budget.toLocaleString('sv-SE')} kr</td>
+              <td style="text-align:right;font-size:.82rem">${c.spent.toLocaleString('sv-SE')} kr</td>
+              <td style="text-align:right;font-size:.82rem;color:${c.remaining < 0 ? '#f87171' : 'rgba(255,255,255,.6)'}">${c.remaining.toLocaleString('sv-SE')} kr</td>
+              <td style="text-align:center">${pacingTxt}</td>
+              <td style="text-align:center">${roasTxt}</td>
+              <td style="text-align:center">${daysLeft}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  }
 
   // ── Inbjudningar ──────────────────────────────────────────────────────────
   function createInvite() {
