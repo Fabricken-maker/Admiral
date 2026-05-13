@@ -940,6 +940,44 @@
 </div>
 
 
+<!-- Notifikationspanel (klocka) -->
+<div class="timeline-overlay" id="notif-overlay" onclick="closeNotif()"></div>
+<div class="timeline-panel" id="notif-panel">
+  <div class="tl-header">
+    <div class="tl-title">🔔 Notifikationer</div>
+    <button class="tl-close" onclick="closeNotif()">✕</button>
+  </div>
+  <div class="tl-body" style="padding:0;gap:0">
+    <div style="padding:.6rem 1.4rem;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:.4rem">
+      <button onclick="setNotifFilter('all')"   id="nf-all"      style="padding:.25rem .7rem;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.08);color:#fff;font-size:.7rem;cursor:pointer">Alla</button>
+      <button onclick="setNotifFilter('critical')" id="nf-critical" style="padding:.25rem .7rem;border-radius:6px;border:1px solid rgba(248,113,113,.3);background:transparent;color:rgba(255,255,255,.4);font-size:.7rem;cursor:pointer">Kritiska</button>
+      <button onclick="setNotifFilter('warning')"  id="nf-warning"  style="padding:.25rem .7rem;border-radius:6px;border:1px solid rgba(240,192,64,.3);background:transparent;color:rgba(255,255,255,.4);font-size:.7rem;cursor:pointer">Varningar</button>
+    </div>
+    <div id="notif-list" style="overflow-y:auto;flex:1"></div>
+  </div>
+</div>
+
+<!-- Sök-overlay (förstoringsglas) -->
+<div class="timeline-overlay" id="search-overlay" onclick="closeSearch()"></div>
+<div id="search-modal" style="
+  position:fixed;top:80px;left:50%;transform:translateX(-50%) scale(.96);
+  width:min(560px,94vw);background:#0d1829;border:1px solid rgba(255,255,255,.1);
+  border-radius:16px;z-index:201;box-shadow:0 24px 64px rgba(0,0,0,.6);
+  opacity:0;pointer-events:none;transition:all .18s cubic-bezier(.4,0,.2,1)">
+  <div style="display:flex;align-items:center;gap:.7rem;padding:.9rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.07)">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><line x1="11" y1="11" x2="15" y2="15"/></svg>
+    <input id="search-input" placeholder="Sök kampanj, kund, annonsgrupp…" oninput="runSearch()" onkeydown="searchKey(event)"
+      style="flex:1;background:none;border:none;outline:none;color:#fff;font-size:.9rem;caret-color:#4fc3f7"/>
+    <kbd style="font-size:.65rem;color:rgba(255,255,255,.25);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:.15rem .4rem">Esc</kbd>
+  </div>
+  <div id="search-results" style="max-height:360px;overflow-y:auto;padding:.5rem"></div>
+  <div style="padding:.6rem 1.1rem;border-top:1px solid rgba(255,255,255,.06);font-size:.65rem;color:rgba(255,255,255,.2);display:flex;gap:1.2rem">
+    <span><kbd style="background:rgba(255,255,255,.07);border-radius:3px;padding:.1rem .35rem;font-size:.65rem">↑↓</kbd> navigera</span>
+    <span><kbd style="background:rgba(255,255,255,.07);border-radius:3px;padding:.1rem .35rem;font-size:.65rem">↵</kbd> öppna</span>
+    <span><kbd style="background:rgba(255,255,255,.07);border-radius:3px;padding:.1rem .35rem;font-size:.65rem">Esc</kbd> stäng</span>
+  </div>
+</div>
+
   <div class="shapes">
     <div class="sphere s-blue-xl"></div>
     <div class="sphere s-gold-lg"></div>
@@ -1024,14 +1062,14 @@
               <line x1="2" y1="7" x2="14" y2="7"/>
             </svg>
           </div>
-          <div class="tb-btn" style="position:relative">
+          <div class="tb-btn" id="notif-btn" onclick="toggleNotif()" title="Notifikationer" style="position:relative">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
               <path d="M8 1a5 5 0 0 1 5 5c0 4 1.5 5 1.5 5H1.5S3 10 3 6a5 5 0 0 1 5-5z"/>
               <path d="M6.3 14a1.8 1.8 0 0 0 3.4 0"/>
             </svg>
-            <span class="notif-dot"></span>
+            <span class="notif-dot" id="notif-dot"></span>
           </div>
-          <div class="tb-btn">
+          <div class="tb-btn" id="search-btn" onclick="openSearch()" title="Sök (⌘K)">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
               <circle cx="7" cy="7" r="5"/>
               <line x1="11" y1="11" x2="15" y2="15"/>
@@ -1319,6 +1357,194 @@
       const btn = document.getElementById('user-btn');
       if (!btn.contains(e.target)) btn.classList.remove('open');
     });
+
+    // Keyboard shortcut ⌘K / Ctrl+K för sök
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+      if (e.key === 'Escape') { closeSearch(); closeNotif(); closeTimeline(); }
+    });
+
+    // ── Notifikationspanel ──────────────────────────────────────────────────
+    const PLACEHOLDER_NOTIFS = [
+      { severity: 'critical', category: 'token',   message: 'Meta-token löper ut om 2 dagar — förnya nu', report_date: '2026-05-13' },
+      { severity: 'warning',  category: 'pacing',  message: 'Sommarkampanjen: spenderar för långsamt (58% av plan)', report_date: '2026-05-13' },
+      { severity: 'warning',  category: 'pacing',  message: 'Retargeting Q2: spenderar för snabbt (142% av plan)', report_date: '2026-05-12' },
+      { severity: 'info',     category: 'token',   message: 'Meta-token är giltigt i 45 dagar', report_date: '2026-05-13' },
+      { severity: 'info',     category: 'budget',  message: 'Varumärkeskampanj: pacing OK (97%)', report_date: '2026-05-12' },
+    ];
+
+    let notifFilter = 'all';
+    let notifLoaded = false;
+    let notifData   = [];
+
+    function toggleNotif() {
+      const panel = document.getElementById('notif-panel');
+      const isOpen = panel.classList.contains('open');
+      if (isOpen) { closeNotif(); } else {
+        panel.classList.add('open');
+        document.getElementById('notif-overlay').classList.add('open');
+        document.getElementById('notif-btn').style.color = '#fff';
+        if (!notifLoaded) loadNotifs();
+      }
+    }
+    function closeNotif() {
+      document.getElementById('notif-panel').classList.remove('open');
+      document.getElementById('notif-overlay').classList.remove('open');
+      document.getElementById('notif-btn').style.color = '';
+    }
+
+    async function loadNotifs() {
+      try {
+        const res = await fetch('/api/reports', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+        const data = await res.json();
+        notifData = data.reports?.length ? data.reports : PLACEHOLDER_NOTIFS.map(n => ({...n, _placeholder: true}));
+      } catch {
+        notifData = PLACEHOLDER_NOTIFS.map(n => ({...n, _placeholder: true}));
+      }
+      notifLoaded = true;
+      renderNotifs();
+      // Uppdatera notif-dot
+      const hasCritical = notifData.some(n => n.severity === 'critical');
+      const hasWarning  = notifData.some(n => n.severity === 'warning');
+      const dot = document.getElementById('notif-dot');
+      dot.style.background = hasCritical ? '#ef4444' : hasWarning ? '#f0c040' : 'transparent';
+    }
+
+    function setNotifFilter(f) {
+      notifFilter = f;
+      ['all','critical','warning'].forEach(k => {
+        const btn = document.getElementById('nf-' + k);
+        btn.style.background = k === f ? 'rgba(255,255,255,.08)' : 'transparent';
+        btn.style.color = k === f ? '#fff' : 'rgba(255,255,255,.4)';
+      });
+      renderNotifs();
+    }
+
+    function renderNotifs() {
+      const sevColor = { critical: '#f87171', warning: '#f0c040', info: '#34d399' };
+      const sevIcon  = { critical: '🔴', warning: '🟡', info: '🟢' };
+      const catLabel = { token: 'Token', pacing: 'Pacing', budget: 'Budget', inactivity: 'Inaktivitet' };
+
+      const filtered = notifFilter === 'all' ? notifData : notifData.filter(n => n.severity === notifFilter);
+
+      if (!filtered.length) {
+        document.getElementById('notif-list').innerHTML =
+          '<div style="text-align:center;padding:3rem;color:rgba(255,255,255,.3);font-size:.82rem">Inga notifikationer</div>';
+        return;
+      }
+
+      const placeholderBanner = notifData[0]?._placeholder
+        ? `<div style="margin:.8rem 1.4rem;padding:.5rem .8rem;background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2);border-radius:8px;font-size:.7rem;color:rgba(240,192,64,.8)">
+             Exempeldata — riktiga notiser visas från imorgon kl 07:00
+           </div>` : '';
+
+      document.getElementById('notif-list').innerHTML = placeholderBanner + filtered.map(n => `
+        <div style="padding:.85rem 1.4rem;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:.75rem;align-items:flex-start">
+          <span style="font-size:.85rem;margin-top:.05rem">${sevIcon[n.severity] || '⚪'}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.78rem;color:rgba(255,255,255,.85);line-height:1.5">${n.message}</div>
+            <div style="display:flex;gap:.5rem;margin-top:.3rem">
+              <span style="font-size:.63rem;color:rgba(255,255,255,.3)">${n.report_date}</span>
+              <span style="font-size:.63rem;color:${sevColor[n.severity]};background:${sevColor[n.severity]}18;padding:.1rem .4rem;border-radius:3px">${catLabel[n.category] || n.category}</span>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    // ── Sök ────────────────────────────────────────────────────────────────
+    const PLACEHOLDER_SEARCH = [
+      { type: 'campaign', label: 'Sommarkampanjen 2026', sub: 'Aktiv · 15 000 kr/mån',  icon: '📢' },
+      { type: 'campaign', label: 'Retargeting Q2',        sub: 'Aktiv · 8 000 kr/mån',   icon: '📢' },
+      { type: 'campaign', label: 'Varumärkeskampanj',     sub: 'Pausad · 12 000 kr/mån', icon: '📢' },
+      { type: 'adset',    label: 'Lookalike 1–3%',        sub: 'Sommarkampanjen · 7 200 kr/dag', icon: '🎯' },
+      { type: 'adset',    label: 'Retargeting 30d',       sub: 'Retargeting Q2 · 3 800 kr/dag',  icon: '🎯' },
+    ];
+
+    let searchIdx = -1;
+
+    function openSearch() {
+      const modal = document.getElementById('search-modal');
+      const overlay = document.getElementById('search-overlay');
+      modal.style.opacity = '1';
+      modal.style.pointerEvents = 'all';
+      modal.style.transform = 'translateX(-50%) scale(1)';
+      overlay.classList.add('open');
+      document.getElementById('search-btn').style.color = '#fff';
+      setTimeout(() => document.getElementById('search-input').focus(), 50);
+      showSearchPlaceholder();
+    }
+
+    function closeSearch() {
+      const modal = document.getElementById('search-modal');
+      modal.style.opacity = '0';
+      modal.style.pointerEvents = 'none';
+      modal.style.transform = 'translateX(-50%) scale(.96)';
+      document.getElementById('search-overlay').classList.remove('open');
+      document.getElementById('search-btn').style.color = '';
+      document.getElementById('search-input').value = '';
+      searchIdx = -1;
+    }
+
+    function showSearchPlaceholder() {
+      const items = PLACEHOLDER_SEARCH;
+      renderSearchResults(items, true);
+    }
+
+    function runSearch() {
+      const q = document.getElementById('search-input').value.trim().toLowerCase();
+      searchIdx = -1;
+      if (!q) { showSearchPlaceholder(); return; }
+      const results = PLACEHOLDER_SEARCH.filter(i =>
+        i.label.toLowerCase().includes(q) || i.sub.toLowerCase().includes(q)
+      );
+      renderSearchResults(results, false);
+    }
+
+    function renderSearchResults(items, isPlaceholder) {
+      const wrap = document.getElementById('search-results');
+      if (!items.length) {
+        wrap.innerHTML = '<div style="padding:1.5rem;text-align:center;color:rgba(255,255,255,.3);font-size:.8rem">Inga träffar</div>';
+        return;
+      }
+      const header = isPlaceholder
+        ? '<div style="padding:.3rem .6rem .5rem;font-size:.63rem;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.08em">Senaste</div>'
+        : '';
+      wrap.innerHTML = header + items.map((item, i) => `
+        <div class="search-result-row" data-idx="${i}" onclick="selectSearchItem(${i})"
+          style="display:flex;align-items:center;gap:.7rem;padding:.55rem .8rem;border-radius:8px;cursor:pointer;transition:background .1s">
+          <span style="font-size:1rem;width:22px;text-align:center">${item.icon}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:.82rem;color:#fff;font-weight:500">${item.label}</div>
+            <div style="font-size:.7rem;color:rgba(255,255,255,.35);margin-top:.1rem">${item.sub}</div>
+          </div>
+          <span style="font-size:.63rem;color:rgba(255,255,255,.2);background:rgba(255,255,255,.06);padding:.15rem .4rem;border-radius:4px">${item.type === 'campaign' ? 'Kampanj' : 'Annonsgrupp'}</span>
+        </div>`).join('');
+
+      // Hover-style
+      wrap.querySelectorAll('.search-result-row').forEach(row => {
+        row.addEventListener('mouseenter', () => row.style.background = 'rgba(255,255,255,.05)');
+        row.addEventListener('mouseleave', () => row.style.background = '');
+      });
+    }
+
+    function searchKey(e) {
+      const rows = document.querySelectorAll('.search-result-row');
+      if (!rows.length) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); searchIdx = Math.min(searchIdx + 1, rows.length - 1); highlightSearch(); }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); searchIdx = Math.max(searchIdx - 1, 0); highlightSearch(); }
+      if (e.key === 'Enter' && searchIdx >= 0) selectSearchItem(searchIdx);
+    }
+
+    function highlightSearch() {
+      document.querySelectorAll('.search-result-row').forEach((row, i) => {
+        row.style.background = i === searchIdx ? 'rgba(79,195,247,.1)' : '';
+      });
+    }
+
+    function selectSearchItem(idx) {
+      // Placeholder: visa att det fungerar, länka till rätt sida när kampanjsidor finns
+      closeSearch();
+    }
 
     // ── Tidslinjepanel ─────────────────────────────────────────────────────
     let tlLoaded = false;
