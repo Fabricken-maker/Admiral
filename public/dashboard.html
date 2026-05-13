@@ -166,7 +166,29 @@
       display: flex;
       align-items: center;
       gap: 0.55rem;
+      text-decoration: none;
+      cursor: pointer;
     }
+    .topbar-nav {
+      display: flex;
+      align-items: center;
+      gap: .25rem;
+      margin-left: 1.4rem;
+    }
+    .nav-tab {
+      padding: .35rem .75rem;
+      border-radius: 7px;
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--t40);
+      text-decoration: none;
+      transition: all .15s;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    .nav-tab:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .nav-tab.active { color: #fff; background: rgba(255,255,255,.08); }
 
     .tl-icon {
       width: 32px; height: 32px;
@@ -868,7 +890,8 @@
 
       <!-- Topbar -->
       <div class="topbar">
-        <div class="topbar-logo">
+        <div style="display:flex;align-items:center">
+        <a href="/dashboard.html" class="topbar-logo">
           <div class="tl-icon">
             <svg width="17" height="17" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="10" cy="10" r="2.2" fill="#f0c040"/>
@@ -891,6 +914,11 @@
             </svg>
           </div>
           <span class="tl-wordmark">ADMIRAL</span>
+        </a>
+        <nav class="topbar-nav">
+          <a href="/dashboard.html" class="nav-tab active">Dashboard</a>
+          <a href="/admin.html" class="nav-tab" id="nav-admin" style="display:none">Admin</a>
+        </nav>
         </div>
         <div class="topbar-right">
           <div class="tb-btn">
@@ -1147,6 +1175,7 @@
         document.getElementById('dd-email').textContent = email;
         if (email === 'admin@admiralai.se') {
           document.getElementById('admin-link').style.display = 'block';
+          document.getElementById('nav-admin').style.display = 'inline-flex';
         }
       } catch(e) {}
     })();

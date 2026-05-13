@@ -14,9 +14,14 @@
     body { font-family: -apple-system,'Inter',sans-serif; background: var(--bg); color: #fff; min-height: 100vh; -webkit-font-smoothing: antialiased; }
 
     .topbar { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1.65rem; border-bottom: 1px solid var(--border); background: rgba(6,12,24,.9); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; }
-    .logo { font-size: 1rem; font-weight: 800; letter-spacing: .12em; }
+    .topbar-left { display: flex; align-items: center; gap: 1.2rem; }
+    .logo { font-size: 1rem; font-weight: 800; letter-spacing: .12em; text-decoration: none; color: #fff; }
     .logo span { color: var(--blue); }
-    .topbar-links { display: flex; gap: 1rem; }
+    .nav-tabs { display: flex; gap: .2rem; }
+    .nav-tab { padding: .32rem .7rem; border-radius: 7px; font-size: .75rem; font-weight: 600; color: var(--t40); text-decoration: none; transition: all .15s; }
+    .nav-tab:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .nav-tab.active { color: #fff; background: rgba(255,255,255,.08); }
+    .topbar-links { display: flex; gap: 1rem; align-items: center; }
     .topbar-links a { font-size: .78rem; color: var(--t40); text-decoration: none; }
     .topbar-links a:hover { color: #fff; }
 
@@ -24,7 +29,7 @@
     h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: .3rem; }
     .subtitle { font-size: .82rem; color: var(--t40); margin-bottom: 1.8rem; }
 
-    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; margin-bottom: 1.8rem; }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .8rem; margin-bottom: 1.8rem; }
     .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.1rem; backdrop-filter: blur(12px); }
     .stat-val { font-size: 1.5rem; font-weight: 700; }
     .stat-lbl { font-size: .7rem; color: var(--t40); margin-top: .2rem; text-transform: uppercase; letter-spacing: .08em; }
@@ -58,9 +63,14 @@
 <body>
 
 <div class="topbar">
-  <div class="logo">ADMIRAL <span>ADMIN</span></div>
+  <div class="topbar-left">
+    <a href="/dashboard.html" class="logo">ADMIRAL <span>·</span></a>
+    <nav class="nav-tabs">
+      <a href="/dashboard.html" class="nav-tab">Dashboard</a>
+      <a href="/admin.html" class="nav-tab active">Admin</a>
+    </nav>
+  </div>
   <div class="topbar-links">
-    <a href="/dashboard.html">← Dashboard</a>
     <a href="#" onclick="logout()">Logga ut</a>
   </div>
 </div>
