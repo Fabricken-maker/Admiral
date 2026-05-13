@@ -45,6 +45,14 @@
     .badge-gray { background: rgba(255,255,255,.06); border: 1px solid var(--border); color: var(--t40); }
 
     .loading { color: var(--t40); font-size: .82rem; text-align: center; padding: 2rem; }
+    .action-btn { padding: .22rem .55rem; border-radius: 5px; font-size: .68rem; font-weight: 600; cursor: pointer; border: 1px solid; transition: all .15s; }
+    .action-btn:disabled { opacity: .4; cursor: default; }
+    .btn-pause { background: rgba(240,192,64,.1); border-color: rgba(240,192,64,.3); color: var(--gold); }
+    .btn-pause:hover:not(:disabled) { background: rgba(240,192,64,.2); }
+    .btn-activate { background: rgba(52,211,153,.1); border-color: rgba(52,211,153,.3); color: var(--green); }
+    .btn-activate:hover:not(:disabled) { background: rgba(52,211,153,.2); }
+    .btn-terminate { background: rgba(248,113,113,.08); border-color: rgba(248,113,113,.25); color: var(--red); }
+    .btn-terminate:hover:not(:disabled) { background: rgba(248,113,113,.15); }
   </style>
 </head>
 <body>
@@ -108,12 +116,13 @@
         <table>
           <thead><tr>
             <th>Kund</th>
+            <th>Status</th>
             <th>Meta</th>
             <th>Token</th>
             <th>Aktiva budgetar</th>
             <th>Månadsbudget</th>
-            <th>Spenderat</th>
             <th>Registrerad</th>
+            <th>Åtgärd</th>
           </tr></thead>
           <tbody>
             ${customers.map(c => {
@@ -129,23 +138,59 @@
               const spent = c.total_spent > 0 ? Math.round(c.total_spent).toLocaleString('sv-SE') + ' kr' : '—';
               const date = new Date(c.created_at).toLocaleDateString('sv-SE');
 
-              return `<tr>
+              const status = c.status || 'active';
+              const statusBadge = status === 'active' ? '<span class="badge badge-green">Aktiv</span>'
+                : status === 'paused' ? '<span class="badge badge-gold">Pausad</span>'
+                : '<span class="badge badge-red">Avslutad</span>';
+
+              const actions = status === 'active'
+                ? `<button class="action-btn btn-pause" onclick="userAction(${c.id},'pause')">Pausa</button>
+                   <button class="action-btn btn-terminate" onclick="userAction(${c.id},'terminate')" style="margin-left:4px">Avsluta</button>`
+                : status === 'paused'
+                ? `<button class="action-btn btn-activate" onclick="userAction(${c.id},'activate')">Aktivera</button>
+                   <button class="action-btn btn-terminate" onclick="userAction(${c.id},'terminate')" style="margin-left:4px">Avsluta</button>`
+                : '<span style="color:rgba(255,255,255,.25);font-size:.72rem">Avslutat</span>';
+
+              return `<tr id="row-${c.id}">
                 <td>
                   <div style="font-weight:600">${c.name || '—'}</div>
                   <div style="font-size:.72rem;color:rgba(255,255,255,.4)">${c.email}</div>
                 </td>
+                <td>${statusBadge}</td>
                 <td>${c.meta_connected ? '<span class="badge badge-green">✓ Kopplat</span>' : '<span class="badge badge-gray">Ej kopplat</span>'}</td>
                 <td>${tokenBadge}</td>
                 <td>${c.active_plans > 0 ? `<span class="badge badge-green">${c.active_plans} aktiv${c.active_plans > 1 ? 'a' : ''}</span>` : '<span class="badge badge-gray">—</span>'}</td>
                 <td>${budget}</td>
-                <td>${spent}</td>
                 <td style="color:rgba(255,255,255,.4)">${date}</td>
+                <td>${actions}</td>
               </tr>`;
             }).join('')}
           </tbody>
         </table>`;
     } catch (e) {
       document.getElementById('table-wrap').innerHTML = `<div class="loading" style="color:#f87171">Fel: ${e.message}</div>`;
+    }
+  }
+
+  async function userAction(userId, action) {
+    const labels = { pause: 'pausa', activate: 'aktivera', terminate: 'avsluta' };
+    if (!confirm(`Är du säker på att du vill ${labels[action]} det här kontot?`)) return;
+
+    let reason = null;
+    if (action === 'pause') reason = prompt('Anledning (visas ej för kund):') || 'Ej betalt';
+    if (action === 'terminate') reason = prompt('Anledning:') || 'Avslutat konto';
+
+    try {
+      const res = await fetch('/api/admin/user-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ user_id: userId, action, reason })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      loadCustomers(); // Refresh
+    } catch (e) {
+      alert('Fel: ' + e.message);
     }
   }
 

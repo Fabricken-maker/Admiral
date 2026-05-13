@@ -137,6 +137,18 @@ force = true
 [redirects.headers]
 
 [[redirects]]
+from = "/api/admin/user-action"
+to = "/.netlify/functions/admin-user-action"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
 from = "/api/admin/customers"
 to = "/.netlify/functions/admin-customers"
 status = 200.0

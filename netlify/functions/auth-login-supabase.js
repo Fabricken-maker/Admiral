@@ -75,6 +75,25 @@ export const handler = async (event, context) => {
       };
     }
 
+    // Check account status
+    if (user.status === 'paused') {
+      return {
+        statusCode: 403,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Ditt konto är pausat. Kontakta Admiral för att återaktivera.' })
+      };
+    }
+    if (user.status === 'terminated') {
+      return {
+        statusCode: 403,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Detta konto har avslutats.' })
+      };
+    }
+
+    // Update last login
+    await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('id', user.id);
+
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {

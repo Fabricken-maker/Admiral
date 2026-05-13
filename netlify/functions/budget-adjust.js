@@ -37,8 +37,9 @@ export const handler = async () => {
     // Hämta alla aktiva budgetplaner för nuvarande månad
     const { data: plans, error } = await supabase
       .from('budget_plans')
-      .select('*, ad_set_allocations(*), user_id')
+      .select('*, ad_set_allocations(*), user_id, users!inner(status)')
       .eq('status', 'active')
+      .eq('users.status', 'active')
       .lte('month_start', today)
       .gte('month_end', today);
 

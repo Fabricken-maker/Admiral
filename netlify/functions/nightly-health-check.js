@@ -10,6 +10,32 @@ export const handler = async () => {
   const today = new Date().toISOString().split('T')[0];
   const allFindings = [];
 
+  // ── Kontrollera inaktiva konton (admin-rapport) ────────────
+  try {
+    const cutoff60 = new Date(Date.now() - 60 * 86400000).toISOString();
+    const cutoff90 = new Date(Date.now() - 90 * 86400000).toISOString();
+
+    const { data: inactive } = await supabase
+      .from('users')
+      .select('id, email, last_login_at, status')
+      .eq('status', 'active')
+      .or(`last_login_at.lt.${cutoff60},last_login_at.is.null`);
+
+    for (const u of (inactive || [])) {
+      const lastLogin = u.last_login_at ? new Date(u.last_login_at) : null;
+      const daysInactive = lastLogin ? Math.floor((Date.now() - lastLogin) / 86400000) : null;
+      const severity = (!lastLogin || new Date(u.last_login_at) < new Date(cutoff90)) ? 'warning' : 'info';
+      await supabase.from('health_reports').insert({
+        report_date: today,
+        user_id: 3, // admin user
+        severity,
+        category: 'inactivity',
+        message: `${u.email}: inaktiv i ${daysInactive ?? '?'} dagar${severity === 'warning' ? ' — överväg att avsluta kontot' : ''}`,
+        details: { user_id: u.id, last_login_at: u.last_login_at }
+      });
+    }
+  } catch (e) { /* silent */ }
+
   // Hämta alla användare med kopplat Meta-token
   const { data: tokens } = await supabase
     .from('meta_tokens')
