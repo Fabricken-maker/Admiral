@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { sendEmail, buildWelcomeEmail } from './lib/send-email.js';
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -99,6 +100,13 @@ export const handler = async (event, context) => {
     }
 
     const user = newUser[0];
+
+    // Skicka välkomstmail (fire-and-forget)
+    sendEmail({
+      to: user.email,
+      subject: 'Välkommen till Admiral — koppla ditt Meta-konto',
+      html: buildWelcomeEmail({ name: company_name || user.email.split('@')[0] })
+    }).catch(() => {}); // ignorera fel — registrering ska inte blockeras
 
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET;

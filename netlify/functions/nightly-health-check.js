@@ -1,10 +1,13 @@
 /**
  * Admiral Nightly Health Check — körs 07:00 UTC dagligen
  * Kontrollerar token, pacing och budget per kund
+ * Skickar daglig rapport till admin + token-varningar till kunder
  */
 import { createClient } from '@supabase/supabase-js';
+import { sendEmail, buildAdminDailyReport, buildTokenExpiryEmail } from './lib/send-email.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hej@admiralai.se';
 
 export const handler = async () => {
   const today = new Date().toISOString().split('T')[0];
@@ -110,10 +113,50 @@ export const handler = async () => {
       );
       allFindings.push(...findings.map(f => ({ user_id: userId, ...f })));
     }
+
+    // ── Skicka token-varning till kunden om den löper ut ───────
+    const tokenFinding = findings.find(f => f.category === 'token' && (f.severity === 'critical' || f.severity === 'warning'));
+    if (tokenFinding) {
+      try {
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('email, name')
+          .eq('id', userId)
+          .single();
+
+        if (userRow) {
+          const daysLeft = tokenFinding.details?.days_left ?? '?';
+          await sendEmail({
+            to: userRow.email,
+            subject: tokenFinding.severity === 'critical'
+              ? `⚠️ Ditt Meta-token löper ut om ${daysLeft} dag${daysLeft !== 1 ? 'ar' : ''} — förnya nu`
+              : `🔔 Ditt Meta-token löper ut om ${daysLeft} dagar`,
+            html: buildTokenExpiryEmail({ name: userRow.name, daysLeft, severity: tokenFinding.severity })
+          });
+        }
+      } catch (e) { /* silent — mail är inte kritiskt */ }
+    }
   }
 
   const criticals = allFindings.filter(f => f.severity === 'critical').length;
   const warnings  = allFindings.filter(f => f.severity === 'warning').length;
+
+  // ── Skicka daglig sammanfattning till admin ─────────────────
+  await sendEmail({
+    to: ADMIN_EMAIL,
+    subject: criticals > 0
+      ? `🔴 Admiral: ${criticals} kritiska problem ${today}`
+      : warnings > 0
+        ? `🟡 Admiral: ${warnings} varningar ${today}`
+        : `✅ Admiral: Allt OK ${today}`,
+    html: buildAdminDailyReport({
+      date: today,
+      findings: allFindings,
+      criticals,
+      warnings,
+      users: tokens?.length || 0
+    })
+  });
 
   return {
     statusCode: 200,
