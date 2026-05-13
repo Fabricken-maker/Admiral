@@ -84,6 +84,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/timeline"
+  to = "/.netlify/functions/api-timeline"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/reports"
   to = "/.netlify/functions/api-reports"
   status = 200
