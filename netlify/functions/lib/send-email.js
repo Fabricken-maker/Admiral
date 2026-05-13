@@ -4,7 +4,8 @@
  */
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM = 'Admiral <noreply@admiralai.se>';
+// Använd verifierad avsändare om domänen är klar, annars Resends testadress
+const FROM = process.env.RESEND_FROM || 'onboarding@resend.dev';
 
 /**
  * Skickar ett e-postmeddelande via Resend API
