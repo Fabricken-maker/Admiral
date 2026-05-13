@@ -1,161 +1,165 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admiral - Meta Ads Dashboard</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admiral — AI-driven annonsoptimering</title>
+  <meta name="description" content="Admiral justerar dina Meta-kampanjer automatiskt varje dag baserat på ROAS. Sluta övervaka manuellt — låt Admiral sköta det."/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #060c18; --blue: #1a6ae0; --bright: #4fc3f7;
+      --gold: #f0c040; --green: #34d399;
+      --t60: rgba(255,255,255,.6); --t40: rgba(255,255,255,.4);
+      --border: rgba(255,255,255,.08);
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: -apple-system,'Inter','Segoe UI',sans-serif; background: var(--bg); color: #fff; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #dce3f0;
-        }
+    /* NAV */
+    nav { display:flex; align-items:center; justify-content:space-between; padding:.9rem 2rem; position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(6,12,24,.88); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
+    .nav-logo { font-size:1rem; font-weight:800; letter-spacing:.14em; }
+    .nav-logo span { color:var(--bright); }
+    .nav-links { display:flex; align-items:center; gap:1.4rem; }
+    .nav-links a { font-size:.8rem; color:var(--t60); text-decoration:none; transition:color .2s; }
+    .nav-links a:hover { color:#fff; }
+    .nav-btn { padding:.42rem 1rem; background:var(--blue); border:none; border-radius:8px; color:#fff; font-size:.8rem; font-weight:600; cursor:pointer; text-decoration:none; transition:all .2s; }
+    .nav-btn:hover { background:#1e7aff; }
 
-        .container {
-            width: 100%;
-            max-width: 500px;
-            padding: 20px;
-        }
+    /* HERO */
+    .hero { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:7rem 1.5rem 4rem; position:relative; overflow:hidden; }
+    .hero-glow { position:absolute; width:700px; height:700px; border-radius:50%; background:radial-gradient(circle, rgba(26,106,224,.15) 0%, transparent 70%); top:50%; left:50%; transform:translate(-50%,-55%); pointer-events:none; }
+    .hero-tag { display:inline-flex; align-items:center; gap:.5rem; padding:.32rem .85rem; border-radius:20px; background:rgba(79,195,247,.08); border:1px solid rgba(79,195,247,.2); font-size:.7rem; font-weight:600; color:var(--bright); letter-spacing:.08em; text-transform:uppercase; margin-bottom:1.8rem; }
+    .hero-tag::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--bright); animation:pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    h1 { font-size:clamp(2.2rem,6vw,4rem); font-weight:800; line-height:1.1; letter-spacing:-.02em; margin-bottom:1.3rem; max-width:780px; }
+    h1 em { font-style:normal; color:var(--bright); }
+    .hero-sub { font-size:clamp(.9rem,2vw,1.1rem); color:var(--t60); line-height:1.65; max-width:520px; margin-bottom:2.2rem; }
+    .hero-cta { display:flex; gap:.8rem; flex-wrap:wrap; justify-content:center; }
+    .btn-primary { padding:.8rem 2rem; background:var(--blue); border:none; border-radius:10px; color:#fff; font-size:.92rem; font-weight:700; cursor:pointer; text-decoration:none; transition:all .2s; box-shadow:0 8px 28px rgba(26,106,224,.35); }
+    .btn-primary:hover { background:#1e7aff; transform:translateY(-2px); box-shadow:0 12px 36px rgba(26,106,224,.45); }
+    .btn-ghost { padding:.8rem 1.6rem; background:transparent; border:1px solid var(--border); border-radius:10px; color:var(--t60); font-size:.92rem; font-weight:600; cursor:pointer; text-decoration:none; transition:all .2s; }
+    .btn-ghost:hover { border-color:var(--t40); color:#fff; }
+    .hero-note { margin-top:1rem; font-size:.76rem; color:var(--t40); }
 
-        .card {
-            background: rgba(26, 31, 58, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(200, 168, 75, 0.2);
-            border-radius: 16px;
-            padding: 60px 40px;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
+    /* STATS */
+    .stats { display:flex; justify-content:center; gap:3rem; flex-wrap:wrap; padding:2.5rem 2rem; border-top:1px solid var(--border); border-bottom:1px solid var(--border); background:rgba(255,255,255,.02); }
+    .stat { text-align:center; }
+    .stat-n { font-size:1.8rem; font-weight:800; color:var(--bright); }
+    .stat-l { font-size:.72rem; color:var(--t40); margin-top:.25rem; text-transform:uppercase; letter-spacing:.1em; }
 
-        .logo {
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
+    /* SECTIONS */
+    .section { padding:5rem 1.5rem; max-width:1000px; margin:0 auto; }
+    .section-tag { font-size:.68rem; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--bright); margin-bottom:.7rem; }
+    .section-title { font-size:clamp(1.5rem,4vw,2.2rem); font-weight:800; line-height:1.2; margin-bottom:.9rem; }
+    .section-sub { font-size:.92rem; color:var(--t60); line-height:1.65; max-width:540px; margin-bottom:2.8rem; }
 
-        h1 {
-            font-size: 32px;
-            margin-bottom: 12px;
-            background: linear-gradient(135deg, #c8a84b 0%, #5898f0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
+    /* STEPS */
+    .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; }
+    .step { background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:14px; padding:1.4rem 1.5rem; transition:all .25s; }
+    .step:hover { border-color:rgba(79,195,247,.2); background:rgba(79,195,247,.03); transform:translateY(-2px); }
+    .step-num { font-size:.63rem; font-weight:700; letter-spacing:.12em; color:var(--bright); text-transform:uppercase; margin-bottom:.6rem; }
+    .step-title { font-size:.95rem; font-weight:700; margin-bottom:.45rem; }
+    .step-desc { font-size:.82rem; color:var(--t60); line-height:1.6; }
 
-        .subtitle {
-            font-size: 16px;
-            color: #a0a8b3;
-            margin-bottom: 40px;
-        }
+    /* FEATURES */
+    .features { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:1rem; }
+    .feature { background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:14px; padding:1.4rem 1.5rem; }
+    .feature-icon { font-size:1.3rem; margin-bottom:.65rem; }
+    .feature-title { font-size:.9rem; font-weight:700; margin-bottom:.4rem; }
+    .feature-desc { font-size:.8rem; color:var(--t60); line-height:1.6; }
 
-        .button-group {
-            display: flex;
-            gap: 12px;
-            flex-direction: column;
-        }
+    /* CTA */
+    .cta-section { margin:2rem 1.5rem 4rem; padding:4rem 2rem; text-align:center; background:linear-gradient(135deg,rgba(26,106,224,.12),rgba(79,195,247,.06)); border:1px solid rgba(79,195,247,.15); border-radius:20px; }
+    .cta-section h2 { font-size:clamp(1.5rem,4vw,2rem); font-weight:800; margin-bottom:.8rem; }
+    .cta-section p { font-size:.92rem; color:var(--t60); margin-bottom:2rem; }
 
-        button {
-            padding: 14px 28px;
-            font-size: 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-login {
-            background: linear-gradient(135deg, #c8a84b 0%, #a88a3a 100%);
-            color: #0a0e27;
-        }
-
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 24px rgba(200, 168, 75, 0.3);
-        }
-
-        .btn-register {
-            background: rgba(88, 152, 240, 0.2);
-            color: #5898f0;
-            border: 1px solid #5898f0;
-        }
-
-        .btn-register:hover {
-            background: rgba(88, 152, 240, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .features {
-            margin-top: 40px;
-            padding-top: 40px;
-            border-top: 1px solid rgba(200, 168, 75, 0.1);
-            text-align: left;
-        }
-
-        .feature {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-            font-size: 14px;
-            color: #a0a8b3;
-        }
-
-        .feature-icon {
-            color: #3dd68c;
-            font-weight: bold;
-        }
-    </style>
+    /* FOOTER */
+    footer { border-top:1px solid var(--border); padding:2rem; text-align:center; font-size:.76rem; color:var(--t40); }
+    footer a { color:var(--t40); text-decoration:none; }
+    footer a:hover { color:#fff; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            
-            <h1>Admiral</h1>
-            <p class="subtitle">Meta Ads Intelligence Dashboard</p>
 
-            <div class="button-group">
-                <button class="btn-login" onclick="goToLogin()">Logga in</button>
-                <button class="btn-register" onclick="goToRegister()">Registrera dig</button>
-            </div>
+<nav>
+  <div class="nav-logo">ADMIRAL<span>.</span></div>
+  <div class="nav-links">
+    <a href="#how">Hur det fungerar</a>
+    <a href="#features">Funktioner</a>
+    <a href="/login.html">Logga in</a>
+    <a href="/register.html" class="nav-btn">Kom igång</a>
+  </div>
+</nav>
 
-            <div class="features">
-                <div class="feature">
-                    <span class="feature-icon">✓</span>
-                    <span>Real-time kampanjövervakning</span>
-                </div>
-                <div class="feature">
-                    <span class="feature-icon">✓</span>
-                    <span>CPM, Conversion & ROI-analys</span>
-                </div>
-                <div class="feature">
-                    <span class="feature-icon">✓</span>
-                    <span>Automatisk Meta Ads-synk</span>
-                </div>
-                <div class="feature">
-                    <span class="feature-icon">✓</span>
-                    <span>Setup-wizard för snabb start</span>
-                </div>
-            </div>
-        </div>
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-tag">AI-driven annonsoptimering</div>
+  <h1>Sluta övervaka.<br>Låt <em>Admiral</em> optimera.</h1>
+  <p class="hero-sub">Admiral justerar dina Meta-kampanjer automatiskt varje dag. Budgeten fördelas dit den ger mest — baserat på din faktiska ROAS.</p>
+  <div class="hero-cta">
+    <a href="/register.html" class="btn-primary">Kom igång →</a>
+    <a href="#how" class="btn-ghost">Hur det fungerar</a>
+  </div>
+  <p class="hero-note">Koppla ditt Meta-konto på 2 minuter. Ingen kod krävs.</p>
+</section>
+
+<div class="stats">
+  <div class="stat"><div class="stat-n">06:00</div><div class="stat-l">Daglig justering</div></div>
+  <div class="stat"><div class="stat-n">ROAS</div><div class="stat-l">Styrd fördelning</div></div>
+  <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Automatiserat</div></div>
+  <div class="stat"><div class="stat-n">±0 kr</div><div class="stat-l">Mot månadsplan</div></div>
+</div>
+
+<section class="section" id="how">
+  <div class="section-tag">Hur det fungerar</div>
+  <h2 class="section-title">Tre steg till automatisk optimering</h2>
+  <p class="section-sub">Admiral tar hand om det dagliga arbetet så du kan fokusera på strategi.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">Steg 01</div>
+      <div class="step-title">Koppla Meta-kontot</div>
+      <div class="step-desc">Logga in med Facebook — Admiral får säker åtkomst till dina annonskonton. Tar 2 minuter.</div>
     </div>
+    <div class="step">
+      <div class="step-num">Steg 02</div>
+      <div class="step-title">Sätt månadsbudget</div>
+      <div class="step-desc">Du bestämmer hur mycket du vill spendera per kampanj. Admiral räknar ut den dagliga fördelningen.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Steg 03</div>
+      <div class="step-title">Admiral optimerar dagligen</div>
+      <div class="step-desc">Varje morgon justeras budgeten mellan dina annonsgrupper baserat på vilka som ger bäst ROAS.</div>
+    </div>
+  </div>
+</section>
 
-    <script>
-        function goToLogin() {
-            window.location.href = '/login.html';
-        }
+<section class="section" id="features" style="padding-top:1rem">
+  <div class="section-tag">Funktioner</div>
+  <h2 class="section-title">Allt du behöver för smart annonsering</h2>
+  <p class="section-sub">Inget att installera. Inga agenturer att betala. Admiral jobbar medan du sover.</p>
+  <div class="features">
+    <div class="feature"><div class="feature-icon">⚡</div><div class="feature-title">ROAS-viktad budgetfördelning</div><div class="feature-desc">Annonsgrupper med hög ROAS får mer budget automatiskt. De som underpresterar skärs ned.</div></div>
+    <div class="feature"><div class="feature-icon">📊</div><div class="feature-title">Pacing mot månadsplan</div><div class="feature-desc">Admiral säkerställer att du träffar din månadsbudget exakt — varken mer eller mindre.</div></div>
+    <div class="feature"><div class="feature-icon">🔔</div><div class="feature-title">Daglig hälsokontroll</div><div class="feature-desc">Varje morgon kontrolleras token, pacing och spend. Avvikelser visas direkt i dashboarden.</div></div>
+    <div class="feature"><div class="feature-icon">▶</div><div class="feature-title">Aktivera &amp; pausa kampanjer</div><div class="feature-desc">Starta och stoppa kampanjer direkt från Admiral utan att öppna Meta Ads Manager.</div></div>
+    <div class="feature"><div class="feature-icon">🔒</div><div class="feature-title">Din data, ditt konto</div><div class="feature-desc">Varje kund har sitt eget krypterade Meta-token. Ingen delad åtkomst, ingen dataläcka.</div></div>
+    <div class="feature"><div class="feature-icon">🔄</div><div class="feature-title">Retry &amp; felhantering</div><div class="feature-desc">Om Meta API svarar fel försöker Admiral automatiskt igen. Inga budgetar glider ur synk.</div></div>
+  </div>
+</section>
 
-        function goToRegister() {
-            window.location.href = '/login.html?register=true';
-        }
-    </script>
+<div class="cta-section">
+  <h2>Redo att låta Admiral jobba?</h2>
+  <p>Koppla ditt Meta-konto idag och se vad som händer när AI sköter optimeringen.</p>
+  <a href="/register.html" class="btn-primary">Skapa konto →</a>
+</div>
+
+<footer>
+  <p>© 2026 Admiral · <a href="mailto:hej@admiralai.se">hej@admiralai.se</a> · <a href="/login.html">Logga in</a></p>
+</footer>
+
+<script>
+  if (localStorage.getItem('token')) window.location.href = '/dashboard.html';
+</script>
 </body>
 </html>
