@@ -914,6 +914,11 @@
   <div class="tl-body">
     <div id="tl-loading" style="color:rgba(255,255,255,.4);font-size:.82rem;text-align:center;padding:2rem">Laddar…</div>
 
+    <!-- Placeholder-banner -->
+    <div id="tl-placeholder-banner" style="display:none;background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.25);border-radius:8px;padding:.55rem .8rem;margin-bottom:1rem;font-size:.72rem;color:#f0c040;display:none">
+      ⚠️ Exempeldata — dina riktiga kampanjer visas så snart data finns inlagd
+    </div>
+
     <!-- Gantt -->
     <div id="tl-gantt" style="display:none">
       <div style="font-size:.78rem;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:.9rem">Tidslinje</div>
@@ -1549,6 +1554,61 @@
     // ── Tidslinjepanel ─────────────────────────────────────────────────────
     let tlLoaded = false;
 
+    // ── PLACEHOLDER-DATA för tidslinje ──────────────────────────
+    const today = new Date();
+    const fmt = d => d.toISOString().split('T')[0];
+    const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+
+    const PLACEHOLDER_CAMPAIGNS = [
+      {
+        id: 'p1', name: 'Sommarkampanj 2026', customer: 'Exempelkund AB',
+        status: 'active',
+        month_start: fmt(new Date(today.getFullYear(), today.getMonth(), 1)),
+        month_end:   fmt(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
+        monthly_budget: 25000, total_spent: 11200, progress_pct: 45
+      },
+      {
+        id: 'p2', name: 'Brand Awareness Q2', customer: 'Demo Butik',
+        status: 'active',
+        month_start: fmt(new Date(today.getFullYear(), today.getMonth(), 1)),
+        month_end:   fmt(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
+        monthly_budget: 15000, total_spent: 9300, progress_pct: 62
+      },
+      {
+        id: 'p3', name: 'Retargeting — vår', customer: 'Exempelkund AB',
+        status: 'paused',
+        month_start: fmt(new Date(today.getFullYear(), today.getMonth() - 1, 10)),
+        month_end:   fmt(new Date(today.getFullYear(), today.getMonth(), 20)),
+        monthly_budget: 8000, total_spent: 7100, progress_pct: 89
+      },
+      {
+        id: 'p4', name: 'Produktlansering Juli', customer: 'Nytt Bolag',
+        status: 'active',
+        month_start: fmt(new Date(today.getFullYear(), today.getMonth() + 1, 1)),
+        month_end:   fmt(new Date(today.getFullYear(), today.getMonth() + 2, 0)),
+        monthly_budget: 40000, total_spent: 0, progress_pct: 0
+      }
+    ];
+
+    // 45 dagars placeholder spend-kurva (sjunker lite oregelbundet)
+    const PLACEHOLDER_DAILY = (() => {
+      const days = [];
+      const base = 900;
+      for (let i = 44; i >= 0; i--) {
+        const d = addDays(today, -i);
+        const noise = Math.sin(i * 1.3) * 120 + Math.cos(i * 0.7) * 80;
+        const actual  = Math.max(0, Math.round(base + noise + (Math.random() - 0.5) * 60));
+        const planned = Math.round(base + (i < 20 ? 50 : 0));
+        days.push({ date: fmt(d), actual, planned });
+      }
+      return days;
+    })();
+
+    const PLACEHOLDER_WINDOW = {
+      start: fmt(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+      end:   fmt(new Date(today.getFullYear(), today.getMonth() + 3, 0))
+    };
+
     function toggleTimeline() {
       const panel = document.getElementById('tl-panel');
       const overlay = document.getElementById('tl-overlay');
@@ -1576,14 +1636,32 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
+        const isPlaceholder = !data.campaigns?.length;
+        const campaigns  = isPlaceholder ? PLACEHOLDER_CAMPAIGNS : data.campaigns;
+        const dailySpend = isPlaceholder ? PLACEHOLDER_DAILY     : data.daily_spend;
+        const win        = isPlaceholder ? PLACEHOLDER_WINDOW    : data.window;
+        const todayStr   = data.today || fmt(today);
+
         document.getElementById('tl-loading').style.display = 'none';
-        renderGantt(data.campaigns, data.window, data.today);
-        renderSpendCurve(data.daily_spend);
+
+        if (isPlaceholder) {
+          document.getElementById('tl-placeholder-banner').style.display = 'block';
+        }
+
+        renderGantt(campaigns, win, todayStr);
+        renderSpendCurve(dailySpend);
         document.getElementById('tl-gantt').style.display = 'block';
         document.getElementById('tl-chart').style.display = 'block';
         tlLoaded = true;
       } catch (e) {
-        document.getElementById('tl-loading').textContent = 'Kunde inte ladda data: ' + e.message;
+        // API misslyckades — visa placeholder ändå
+        document.getElementById('tl-loading').style.display = 'none';
+        document.getElementById('tl-placeholder-banner').style.display = 'block';
+        renderGantt(PLACEHOLDER_CAMPAIGNS, PLACEHOLDER_WINDOW, fmt(today));
+        renderSpendCurve(PLACEHOLDER_DAILY);
+        document.getElementById('tl-gantt').style.display = 'block';
+        document.getElementById('tl-chart').style.display = 'block';
+        tlLoaded = true;
       }
     }
 
