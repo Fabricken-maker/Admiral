@@ -113,6 +113,24 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/mcp/webhooks"
+  to = "/.netlify/functions/mcp-webhooks"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/mcp/webhooks/test"
+  to = "/.netlify/functions/mcp-webhooks"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/fortnox/invoice"
+  to = "/.netlify/functions/fortnox-invoice"
+  status = 200
+  force = true
+
 [functions."budget-adjust"]
   schedule = "0 6 * * *"
 

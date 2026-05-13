@@ -5,6 +5,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail, buildAdminDailyReport, buildTokenExpiryEmail } from './lib/send-email.js';
+import { fireWebhook } from './lib/fire-webhooks.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hej@admiralai.se';
@@ -36,6 +37,15 @@ export const handler = async () => {
         message: `${u.email}: inaktiv i ${daysInactive ?? '?'} dagar${severity === 'warning' ? ' — överväg att avsluta kontot' : ''}`,
         details: { user_id: u.id, last_login_at: u.last_login_at }
       });
+
+      // Webhook: account.inactive vid 30+ dagar
+      if (severity === 'warning') {
+        await fireWebhook('account.inactive', {
+          user_id: u.id, email: u.email,
+          days_inactive: daysInactive,
+          last_login_at: u.last_login_at
+        }).catch(() => {});
+      }
     }
   } catch (e) { /* silent */ }
 
@@ -126,6 +136,7 @@ export const handler = async () => {
 
         if (userRow) {
           const daysLeft = tokenFinding.details?.days_left ?? '?';
+          // E-post till kunden
           await sendEmail({
             to: userRow.email,
             subject: tokenFinding.severity === 'critical'
@@ -133,8 +144,22 @@ export const handler = async () => {
               : `🔔 Ditt Meta-token löper ut om ${daysLeft} dagar`,
             html: buildTokenExpiryEmail({ name: userRow.name, daysLeft, severity: tokenFinding.severity })
           });
+          // Webhook
+          const webhookEvent = tokenFinding.severity === 'critical' ? 'token.expired' : 'token.expiring';
+          await fireWebhook(webhookEvent, {
+            user_id: userId, email: userRow.email, name: userRow.name,
+            days_left: daysLeft, severity: tokenFinding.severity
+          });
         }
-      } catch (e) { /* silent — mail är inte kritiskt */ }
+      } catch (e) { /* silent */ }
+    }
+
+    // ── Webhook: budget-avvikelse ───────────────────────────────
+    const pacingFindings = findings.filter(f => f.category === 'pacing' && f.severity === 'warning');
+    for (const pf of pacingFindings) {
+      await fireWebhook('budget.deviation', {
+        user_id: userId, message: pf.message, details: pf.details
+      }).catch(() => {});
     }
   }
 

@@ -7,6 +7,32 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 
 export const adminToolDefinitions = [
   {
+    name: 'get_spend_trends',
+    description: 'Spend-trend per dag för alla eller en specifik kund. Bra för att se avvikelser och säsongsvariationer.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        user_id:  { type: 'number', description: 'Filtrera på specifik kund (optional)' },
+        days:     { type: 'number', description: 'Antal dagar bakåt (default: 30)' }
+      }
+    }
+  },
+  {
+    name: 'get_token_status_all',
+    description: 'Snabb översikt av Meta-tokenstatus för alla kunder. Visar vilka som snart löper ut.',
+    inputSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'get_customer_activity',
+    description: 'Inloggningshistorik och aktivitet för en kund. Använd för att bedöma churn-risk.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        user_id: { type: 'number', description: 'Kundens user ID' }
+      }
+    }
+  },
+  {
     name: 'get_all_customers',
     description: 'Hämtar alla kunder med status, Meta-koppling, aktiva budgetar och total månadsbudget.',
     inputSchema: {
@@ -65,6 +91,18 @@ export const adminToolDefinitions = [
     name: 'get_budget_overview',
     description: 'Översikt av alla aktiva budgetar: total ARR, aktiva planer, total spend och pacing.',
     inputSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'create_fortnox_invoice',
+    description: 'Skapar fakturor i Fortnox för en given månad. Stöder dry_run för att förhandsgranska utan att skapa.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        month:   { type: 'string', description: 'Format YYYY-MM (default: nuvarande månad)' },
+        user_id: { type: 'number', description: 'Fakturera endast en specifik kund (optional)' },
+        dry_run: { type: 'boolean', description: 'true = förhandsgranska utan att skapa faktura (default: false)' }
+      }
+    }
   },
   {
     name: 'set_account_status',
@@ -292,6 +330,167 @@ export async function callAdminTool(name, args = {}) {
       }
 
       return { success: true, user_id, action, new_status: newStatus };
+    }
+
+    case 'create_fortnox_invoice': {
+      // Delegerar till fortnox-invoice function via intern fetch
+      const baseUrl = process.env.BASE_URL || 'https://admiralai.se';
+      const res = await fetch(`${baseUrl}/api/fortnox/invoice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Använder service-till-service autentisering via intern nyckel
+          'X-Internal-Service': process.env.INTERNAL_SERVICE_SECRET || 'admiral-internal'
+        },
+        body: JSON.stringify({
+          month:   args.month,
+          user_id: args.user_id,
+          dry_run: args.dry_run ?? false
+        })
+      });
+      return await res.json();
+    }
+
+    case 'get_spend_trends': {
+      const days = args.days ?? 30;
+      const fromDate = new Date(Date.now() - (days - 1) * 86400000).toISOString().split('T')[0];
+
+      let query = supabase
+        .from('spend_log')
+        .select(`
+          log_date, actual_spend, planned_spend, pacing_ratio,
+          budget_plans(campaign_name, user_id, users(email, name, company_name))
+        `)
+        .gte('log_date', fromDate)
+        .order('log_date', { ascending: false });
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      // Filtrera på user_id om angivet
+      const rows = (data || []).filter(r =>
+        !args.user_id || r.budget_plans?.user_id === args.user_id
+      );
+
+      // Aggregera per dag
+      const byDate = {};
+      for (const r of rows) {
+        const date = r.log_date;
+        if (!byDate[date]) byDate[date] = { date, total_spend: 0, total_planned: 0, campaigns: [] };
+        byDate[date].total_spend   += parseFloat(r.actual_spend  || 0);
+        byDate[date].total_planned += parseFloat(r.planned_spend || 0);
+        byDate[date].campaigns.push({
+          campaign:     r.budget_plans?.campaign_name,
+          customer:     r.budget_plans?.users?.name || r.budget_plans?.users?.company_name || r.budget_plans?.users?.email,
+          spend:        Math.round(parseFloat(r.actual_spend || 0)),
+          pacing_pct:   r.pacing_ratio ? Math.round(r.pacing_ratio * 100) : null
+        });
+      }
+
+      const trend = Object.values(byDate).map(d => ({
+        ...d,
+        total_spend:   Math.round(d.total_spend),
+        total_planned: Math.round(d.total_planned)
+      }));
+
+      return { trend, period_days: days, data_points: trend.length };
+    }
+
+    case 'get_token_status_all': {
+      const { data, error } = await supabase
+        .from('meta_tokens')
+        .select('user_id, expires_at, users(email, name, company_name, status)')
+        .order('expires_at', { ascending: true });
+
+      if (error) throw error;
+
+      const statuses = (data || []).map(t => {
+        const daysLeft = t.expires_at
+          ? Math.ceil((new Date(t.expires_at) - Date.now()) / 86400000)
+          : null;
+        return {
+          user_id:      t.user_id,
+          email:        t.users?.email,
+          name:         t.users?.name || t.users?.company_name || '—',
+          account_status: t.users?.status || 'active',
+          expires_at:   t.expires_at,
+          days_left:    daysLeft,
+          health:       daysLeft === null ? 'unknown'
+                      : daysLeft <= 0    ? 'expired'
+                      : daysLeft <= 3    ? 'critical'
+                      : daysLeft <= 7    ? 'warning'
+                      : 'ok'
+        };
+      });
+
+      const summary = {
+        ok:       statuses.filter(s => s.health === 'ok').length,
+        warning:  statuses.filter(s => s.health === 'warning').length,
+        critical: statuses.filter(s => s.health === 'critical').length,
+        expired:  statuses.filter(s => s.health === 'expired').length
+      };
+
+      return { tokens: statuses, summary };
+    }
+
+    case 'get_customer_activity': {
+      const { user_id } = args;
+      if (!user_id) throw new Error('user_id krävs');
+
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('id, email, name, company_name, status, created_at, last_login_at, paused_at, paused_reason')
+        .eq('id', user_id)
+        .single();
+
+      if (error) throw error;
+
+      const daysInactive = user.last_login_at
+        ? Math.floor((Date.now() - new Date(user.last_login_at)) / 86400000)
+        : null;
+      const daysSinceRegistration = Math.floor((Date.now() - new Date(user.created_at)) / 86400000);
+
+      // Hälsorapporter senaste 30 dagarna
+      const { data: health } = await supabase
+        .from('health_reports')
+        .select('report_date, severity, category, message')
+        .eq('user_id', user_id)
+        .gte('report_date', new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0])
+        .order('report_date', { ascending: false });
+
+      // Budgetplaner
+      const { data: plans } = await supabase
+        .from('budget_plans')
+        .select('campaign_name, monthly_budget, total_spent, status, month_start, month_end')
+        .eq('user_id', user_id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const churnRisk = daysInactive === null ? 'unknown'
+                      : daysInactive > 90 ? 'high'
+                      : daysInactive > 30 ? 'medium'
+                      : 'low';
+
+      return {
+        user: {
+          id: user.id, email: user.email,
+          name: user.name || user.company_name || '—',
+          status: user.status,
+          registered_at: user.created_at,
+          days_since_registration: daysSinceRegistration,
+          last_login_at: user.last_login_at,
+          days_inactive: daysInactive,
+          churn_risk: churnRisk,
+          paused_at: user.paused_at,
+          paused_reason: user.paused_reason
+        },
+        recent_budgets: plans || [],
+        health_last_30d: {
+          critical: (health || []).filter(h => h.severity === 'critical').length,
+          warning:  (health || []).filter(h => h.severity === 'warning').length,
+          reports:  (health || []).slice(0, 5)
+        }
+      };
     }
 
     default:
