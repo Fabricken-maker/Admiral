@@ -1,14 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { getMetaToken } from './lib/get-meta-token.js';
-
-const cors = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-};
+import { getCorsHeaders } from './lib/cors.js';
 
 export const handler = async (event) => {
+  const cors = getCorsHeaders(event, 'POST, OPTIONS');
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors };
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers: cors, body: JSON.stringify({ error: 'Method not allowed' }) };
 

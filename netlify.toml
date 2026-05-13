@@ -48,6 +48,18 @@
   force = true
 
 [[redirects]]
+  from = "/api/admin/customers"
+  to = "/.netlify/functions/admin-customers"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/meta/token-status"
+  to = "/.netlify/functions/meta-token-status"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/meta/oauth/start"
   to = "/.netlify/functions/meta-oauth-start"
   status = 200

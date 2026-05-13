@@ -15,17 +15,22 @@ export const handler = async (event) => {
     userId = decoded.id;
   } catch { return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Unauthorized' }) }; }
 
-  const today = new Date().toISOString().split('T')[0];
-
-  const { data, error } = await supabase
-    .from('health_reports')
-    .select('*')
-    .eq('report_date', today)
+  const { data } = await supabase
+    .from('meta_tokens')
+    .select('expires_at')
     .eq('user_id', userId)
-    .order('severity', { ascending: true })
-    .order('created_at', { ascending: true });
+    .single();
 
-  if (error) return { statusCode: 500, headers: cors, body: JSON.stringify({ error: error.message }) };
+  if (!data) return { statusCode: 200, headers: cors, body: JSON.stringify({ connected: false }) };
 
-  return { statusCode: 200, headers: cors, body: JSON.stringify({ date: today, reports: data || [] }) };
+  const expiresAt = data.expires_at ? new Date(data.expires_at) : null;
+  const daysLeft = expiresAt ? Math.ceil((expiresAt - Date.now()) / 86400000) : null;
+  const expired = daysLeft !== null && daysLeft <= 0;
+  const expiringSoon = daysLeft !== null && daysLeft <= 7 && !expired;
+
+  return {
+    statusCode: 200,
+    headers: cors,
+    body: JSON.stringify({ connected: true, expires_at: data.expires_at, days_left: daysLeft, expired, expiring_soon: expiringSoon })
+  };
 };

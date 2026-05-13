@@ -919,10 +919,17 @@
             <span class="user-chev">▾</span>
             <div class="user-dropdown" id="user-dropdown">
               <div class="dd-email" id="dd-email"></div>
+              <button class="dd-item" id="admin-link" style="display:none" onclick="window.location.href='/admin.html'">Admin →</button>
               <button class="dd-item danger" onclick="logout()">Logga ut</button>
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- TOKEN WARNING BANNER -->
+      <div id="token-banner" style="display:none;background:rgba(248,113,113,.08);border-bottom:1px solid rgba(248,113,113,.25);padding:.7rem 1.65rem;display:none;align-items:center;justify-content:space-between;gap:1rem;font-size:.8rem;color:#f87171;">
+        <span id="token-banner-msg">⚠ Ditt Meta-konto behöver återkopplas.</span>
+        <button onclick="reconnectMeta()" style="flex-shrink:0;padding:.3rem .8rem;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.4);color:#f87171;border-radius:6px;font-size:.75rem;cursor:pointer;">Återkoppla Meta →</button>
       </div>
 
       <!-- Scrollable content -->
@@ -1138,6 +1145,9 @@
         const initials = email.slice(0, 2).toUpperCase() || 'AD';
         document.getElementById('user-av').textContent = initials;
         document.getElementById('dd-email').textContent = email;
+        if (email === 'admin@admiralai.se') {
+          document.getElementById('admin-link').style.display = 'block';
+        }
       } catch(e) {}
     })();
 
@@ -1194,6 +1204,7 @@
 
     loadAccounts();
     loadDailyReport();
+    checkTokenStatus();
 
     // ── BUDGET MODAL ─────────────────────────────────────────
     let _activeCampaignId = null;
@@ -1391,6 +1402,40 @@
     }
 
     loadCampaigns();
+
+    async function checkTokenStatus() {
+      try {
+        const res = await fetch('/api/meta/token-status', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        const banner = document.getElementById('token-banner');
+        const msg = document.getElementById('token-banner-msg');
+
+        if (!data.connected) {
+          msg.textContent = '⚠ Meta-konto inte kopplat — gå till setup för att koppla.';
+          banner.style.display = 'flex';
+        } else if (data.expired) {
+          msg.textContent = '⚠ Meta-token har gått ut — återkoppla för att Admiral ska fortsätta fungera.';
+          banner.style.display = 'flex';
+        } else if (data.expiring_soon) {
+          msg.textContent = `⚠ Meta-token går ut om ${data.days_left} dagar — återkoppla nu för att undvika avbrott.`;
+          banner.style.display = 'flex';
+        }
+      } catch (e) { /* silent */ }
+    }
+
+    async function reconnectMeta() {
+      try {
+        const res = await fetch('/api/meta/oauth/start', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        if (data.url) window.location.href = data.url;
+      } catch (e) {
+        alert('Kunde inte starta återkoppling: ' + e.message);
+      }
+    }
 
     async function loadDailyReport() {
       try {

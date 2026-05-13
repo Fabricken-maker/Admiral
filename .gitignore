@@ -16,3 +16,9 @@ yarn-error.log*
 
 # Local Netlify folder
 .netlify
+
+# SSL certificates (never commit private keys)
+*.pem
+*.key
+cert.pem
+key.pem

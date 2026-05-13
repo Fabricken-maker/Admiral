@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admiral — Admin</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #060c18; --panel: rgba(12,24,46,0.75); --border: rgba(255,255,255,0.07);
+      --blue: #1a6ae0; --green: #34d399; --red: #f87171; --gold: #f0c040;
+      --t60: rgba(255,255,255,.6); --t40: rgba(255,255,255,.4); --t20: rgba(255,255,255,.2);
+    }
+    body { font-family: -apple-system,'Inter',sans-serif; background: var(--bg); color: #fff; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1.65rem; border-bottom: 1px solid var(--border); background: rgba(6,12,24,.9); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; }
+    .logo { font-size: 1rem; font-weight: 800; letter-spacing: .12em; }
+    .logo span { color: var(--blue); }
+    .topbar-links { display: flex; gap: 1rem; }
+    .topbar-links a { font-size: .78rem; color: var(--t40); text-decoration: none; }
+    .topbar-links a:hover { color: #fff; }
+
+    .page { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: .3rem; }
+    .subtitle { font-size: .82rem; color: var(--t40); margin-bottom: 1.8rem; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; margin-bottom: 1.8rem; }
+    .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.1rem; backdrop-filter: blur(12px); }
+    .stat-val { font-size: 1.5rem; font-weight: 700; }
+    .stat-lbl { font-size: .7rem; color: var(--t40); margin-top: .2rem; text-transform: uppercase; letter-spacing: .08em; }
+
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.4rem; backdrop-filter: blur(12px); }
+    .panel-title { font-size: .85rem; font-weight: 700; margin-bottom: 1rem; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: .65rem; text-transform: uppercase; letter-spacing: .1em; color: var(--t40); padding: .4rem .6rem; text-align: left; border-bottom: 1px solid var(--border); }
+    td { padding: .7rem .6rem; font-size: .8rem; border-bottom: 1px solid rgba(255,255,255,.04); color: rgba(255,255,255,.78); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.03); }
+
+    .badge { display: inline-block; padding: .2rem .5rem; border-radius: 20px; font-size: .65rem; font-weight: 700; }
+    .badge-green { background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.3); color: var(--green); }
+    .badge-red { background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.3); color: var(--red); }
+    .badge-gold { background: rgba(240,192,64,.12); border: 1px solid rgba(240,192,64,.3); color: var(--gold); }
+    .badge-gray { background: rgba(255,255,255,.06); border: 1px solid var(--border); color: var(--t40); }
+
+    .loading { color: var(--t40); font-size: .82rem; text-align: center; padding: 2rem; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">ADMIRAL <span>ADMIN</span></div>
+  <div class="topbar-links">
+    <a href="/dashboard.html">← Dashboard</a>
+    <a href="#" onclick="logout()">Logga ut</a>
+  </div>
+</div>
+
+<div class="page">
+  <h1>Kundöversikt</h1>
+  <p class="subtitle">Alla kunder, deras Meta-status och aktiva budgetar.</p>
+
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card"><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Kunder totalt</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-connected">—</div><div class="stat-lbl">Meta kopplat</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-plans">—</div><div class="stat-lbl">Aktiva budgetar</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-budget">—</div><div class="stat-lbl">Total månadsbudget</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Kunder</div>
+    <div id="table-wrap"><div class="loading">Hämtar kunder…</div></div>
+  </div>
+</div>
+
+<script>
+  // Auth guard — admin only
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (!token || user.email !== 'admin@admiralai.se') window.location.href = '/';
+
+  function logout() { localStorage.clear(); window.location.href = '/'; }
+
+  async function loadCustomers() {
+    try {
+      const res = await fetch('/api/admin/customers', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      const customers = data.customers || [];
+
+      // Stats
+      document.getElementById('s-total').textContent = customers.length;
+      document.getElementById('s-connected').textContent = customers.filter(c => c.meta_connected).length;
+      document.getElementById('s-plans').textContent = customers.reduce((s, c) => s + c.active_plans, 0);
+      const totalBudget = customers.reduce((s, c) => s + c.total_budget, 0);
+      document.getElementById('s-budget').textContent = totalBudget > 0 ? Math.round(totalBudget).toLocaleString('sv-SE') + ' kr' : '—';
+
+      if (!customers.length) {
+        document.getElementById('table-wrap').innerHTML = '<div class="loading">Inga kunder än.</div>';
+        return;
+      }
+
+      document.getElementById('table-wrap').innerHTML = `
+        <table>
+          <thead><tr>
+            <th>Kund</th>
+            <th>Meta</th>
+            <th>Token</th>
+            <th>Aktiva budgetar</th>
+            <th>Månadsbudget</th>
+            <th>Spenderat</th>
+            <th>Registrerad</th>
+          </tr></thead>
+          <tbody>
+            ${customers.map(c => {
+              const tokenBadge = !c.meta_connected
+                ? '<span class="badge badge-gray">Ej kopplat</span>'
+                : c.token_expired
+                  ? '<span class="badge badge-red">Utgången</span>'
+                  : c.token_days_left <= 7
+                    ? `<span class="badge badge-gold">${c.token_days_left}d kvar</span>`
+                    : `<span class="badge badge-green">${c.token_days_left}d kvar</span>`;
+
+              const budget = c.total_budget > 0 ? Math.round(c.total_budget).toLocaleString('sv-SE') + ' kr' : '—';
+              const spent = c.total_spent > 0 ? Math.round(c.total_spent).toLocaleString('sv-SE') + ' kr' : '—';
+              const date = new Date(c.created_at).toLocaleDateString('sv-SE');
+
+              return `<tr>
+                <td>
+                  <div style="font-weight:600">${c.name || '—'}</div>
+                  <div style="font-size:.72rem;color:rgba(255,255,255,.4)">${c.email}</div>
+                </td>
+                <td>${c.meta_connected ? '<span class="badge badge-green">✓ Kopplat</span>' : '<span class="badge badge-gray">Ej kopplat</span>'}</td>
+                <td>${tokenBadge}</td>
+                <td>${c.active_plans > 0 ? `<span class="badge badge-green">${c.active_plans} aktiv${c.active_plans > 1 ? 'a' : ''}</span>` : '<span class="badge badge-gray">—</span>'}</td>
+                <td>${budget}</td>
+                <td>${spent}</td>
+                <td style="color:rgba(255,255,255,.4)">${date}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    } catch (e) {
+      document.getElementById('table-wrap').innerHTML = `<div class="loading" style="color:#f87171">Fel: ${e.message}</div>`;
+    }
+  }
+
+  loadCustomers();
+</script>
+</body>
+</html>

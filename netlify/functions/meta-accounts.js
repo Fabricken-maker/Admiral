@@ -1,14 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { getMetaToken } from './lib/get-meta-token.js';
-
-const corsHeaders = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-};
+import { getCorsHeaders } from './lib/cors.js';
 
 export const handler = async (event) => {
+  const corsHeaders = getCorsHeaders(event, 'GET, OPTIONS');
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: corsHeaders };
 
   const auth = event.headers.authorization || '';

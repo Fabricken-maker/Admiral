@@ -137,6 +137,30 @@ force = true
 [redirects.headers]
 
 [[redirects]]
+from = "/api/admin/customers"
+to = "/.netlify/functions/admin-customers"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/meta/token-status"
+to = "/.netlify/functions/meta-token-status"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
 from = "/api/meta/oauth/start"
 to = "/.netlify/functions/meta-oauth-start"
 status = 200.0
@@ -187,6 +211,18 @@ force = true
 [[redirects]]
 from = "/api/budget/activate"
 to = "/.netlify/functions/budget-activate"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/meta/verify-pixel"
+to = "/.netlify/functions/meta-verify-pixel"
 status = 200.0
 force = true
 
