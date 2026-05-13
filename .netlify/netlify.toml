@@ -245,6 +245,18 @@ force = true
 [redirects.headers]
 
 [[redirects]]
+from = "/api/invite/generate"
+to = "/.netlify/functions/invite-generate"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
 from = "/api/mcp"
 to = "/.netlify/functions/mcp"
 status = 200.0

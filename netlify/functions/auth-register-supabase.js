@@ -39,7 +39,29 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const { email, password, company_name } = JSON.parse(event.body);
+    const { email, password, company_name, invite_token } = JSON.parse(event.body);
+
+    // Kräv inbjudningstoken
+    if (!invite_token) {
+      return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ error: 'Inbjudningslänk krävs för att skapa konto.' }) };
+    }
+
+    // Validera token
+    const { data: invite, error: inviteErr } = await supabase
+      .from('invite_tokens')
+      .select('id, email, expires_at, used_at')
+      .eq('token', invite_token)
+      .single();
+
+    if (inviteErr || !invite) {
+      return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ error: 'Ogiltig inbjudningslänk.' }) };
+    }
+    if (invite.used_at) {
+      return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ error: 'Inbjudningslänken har redan använts.' }) };
+    }
+    if (new Date(invite.expires_at) < new Date()) {
+      return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ error: 'Inbjudningslänken har gått ut. Be om en ny.' }) };
+    }
 
     // Validation
     if (!email || !password) {
@@ -100,6 +122,12 @@ export const handler = async (event, context) => {
     }
 
     const user = newUser[0];
+
+    // Markera inbjudningstoken som använd
+    await supabase.from('invite_tokens').update({
+      used_at: new Date().toISOString(),
+      used_by_user_id: user.id
+    }).eq('token', invite_token);
 
     // Skicka välkomstmail (fire-and-forget)
     sendEmail({

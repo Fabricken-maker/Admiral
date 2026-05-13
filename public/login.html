@@ -261,19 +261,31 @@
                 </form>
 
                 <div class="toggle-mode">
-                    <span id="toggle-text">Ingen kund än? <a onclick="toggleMode()">Registrera dig här</a></span>
+                    <span id="toggle-text">Kund? <a href="mailto:hej@admiralai.se">Kontakta oss för att komma igång</a></span>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const BACKEND_URL = '/.netlify/functions'; // Netlify Functions (serverless)
+        const BACKEND_URL = '/.netlify/functions';
         let isRegisterMode = false;
 
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('register') === 'true') {
-            toggleMode();
+        const inviteToken = urlParams.get('invite');
+
+        // Registrering kräver giltig inbjudningslänk
+        if (urlParams.get('register') === 'true' || inviteToken) {
+            if (!inviteToken) {
+                // Försök registrera utan inbjudan — visa felmeddelande
+                document.addEventListener('DOMContentLoaded', () => {
+                    const msg = document.getElementById('message');
+                    msg.textContent = 'Registrering kräver en inbjudningslänk. Kontakta Admiral för att komma igång.';
+                    msg.classList.add('show', 'error');
+                });
+            } else {
+                toggleMode();
+            }
         }
 
         function toggleMode() {
@@ -342,13 +354,18 @@
                         throw new Error('Lösenordet måste vara minst 6 tecken');
                     }
 
+                    if (!inviteToken) {
+                        throw new Error('Inbjudningslänk saknas. Kontakta Admiral för att få en.');
+                    }
+
                     const response = await fetch(`${BACKEND_URL}/auth-register-supabase`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             email,
                             password,
-                            company_name: email.split('@')[0] + ' Company'
+                            company_name: email.split('@')[0] + ' Company',
+                            invite_token: inviteToken
                         })
                     });
 

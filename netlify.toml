@@ -102,6 +102,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/invite/generate"
+  to = "/.netlify/functions/invite-generate"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/mcp"
   to = "/.netlify/functions/mcp"
   status = 200
