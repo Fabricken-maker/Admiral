@@ -1,27 +1,30 @@
 import { createClient } from '@supabase/supabase-js';
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { getCorsHeaders } from './lib/cors.js';
 
-// Initialize Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('CRITICAL: Supabase credentials not configured!');
+const RATE_WINDOW_MS = 15 * 60 * 1000; // 15 minuter
+const MAX_ATTEMPTS   = 5;
+const BLOCK_MINUTES  = 15;
+
+async function incrementRateLimit(key, existing) {
+  const now = new Date();
+  const inWindow = existing && (now - new Date(existing.window_start)) < RATE_WINDOW_MS;
+  const attempts = inWindow ? existing.attempts + 1 : 1;
+  const blockedUntil = attempts >= MAX_ATTEMPTS
+    ? new Date(Date.now() + BLOCK_MINUTES * 60000).toISOString()
+    : null;
+  await supabase.from('rate_limits').upsert(
+    { key, attempts, window_start: inWindow ? existing.window_start : now.toISOString(), blocked_until: blockedUntil },
+    { onConflict: 'key' }
+  );
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// CORS headers
-const corsHeaders = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
-};
-
 export const handler = async (event, context) => {
-  // Handle CORS preflight
+  const corsHeaders = getCorsHeaders(event, 'POST, OPTIONS');
+
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -49,7 +52,24 @@ export const handler = async (event, context) => {
       };
     }
 
-    // Query user
+    // ── Rate limiting ─────────────────────────────────────────
+    const rlKey = `login:${email.toLowerCase()}`;
+    const { data: rl } = await supabase
+      .from('rate_limits')
+      .select('attempts, window_start, blocked_until')
+      .eq('key', rlKey)
+      .maybeSingle();
+
+    if (rl?.blocked_until && new Date(rl.blocked_until) > new Date()) {
+      const waitMin = Math.ceil((new Date(rl.blocked_until) - Date.now()) / 60000);
+      return {
+        statusCode: 429,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: `För många inloggningsförsök. Försök igen om ${waitMin} minut(er).` })
+      };
+    }
+
+    // ── Hämta användare ───────────────────────────────────────
     const { data: user, error: queryError } = await supabase
       .from('users')
       .select('*')
@@ -57,6 +77,7 @@ export const handler = async (event, context) => {
       .single();
 
     if (queryError || !user) {
+      await incrementRateLimit(rlKey, rl);
       return {
         statusCode: 401,
         headers: corsHeaders,
@@ -64,16 +85,20 @@ export const handler = async (event, context) => {
       };
     }
 
-    // Verify password
+    // ── Verifiera lösenord ────────────────────────────────────
     const validPassword = await bcryptjs.compare(password, user.password_hash);
 
     if (!validPassword) {
+      await incrementRateLimit(rlKey, rl);
       return {
         statusCode: 401,
         headers: corsHeaders,
         body: JSON.stringify({ error: 'Invalid email or password' })
       };
     }
+
+    // ── Rensa rate limit vid lyckad inloggning ────────────────
+    await supabase.from('rate_limits').delete().eq('key', rlKey);
 
     // Check account status
     if (user.status === 'paused') {

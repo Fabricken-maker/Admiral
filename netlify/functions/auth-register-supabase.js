@@ -2,27 +2,13 @@ import { createClient } from '@supabase/supabase-js';
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendEmail, buildWelcomeEmail } from './lib/send-email.js';
+import { getCorsHeaders } from './lib/cors.js';
 
-// Initialize Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('CRITICAL: Supabase credentials not configured!');
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// CORS headers
-const corsHeaders = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
-};
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 export const handler = async (event, context) => {
-  // Handle CORS preflight
+  const corsHeaders = getCorsHeaders(event, 'POST, OPTIONS');
+
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,

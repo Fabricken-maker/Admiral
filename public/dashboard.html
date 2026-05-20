@@ -1093,9 +1093,15 @@
       </div>
 
       <!-- TOKEN WARNING BANNER -->
-      <div id="token-banner" style="display:none;background:rgba(248,113,113,.08);border-bottom:1px solid rgba(248,113,113,.25);padding:.7rem 1.65rem;display:none;align-items:center;justify-content:space-between;gap:1rem;font-size:.8rem;color:#f87171;">
+      <div id="token-banner" style="display:none;background:rgba(248,113,113,.08);border-bottom:1px solid rgba(248,113,113,.25);padding:.7rem 1.65rem;align-items:center;justify-content:space-between;gap:1rem;font-size:.8rem;color:#f87171;">
         <span id="token-banner-msg">⚠ Ditt Meta-konto behöver återkopplas.</span>
         <button onclick="reconnectMeta()" style="flex-shrink:0;padding:.3rem .8rem;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.4);color:#f87171;border-radius:6px;font-size:.75rem;cursor:pointer;">Återkoppla Meta →</button>
+      </div>
+
+      <!-- META RECONNECT QUICK BAR (alltid synlig) -->
+      <div id="meta-quick-bar" style="display:none;background:rgba(248,113,113,.05);border-bottom:1px solid rgba(248,113,113,.15);padding:.5rem 1.65rem;align-items:center;justify-content:space-between;gap:1rem;font-size:.78rem;color:rgba(255,255,255,.5);">
+        <span>🔴 Meta-anslutning: <strong style="color:#f87171">Trasig</strong> — Admiral kan inte hämta annonskonton</span>
+        <button onclick="reconnectMeta()" style="flex-shrink:0;padding:.35rem 1rem;background:rgba(26,106,224,.25);border:1px solid rgba(26,106,224,.5);color:#4fc3f7;border-radius:6px;font-size:.75rem;cursor:pointer;font-weight:600;">🔗 Koppla om Meta nu</button>
       </div>
 
       <!-- Scrollable content -->
@@ -1978,15 +1984,18 @@
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const data = await res.json();
-        const banner = document.getElementById('token-banner');
-        const msg = document.getElementById('token-banner-msg');
+        const banner  = document.getElementById('token-banner');
+        const msg     = document.getElementById('token-banner-msg');
+        const quickBar = document.getElementById('meta-quick-bar');
 
         if (!data.connected) {
-          msg.textContent = '⚠ Meta-konto inte kopplat — gå till setup för att koppla.';
+          msg.textContent = '⚠ Meta-konto inte kopplat — klicka för att koppla.';
           banner.style.display = 'flex';
-        } else if (data.expired) {
-          msg.textContent = '⚠ Meta-token har gått ut — återkoppla för att Admiral ska fortsätta fungera.';
+          quickBar.style.display = 'flex';
+        } else if (data.expired || data.meta_valid === false) {
+          msg.textContent = '⚠ Meta-token har gått ut eller blivit ogiltig — återkoppla nu.';
           banner.style.display = 'flex';
+          quickBar.style.display = 'flex';
         } else if (data.expiring_soon) {
           msg.textContent = `⚠ Meta-token går ut om ${data.days_left} dagar — återkoppla nu för att undvika avbrott.`;
           banner.style.display = 'flex';
