@@ -1109,19 +1109,19 @@
           <div class="kpi">
             <div class="kpi-head">
               <div class="kpi-ico">💰</div>
-              <span class="kpi-badge up">↑ +14,3%</span>
+              <span class="kpi-badge" id="kpi-badge-spend" style="display:none"></span>
             </div>
-            <div class="kpi-val">17 850 kr</div>
-            <div class="kpi-lbl">Total Spend</div>
-            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+            <div class="kpi-val" id="kpi-spend">—</div>
+            <div class="kpi-lbl">Spend 30d</div>
+            <svg class="sparkline-svg" id="spark-spend" viewBox="0 0 120 28" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="sg1" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#d08a08" stop-opacity=".45"/>
                   <stop offset="100%" stop-color="#d08a08" stop-opacity="0"/>
                 </linearGradient>
               </defs>
-              <path d="M0,22 L20,19 L40,21 L60,15 L80,11 L100,8 L120,4" stroke="#d08a08" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-              <path d="M0,22 L20,19 L40,21 L60,15 L80,11 L100,8 L120,4 L120,28 L0,28Z" fill="url(#sg1)"/>
+              <path id="spark-spend-line" d="" stroke="#d08a08" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path id="spark-spend-area" d="" fill="url(#sg1)"/>
             </svg>
           </div>
 
@@ -1133,19 +1133,19 @@
                   <circle cx="8" cy="8" r="2" fill="#4fc3f7" stroke="none"/>
                 </svg>
               </div>
-              <span class="kpi-badge up">↑ +8,1%</span>
+              <span class="kpi-badge" id="kpi-badge-imp" style="display:none"></span>
             </div>
-            <div class="kpi-val">423 K</div>
-            <div class="kpi-lbl">Visningar</div>
-            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+            <div class="kpi-val" id="kpi-impressions">—</div>
+            <div class="kpi-lbl">Visningar 30d</div>
+            <svg class="sparkline-svg" id="spark-imp" viewBox="0 0 120 28" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="sg2" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#4fc3f7" stop-opacity=".40"/>
                   <stop offset="100%" stop-color="#4fc3f7" stop-opacity="0"/>
                 </linearGradient>
               </defs>
-              <path d="M0,23 L20,20 L40,22 L60,16 L80,18 L100,11 L120,7" stroke="#4fc3f7" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-              <path d="M0,23 L20,20 L40,22 L60,16 L80,18 L100,11 L120,7 L120,28 L0,28Z" fill="url(#sg2)"/>
+              <path id="spark-imp-line" d="" stroke="#4fc3f7" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path id="spark-imp-area" d="" fill="url(#sg2)"/>
             </svg>
           </div>
 
@@ -1156,19 +1156,19 @@
                   <path d="M3 3 L9 8 L6 10 L11 13" stroke-linejoin="round"/>
                 </svg>
               </div>
-              <span class="kpi-badge up">↑ +5,2%</span>
+              <span class="kpi-badge" id="kpi-badge-clicks" style="display:none"></span>
             </div>
-            <div class="kpi-val">13 740</div>
-            <div class="kpi-lbl">Klick</div>
-            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+            <div class="kpi-val" id="kpi-clicks">—</div>
+            <div class="kpi-lbl">Klick 30d</div>
+            <svg class="sparkline-svg" id="spark-clicks" viewBox="0 0 120 28" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="sg3" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#1a6ae0" stop-opacity=".42"/>
                   <stop offset="100%" stop-color="#1a6ae0" stop-opacity="0"/>
                 </linearGradient>
               </defs>
-              <path d="M0,25 L20,22 L40,24 L60,19 L80,14 L100,12 L120,8" stroke="#1a6ae0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-              <path d="M0,25 L20,22 L40,24 L60,19 L80,14 L100,12 L120,8 L120,28 L0,28Z" fill="url(#sg3)"/>
+              <path id="spark-clicks-line" d="" stroke="#1a6ae0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path id="spark-clicks-area" d="" fill="url(#sg3)"/>
             </svg>
           </div>
 
@@ -1179,19 +1179,19 @@
                   <path d="M2 9l4 4 8-8" stroke="#34d399" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </div>
-              <span class="kpi-badge up">↑ +18,4%</span>
+              <span class="kpi-badge" id="kpi-badge-conv" style="display:none"></span>
             </div>
-            <div class="kpi-val">189</div>
-            <div class="kpi-lbl">Konverteringar</div>
-            <svg class="sparkline-svg" viewBox="0 0 120 28" preserveAspectRatio="none">
+            <div class="kpi-val" id="kpi-conversions">—</div>
+            <div class="kpi-lbl">Konverteringar 30d</div>
+            <svg class="sparkline-svg" id="spark-conv" viewBox="0 0 120 28" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="sg4" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#34d399" stop-opacity=".40"/>
                   <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
                 </linearGradient>
               </defs>
-              <path d="M0,27 L20,24 L40,26 L60,20 L80,16 L100,10 L120,5" stroke="#34d399" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-              <path d="M0,27 L20,24 L40,26 L60,20 L80,16 L100,10 L120,5 L120,28 L0,28Z" fill="url(#sg4)"/>
+              <path id="spark-conv-line" d="" stroke="#34d399" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path id="spark-conv-area" d="" fill="url(#sg4)"/>
             </svg>
           </div>
         </div>
@@ -1352,9 +1352,77 @@
             </div>
           </div>
         `).join('');
+
+        // ── Uppdatera KPI-kort med riktiga siffror ──────────────
+        const accs = data.accounts || [];
+        const totSpend = accs.reduce((s, a) => s + (a.spend || 0), 0);
+        const totImp   = accs.reduce((s, a) => s + (a.impressions || 0), 0);
+        const totClicks= accs.reduce((s, a) => s + (a.clicks || 0), 0);
+        const totConv  = accs.reduce((s, a) => s + (a.conversions || 0), 0);
+        const ctr      = totImp > 0 ? (totClicks / totImp * 100).toFixed(2) : null;
+        const cpm      = totImp > 0 ? (totSpend / totImp * 1000).toFixed(1) : null;
+        const cpc      = totClicks > 0 ? (totSpend / totClicks).toFixed(2) : null;
+
+        const fmtNum = n => n >= 1000000 ? (n/1000000).toFixed(1)+'M'
+                          : n >= 1000    ? (n/1000).toFixed(0)+'K'
+                          : n.toLocaleString('sv-SE');
+
+        document.getElementById('kpi-spend').textContent =
+          totSpend > 0 ? totSpend.toLocaleString('sv-SE', {maximumFractionDigits:0}) + ' kr' : '—';
+        document.getElementById('kpi-impressions').textContent = totImp > 0 ? fmtNum(totImp) : '—';
+        document.getElementById('kpi-clicks').textContent = totClicks > 0 ? fmtNum(totClicks) : '—';
+        document.getElementById('kpi-conversions').textContent = totConv > 0 ? totConv.toLocaleString('sv-SE') : '—';
+
+        // Badges med meningsfull statistik
+        const showBadge = (id, text, good) => {
+          const el = document.getElementById(id);
+          el.textContent = text;
+          el.className = 'kpi-badge ' + (good ? 'up' : 'down');
+          el.style.display = '';
+        };
+        if (cpc)  showBadge('kpi-badge-spend',  cpc + ' kr/klick', true);
+        if (cpm)  showBadge('kpi-badge-imp',    cpm + ' kr CPM',   true);
+        if (ctr)  showBadge('kpi-badge-clicks', ctr + '% CTR',     parseFloat(ctr) > 1);
+        if (totConv === 0 && totClicks > 0) showBadge('kpi-badge-conv', 'Inga konv. ännu', false);
+
+        // Hämta daglig data för sparklines (använder timeline-endpointen)
+        fetchSparklineData();
+
       } catch(e) {
         grid.innerHTML = `<div class="acc-error">Kunde inte hämta konton: ${e.message}</div>`;
       }
+    }
+
+    // Hämtar daglig spend från /api/timeline och ritar sparklines
+    async function fetchSparklineData() {
+      try {
+        const res = await fetch('/api/timeline', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.daily_spend?.length) return;
+        drawSparkline('spark-spend', data.daily_spend.map(d => d.actual), '#d08a08', 'sg1');
+        // Impressioner och klick har vi inte dagligen — använd spend-kurvan som form, skalas visuellt
+        drawSparkline('spark-imp',    data.daily_spend.map(d => d.actual), '#4fc3f7', 'sg2');
+        drawSparkline('spark-clicks', data.daily_spend.map(d => d.actual), '#1a6ae0', 'sg3');
+        drawSparkline('spark-conv',   data.daily_spend.map(d => d.actual), '#34d399', 'sg4');
+      } catch { /* tyst fel */ }
+    }
+
+    function drawSparkline(svgId, values, color, gradId) {
+      if (!values?.length) return;
+      const W = 120, H = 28, PX = 0, PY = 2;
+      const iW = W - PX * 2, iH = H - PY * 2;
+      const max = Math.max(...values, 1);
+      const px = i => PX + (i / (values.length - 1)) * iW;
+      const py = v => PY + iH - (v / max) * iH;
+      const pts = values.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`);
+      const line = 'M ' + pts.join(' L ');
+      const area = line + ` L ${px(values.length-1).toFixed(1)},${H} L ${PX},${H} Z`;
+      const svg = document.getElementById(svgId);
+      if (!svg) return;
+      svg.querySelector('[id$="-line"]').setAttribute('d', line);
+      svg.querySelector('[id$="-area"]').setAttribute('d', area);
     }
 
     function toggleDropdown() {
