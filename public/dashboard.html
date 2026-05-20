@@ -2,8 +2,19 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Admiral — Dashboard</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#060c18"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Admiral"/>
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png"/>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -897,6 +908,43 @@
       .insights-inner { grid-template-columns: 1fr; }
       .bottom-row { grid-template-columns: 1fr; }
     }
+
+    @media (max-width: 600px) {
+      .topbar { padding: .9rem 1rem; }
+      .topbar-nav .nav-tab { font-size: .72rem; padding: .3rem .55rem; }
+      .tl-wordmark { font-size: .85rem; letter-spacing: .18em; }
+      .scroll-area { padding: .9rem 1rem 5rem; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); gap: .65rem; }
+      .kpi { padding: .9rem; }
+      .kpi-val { font-size: 1.3rem; }
+      .panel { padding: 1rem; }
+      .panel-head { margin-bottom: .7rem; }
+      .acc-grid { grid-template-columns: 1fr; }
+      .camp-tbl th, .camp-tbl td { padding: .5rem .55rem; font-size: .72rem; }
+      .tb-btn { width: 30px; height: 30px; }
+      /* Dölj text-labels i topbar-nav på riktigt liten skärm */
+    }
+
+    /* iOS safe area — hemindikator */
+    .scroll-area {
+      padding-bottom: max(1.4rem, env(safe-area-inset-bottom));
+    }
+    .topbar {
+      padding-top: max(1.15rem, env(safe-area-inset-top));
+    }
+
+    /* Refresh-knapp */
+    #refresh-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid var(--border); background: transparent;
+      color: rgba(255,255,255,.45); cursor: pointer;
+      transition: color .15s, border-color .15s, transform .4s;
+      font-size: 15px;
+    }
+    #refresh-btn:hover { color: #fff; border-color: var(--border-hover); }
+    #refresh-btn.spinning { animation: spin .6s linear; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -1056,6 +1104,7 @@
         </nav>
         </div>
         <div class="topbar-right">
+          <button id="refresh-btn" onclick="refreshAll()" title="Uppdatera data">↻</button>
           <div class="tb-btn" onclick="toggleTimeline()" id="calendar-btn" title="Kampanjtidslinje">
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
               <rect x="2" y="2" width="12" height="13" rx="1.5"/>
@@ -1850,9 +1899,28 @@
       window.location.href = '/';
     }
 
+    // ── Initial load vid inloggning ──────────────────────────
     loadAccounts();
     loadDailyReport();
     checkTokenStatus();
+
+    // ── Uppdatera-knapp ──────────────────────────────────────
+    async function refreshAll() {
+      const btn = document.getElementById('refresh-btn');
+      btn.classList.add('spinning');
+      btn.disabled = true;
+      tlLoaded = false; // återladda timeline vid nästa öppning
+      notifLoaded = false;
+      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus()]);
+      setTimeout(() => { btn.classList.remove('spinning'); btn.disabled = false; }, 600);
+    }
+
+    // ── Service Worker (PWA) ─────────────────────────────────
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(r => console.log('[SW] Registrerad:', r.scope))
+        .catch(e => console.warn('[SW] Misslyckades:', e));
+    }
 
     // ── BUDGET MODAL ─────────────────────────────────────────
     let _activeCampaignId = null;

@@ -2,9 +2,16 @@
 <html lang="sv">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Admiral — AI-driven annonsoptimering</title>
   <meta name="description" content="Admiral justerar dina Meta-kampanjer automatiskt varje dag baserat på ROAS. Sluta övervaka manuellt — låt Admiral sköta det."/>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#060c18"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Admiral"/>
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -160,6 +167,7 @@
 
 <script>
   if (localStorage.getItem('token')) window.location.href = '/dashboard.html';
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 </script>
 </body>
 </html>
