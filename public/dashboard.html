@@ -258,19 +258,16 @@
 
     .user-dropdown {
       display: none;
-      position: absolute;
-      top: calc(100% + 8px);
-      right: 0;
+      position: fixed;
       background: #0d1a2e;
       border: 1px solid var(--border-hover);
       border-radius: 10px;
       padding: 6px;
       min-width: 180px;
-      z-index: 100;
-      box-shadow: 0 12px 40px rgba(0,0,0,.5);
+      z-index: 9999;
+      box-shadow: 0 12px 40px rgba(0,0,0,.6);
     }
 
-    .user-btn:hover .user-dropdown,
     .user-btn.open .user-dropdown { display: block; }
 
     /* ── Tidslinjepanel ─────────────────────────────────────── */
@@ -1361,7 +1358,15 @@
     }
 
     function toggleDropdown() {
-      document.getElementById('user-btn').classList.toggle('open');
+      const btn = document.getElementById('user-btn');
+      const dd  = document.getElementById('user-dropdown');
+      const isOpen = btn.classList.toggle('open');
+      if (isOpen) {
+        // Positionera dropdown relativt viewport (flyr overflow:hidden)
+        const rect = btn.getBoundingClientRect();
+        dd.style.top   = (rect.bottom + 8) + 'px';
+        dd.style.right = (window.innerWidth - rect.right) + 'px';
+      }
     }
 
     document.addEventListener('click', function(e) {
