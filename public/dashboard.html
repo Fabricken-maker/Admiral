@@ -936,13 +936,13 @@
     /* Refresh-knapp */
     #refresh-btn {
       display: flex; align-items: center; justify-content: center;
-      width: 32px; height: 32px; border-radius: 8px;
-      border: 1px solid var(--border); background: transparent;
-      color: rgba(255,255,255,.45); cursor: pointer;
-      transition: color .15s, border-color .15s, transform .4s;
-      font-size: 15px;
+      width: 40px; height: 40px; border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.7); cursor: pointer;
+      transition: color .15s, border-color .15s, background .15s;
+      font-size: 19px;
     }
-    #refresh-btn:hover { color: #fff; border-color: var(--border-hover); }
+    #refresh-btn:hover { color: #fff; border-color: rgba(255,255,255,.35); background: rgba(255,255,255,.1); }
     #refresh-btn.spinning { animation: spin .6s linear; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
@@ -1269,23 +1269,79 @@
         <div class="panel">
           <div class="panel-head">
             <span class="panel-title">Performance Insights</span>
-            <div class="period-sel">Jan–Apr 2026 ▾</div>
+            <button class="more-btn" onclick="loadInsights()" title="Uppdatera">↻</button>
           </div>
+
+          <!-- Sammanfattningsrad -->
+          <div id="insights-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.2rem">
+            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.85rem">
+              <div style="font-size:.65rem;color:var(--t40);margin-bottom:.3rem">SESSIONER (Meta)</div>
+              <div id="ins-sessions" style="font-size:1.35rem;font-weight:700">—</div>
+            </div>
+            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.85rem">
+              <div style="font-size:.65rem;color:var(--t40);margin-bottom:.3rem">BOKA-KLICK</div>
+              <div id="ins-boka" style="font-size:1.35rem;font-weight:700">—</div>
+            </div>
+            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.85rem">
+              <div style="font-size:.65rem;color:var(--t40);margin-bottom:.3rem">SÅLDA KURSER</div>
+              <div id="ins-courses" style="font-size:1.35rem;font-weight:700">—</div>
+            </div>
+            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.85rem">
+              <div style="font-size:.65rem;color:var(--t40);margin-bottom:.3rem">INTÄKT (manuell)</div>
+              <div id="ins-revenue" style="font-size:1.35rem;font-weight:700">—</div>
+            </div>
+          </div>
+
+          <!-- Charts -->
           <div class="insights-inner">
             <div>
-              <div class="chart-subtitle">ROAS</div>
-              <div class="chart-box"><canvas id="roasChart"></canvas></div>
+              <div class="chart-subtitle">
+                Boka-klick per dag
+                <span id="ga4-source-badge" style="display:none;margin-left:.5rem;font-size:.6rem;background:rgba(52,211,153,.12);color:#34d399;border:1px solid rgba(52,211,153,.25);border-radius:4px;padding:.1rem .4rem">GA4</span>
+                <span id="ga4-placeholder-badge" style="display:none;margin-left:.5rem;font-size:.6rem;background:rgba(240,192,64,.1);color:#f0c040;border:1px solid rgba(240,192,64,.25);border-radius:4px;padding:.1rem .4rem">Inväntar GA4</span>
+              </div>
+              <div class="chart-box"><canvas id="bokaChart"></canvas></div>
             </div>
             <div>
               <div class="chart-subtitle">
-                Utgift vs. Intäkt
+                Spend vs sålda kurser
                 <div class="legend-inline">
                   <span class="legend-dot-inline"><span class="ld" style="background:#1a6ae0"></span> Spend</span>
-                  <span class="legend-dot-inline"><span class="ld" style="background:#d08a08"></span> Intäkt</span>
+                  <span class="legend-dot-inline"><span class="ld" style="background:#34d399"></span> Kurser</span>
                 </div>
               </div>
               <div class="chart-box"><canvas id="spendChart"></canvas></div>
             </div>
+          </div>
+
+          <!-- Manuell konvertering — admin only -->
+          <div id="manual-conv-section" style="display:none;margin-top:1.4rem;border-top:1px solid var(--border);padding-top:1.2rem">
+            <div style="font-size:.78rem;font-weight:700;color:var(--t60);margin-bottom:.85rem">✏️ Lägg in sålda kurser manuellt</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:.6rem;align-items:end">
+              <div>
+                <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">KAMPANJ</label>
+                <select id="conv-plan" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.78rem">
+                  <option value="">Välj kampanj…</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">DATUM</label>
+                <input id="conv-date" type="date" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.78rem"/>
+              </div>
+              <div>
+                <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">KURSER SÅLDA</label>
+                <input id="conv-courses" type="number" min="0" placeholder="0" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.78rem"/>
+              </div>
+              <div>
+                <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">INTÄKT (kr)</label>
+                <input id="conv-revenue" type="number" min="0" placeholder="0" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.78rem"/>
+              </div>
+              <button onclick="saveConversion()" style="padding:.48rem 1rem;background:var(--blue);border:none;color:#fff;border-radius:8px;font-size:.78rem;cursor:pointer;font-weight:600;white-space:nowrap">Spara</button>
+            </div>
+            <div id="conv-msg" style="font-size:.72rem;margin-top:.5rem;color:var(--green);display:none"></div>
+
+            <!-- Historik -->
+            <div id="conv-history" style="margin-top:1rem"></div>
           </div>
         </div>
 
@@ -1900,9 +1956,13 @@
     }
 
     // ── Initial load vid inloggning ──────────────────────────
+    // Sätt dagens datum som default i konverteringsformuläret
+    document.getElementById('conv-date').value = fmt(today);
+
     loadAccounts();
     loadDailyReport();
     checkTokenStatus();
+    loadInsights();
 
     // ── Uppdatera-knapp ──────────────────────────────────────
     async function refreshAll() {
@@ -1911,7 +1971,7 @@
       btn.disabled = true;
       tlLoaded = false; // återladda timeline vid nästa öppning
       notifLoaded = false;
-      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus()]);
+      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus(), loadInsights()]);
       setTimeout(() => { btn.classList.remove('spinning'); btn.disabled = false; }, 600);
     }
 
@@ -2224,66 +2284,233 @@
     Chart.defaults.font.family = "-apple-system,'Inter','Segoe UI',sans-serif";
     Chart.defaults.font.size   = 10.5;
 
-    const labels = ['Jan','Feb','Mar','Apr','Maj','Jun'];
+    let bokaChartInst = null;
+    let spendChartInst = null;
 
-    const rCtx  = document.getElementById('roasChart').getContext('2d');
-    const rGrad = rCtx.createLinearGradient(0, 0, 0, 175);
-    rGrad.addColorStop(0,   'rgba(26,106,224,.50)');
-    rGrad.addColorStop(0.65,'rgba(26,106,224,.10)');
-    rGrad.addColorStop(1,   'rgba(26,106,224,.00)');
-
-    new Chart(rCtx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          { label:'ROAS', data:[2.1,2.8,3.4,3.2,3.9,4.1], borderColor:'#4fc3f7', borderWidth:2.2, backgroundColor:rGrad, pointBackgroundColor:'#4fc3f7', pointBorderColor:'#0c1c38', pointBorderWidth:2, pointRadius:4, pointHoverRadius:6, tension:0.42, fill:true },
-          { label:'Glow', data:[2.1,2.8,3.4,3.2,3.9,4.1], borderColor:'rgba(79,195,247,.22)', borderWidth:8, backgroundColor:'transparent', pointRadius:0, tension:0.42, fill:false },
-          { label:'Mål 3×', data:[3,3,3,3,3,3], borderColor:'rgba(212,140,8,.45)', borderWidth:1.4, borderDash:[5,4], pointRadius:0, tension:0, fill:false }
-        ]
-      },
-      options: {
-        responsive:true, maintainAspectRatio:false,
-        animation:{ duration:1200, easing:'easeOutQuart' },
-        plugins:{
-          legend:{ display:false },
-          tooltip:{ backgroundColor:'rgba(10,20,40,.96)', borderColor:'rgba(255,255,255,.12)', borderWidth:1, padding:10,
-            callbacks:{ label: c => c.dataset.label==='Glow' ? '' : ` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}×` },
-            filter: i => i.datasetIndex === 0
-          }
+    function buildBokaChart(labels, bokaData) {
+      const ctx = document.getElementById('bokaChart').getContext('2d');
+      const grad = ctx.createLinearGradient(0, 0, 0, 175);
+      grad.addColorStop(0,   'rgba(26,106,224,.50)');
+      grad.addColorStop(1,   'rgba(26,106,224,.00)');
+      if (bokaChartInst) bokaChartInst.destroy();
+      bokaChartInst = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Boka-klick', data: bokaData,
+            borderColor: '#4fc3f7', borderWidth: 2.2,
+            backgroundColor: grad,
+            pointBackgroundColor: '#4fc3f7', pointBorderColor: '#0c1c38',
+            pointBorderWidth: 2, pointRadius: 3, pointHoverRadius: 6,
+            tension: 0.38, fill: true
+          }]
         },
-        scales:{
-          x:{ grid:{ color:'rgba(255,255,255,.05)' }, ticks:{ color:'rgba(255,255,255,.38)', padding:4 } },
-          y:{ min:0, max:6, grid:{ color:'rgba(255,255,255,.05)' }, ticks:{ color:'rgba(255,255,255,.38)', stepSize:2, callback: v => v+'×', padding:4 } }
-        },
-        interaction:{ mode:'index', intersect:false }
-      }
-    });
-
-    new Chart(document.getElementById('spendChart').getContext('2d'), {
-      type:'bar',
-      data:{
-        labels,
-        datasets:[
-          { label:'Spend', data:[11500,14200,16800,17850,null,null], backgroundColor:'rgba(26,106,224,.72)', borderRadius:4, barPercentage:.65, categoryPercentage:.75 },
-          { label:'Intäkt', data:[25300,39800,60500,67800,null,null], backgroundColor:'rgba(208,138,8,.72)', borderRadius:4, barPercentage:.65, categoryPercentage:.75 }
-        ]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        animation:{ duration:1200, easing:'easeOutQuart' },
-        plugins:{
-          legend:{ display:false },
-          tooltip:{ backgroundColor:'rgba(10,20,40,.96)', borderColor:'rgba(255,255,255,.12)', borderWidth:1, padding:10,
-            callbacks:{ label: c => ` ${c.dataset.label}: ${(c.parsed.y/1000).toFixed(0)}k kr` }
-          }
-        },
-        scales:{
-          x:{ grid:{ display:false }, ticks:{ color:'rgba(255,255,255,.38)', padding:4 } },
-          y:{ grid:{ color:'rgba(255,255,255,.05)' }, ticks:{ color:'rgba(255,255,255,.38)', callback: v => v ? (v/1000)+'k' : '0', padding:4 } }
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 900 },
+          plugins: {
+            legend: { display: false },
+            tooltip: { backgroundColor:'rgba(10,20,40,.96)', borderColor:'rgba(255,255,255,.12)', borderWidth:1, padding:10,
+              callbacks: { label: c => ` Boka-klick: ${c.parsed.y}` }
+            }
+          },
+          scales: {
+            x: { grid: { color:'rgba(255,255,255,.05)' }, ticks: { color:'rgba(255,255,255,.38)', padding:4, maxTicksLimit:8 } },
+            y: { min:0, grid: { color:'rgba(255,255,255,.05)' }, ticks: { color:'rgba(255,255,255,.38)', stepSize:1, padding:4 } }
+          },
+          interaction: { mode:'index', intersect:false }
         }
+      });
+    }
+
+    function buildSpendVsCourses(labels, spendData, coursesData) {
+      const ctx = document.getElementById('spendChart').getContext('2d');
+      if (spendChartInst) spendChartInst.destroy();
+      spendChartInst = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label:'Spend (kr)', data: spendData, backgroundColor:'rgba(26,106,224,.72)', borderRadius:4, barPercentage:.65, categoryPercentage:.75 },
+            { label:'Kurser', data: coursesData, backgroundColor:'rgba(52,211,153,.72)', borderRadius:4, barPercentage:.65, categoryPercentage:.75, yAxisID:'y2' }
+          ]
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false,
+          animation:{ duration:900 },
+          plugins: {
+            legend:{ display:false },
+            tooltip:{ backgroundColor:'rgba(10,20,40,.96)', borderColor:'rgba(255,255,255,.12)', borderWidth:1, padding:10,
+              callbacks:{ label: c => c.datasetIndex===0 ? ` Spend: ${c.parsed.y.toLocaleString('sv-SE')} kr` : ` Kurser: ${c.parsed.y}` }
+            }
+          },
+          scales:{
+            x:{ grid:{ display:false }, ticks:{ color:'rgba(255,255,255,.38)', padding:4, maxTicksLimit:8 } },
+            y:{ grid:{ color:'rgba(255,255,255,.05)' }, ticks:{ color:'rgba(255,255,255,.38)', callback: v => v >= 1000 ? (v/1000)+'k' : v, padding:4 } },
+            y2:{ position:'right', grid:{ display:false }, ticks:{ color:'rgba(52,211,153,.5)', stepSize:1, padding:4 } }
+          }
+        }
+      });
+    }
+
+    // ── Ladda Performance Insights ───────────────────────────
+    async function loadInsights() {
+      const token = localStorage.getItem('token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      // Kör GA4 + konverteringar parallellt
+      const [ga4Res, convRes] = await Promise.all([
+        fetch('/api/ga4/insights?days=30', { headers }).then(r => r.json()).catch(() => null),
+        fetch('/api/conversions', { headers }).then(r => r.json()).catch(() => null)
+      ]);
+
+      // GA4 badge
+      if (ga4Res?.not_configured) {
+        document.getElementById('ga4-placeholder-badge').style.display = '';
+      } else if (ga4Res?.daily) {
+        document.getElementById('ga4-source-badge').style.display = '';
       }
-    });
+
+      // Summering
+      const totSessions = ga4Res?.totals?.sessions    || 0;
+      const totBoka     = ga4Res?.totals?.boka_clicks || 0;
+      const totCourses  = convRes?.totals?.courses_sold  || 0;
+      const totRevenue  = convRes?.totals?.revenue_sek   || 0;
+
+      document.getElementById('ins-sessions').textContent = totSessions > 0 ? totSessions.toLocaleString('sv-SE') : '—';
+      document.getElementById('ins-boka').textContent     = totBoka > 0     ? totBoka.toLocaleString('sv-SE')     : '—';
+      document.getElementById('ins-courses').textContent  = totCourses > 0  ? totCourses                          : '—';
+      document.getElementById('ins-revenue').textContent  = totRevenue > 0  ? totRevenue.toLocaleString('sv-SE') + ' kr' : '—';
+
+      // Bygg daglabels från GA4 eller spend_log
+      const dailySource = ga4Res?.daily?.length ? ga4Res.daily : null;
+
+      if (dailySource) {
+        const labels   = dailySource.map(d => d.date.slice(5));  // MM-DD
+        const bokaData = dailySource.map(d => d.boka_clicks);
+        buildBokaChart(labels, bokaData);
+      } else {
+        // Ingen GA4 — visa tomt diagram med meddelande
+        buildBokaChart(['—'], [0]);
+      }
+
+      // Spend vs kurser — använd spend_log per dag
+      const spendRes = await fetch('/api/timeline', { headers }).then(r => r.json()).catch(() => null);
+      if (spendRes?.daily_spend?.length) {
+        const labels   = spendRes.daily_spend.slice(-30).map(d => d.date.slice(5));
+        const spendDat = spendRes.daily_spend.slice(-30).map(d => d.actual);
+
+        // Matcha konverteringar per dag
+        const convMap = {};
+        for (const c of (convRes?.conversions || [])) {
+          const d = c.conversion_date?.slice(5,10);
+          if (d) convMap[d] = (convMap[d] || 0) + (c.courses_sold || 0);
+        }
+        const coursesDat = labels.map(l => convMap[l] || 0);
+        buildSpendVsCourses(labels, spendDat, coursesDat);
+      }
+
+      // Visa manuell inmatning för admin
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.email === 'admin@admiralai.se') {
+        document.getElementById('manual-conv-section').style.display = 'block';
+        loadConvHistory(convRes?.conversions || []);
+        populateConvPlanSelect();
+      }
+    }
+
+    async function populateConvPlanSelect() {
+      try {
+        const token = localStorage.getItem('token');
+        const { data } = await fetch('/api/admin/campaigns', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json());
+        const sel = document.getElementById('conv-plan');
+        if (!data?.campaigns) return;
+        data.campaigns.filter(c => c.status === 'active').forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = `${c.campaign_name} (${c.customer_name})`;
+          sel.appendChild(opt);
+        });
+      } catch {}
+    }
+
+    // Korrekt fetch för admin/campaigns som returnerar { campaigns, summary }
+    async function populateConvPlanSelect() {
+      try {
+        const token = localStorage.getItem('token');
+        const res  = await fetch('/api/admin/campaigns', { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const sel  = document.getElementById('conv-plan');
+        sel.innerHTML = '<option value="">Välj kampanj…</option>';
+        (data.campaigns || []).filter(c => c.status === 'active').forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = `${c.campaign_name} — ${c.customer_name}`;
+          sel.appendChild(opt);
+        });
+      } catch {}
+    }
+
+    function loadConvHistory(conversions) {
+      const el = document.getElementById('conv-history');
+      if (!conversions.length) { el.innerHTML = '<div style="font-size:.72rem;color:var(--t40)">Inga registrerade konverteringar ännu.</div>'; return; }
+      el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:.72rem">
+        <thead><tr style="color:var(--t40)">
+          <th style="text-align:left;padding:.3rem .5rem">Datum</th>
+          <th style="text-align:left;padding:.3rem .5rem">Kampanj</th>
+          <th style="text-align:right;padding:.3rem .5rem">Kurser</th>
+          <th style="text-align:right;padding:.3rem .5rem">Intäkt</th>
+          <th style="padding:.3rem .5rem"></th>
+        </tr></thead>
+        <tbody>${conversions.slice(0,10).map(c => `
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:.4rem .5rem;color:var(--t60)">${c.conversion_date}</td>
+            <td style="padding:.4rem .5rem">${c.budget_plans?.campaign_name || '—'}</td>
+            <td style="padding:.4rem .5rem;text-align:right;color:var(--green)">${c.courses_sold}</td>
+            <td style="padding:.4rem .5rem;text-align:right">${parseFloat(c.revenue_sek || 0).toLocaleString('sv-SE')} kr</td>
+            <td style="padding:.4rem .5rem;text-align:right"><button onclick="deleteConversion(${c.id})" style="background:none;border:none;color:rgba(248,113,113,.5);cursor:pointer;font-size:.75rem" title="Ta bort">✕</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+    }
+
+    async function saveConversion() {
+      const token = localStorage.getItem('token');
+      const body = {
+        budget_plan_id: parseInt(document.getElementById('conv-plan').value),
+        conversion_date: document.getElementById('conv-date').value,
+        courses_sold:    parseInt(document.getElementById('conv-courses').value || 0),
+        revenue_sek:     parseFloat(document.getElementById('conv-revenue').value || 0)
+      };
+      if (!body.budget_plan_id || !body.conversion_date) {
+        document.getElementById('conv-msg').textContent = '⚠ Välj kampanj och datum.';
+        document.getElementById('conv-msg').style.display = '';
+        document.getElementById('conv-msg').style.color = 'var(--red)';
+        return;
+      }
+      try {
+        const res = await fetch('/api/conversions', { method:'POST', headers:{ 'Authorization':`Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+        if (!res.ok) throw new Error((await res.json()).error);
+        document.getElementById('conv-msg').textContent = '✅ Sparat!';
+        document.getElementById('conv-msg').style.display = '';
+        document.getElementById('conv-msg').style.color = 'var(--green)';
+        document.getElementById('conv-courses').value = '';
+        document.getElementById('conv-revenue').value = '';
+        setTimeout(() => { document.getElementById('conv-msg').style.display = 'none'; }, 3000);
+        loadInsights();
+      } catch(e) {
+        document.getElementById('conv-msg').textContent = '❌ ' + e.message;
+        document.getElementById('conv-msg').style.display = '';
+      }
+    }
+
+    async function deleteConversion(id) {
+      if (!confirm('Ta bort denna konvertering?')) return;
+      const token = localStorage.getItem('token');
+      await fetch(`/api/conversions?id=${id}`, { method:'DELETE', headers:{ 'Authorization':`Bearer ${token}` } });
+      loadInsights();
+    }
 
     new Chart(document.getElementById('audChart').getContext('2d'), {
       type:'doughnut',

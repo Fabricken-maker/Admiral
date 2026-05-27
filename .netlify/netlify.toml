@@ -329,6 +329,30 @@ force = true
 [redirects.headers]
 
 [[redirects]]
+from = "/api/ga4/insights"
+to = "/.netlify/functions/ga4-insights"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
+from = "/api/conversions"
+to = "/.netlify/functions/manual-conversions"
+status = 200.0
+force = true
+
+[redirects.query]
+
+[redirects.conditions]
+
+[redirects.headers]
+
+[[redirects]]
 from = "/api/fortnox/invoice"
 to = "/.netlify/functions/fortnox-invoice"
 status = 200.0
