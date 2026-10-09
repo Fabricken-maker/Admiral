@@ -4,6 +4,7 @@
 //  - budget-adjust (06:00 UTC) → spend_log per aktiv plan och dygn, inga meta_api-fel
 //  - GA4-synk → /api/ga4/insights levererar data
 //  - ChromaDB (Sofias minne på VPS:en) → svarar och växer
+//  - weekly-sync (05:15 UTC) → weekly_metrics har senaste avslutade vecka, inga synkfel
 // budget-adjust och nightly-health-check startas aldrig om av modulen:
 // budget-adjust ändrar budgetar i Meta och nightly-health-check skickar mejl/webhooks.
 // Tillåten reparation: omstart av ChromaDB-containern om den inte svarar.
@@ -11,7 +12,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { pass, fail, skip } from '../lib/result.js';
 import { fetchJson } from '../lib/http.js';
-import { addDays } from '../lib/time.js';
+import { addDays, completedWeekStarts, stockholmMidnight } from '../lib/time.js';
 
 const A = 'jobs';
 const run$ = promisify(execFile);
@@ -31,6 +32,7 @@ export async function run(ctx) {
     checkBudgetAdjust(ctx),
     checkGa4(ctx),
     checkChroma(ctx),
+    checkWeeklySync(ctx),
   ]);
   return results.flat();
 }
@@ -71,6 +73,44 @@ async function checkBudgetAdjust(ctx) {
     const errs = await supabase.select('health_reports', `select=report_date,message&category=eq.meta_api&severity=eq.critical&report_date=gte.${days[0]}&order=report_date.desc`);
     out.push(errs.length
       ? fail(A, id, `budget-adjust misslyckades mot Meta ${errs.length} gång(er) senaste 7 dygnen, senast ${errs[0].report_date}: ${errs[0].message}`, { where: 'netlify/functions/budget-adjust.js' })
+      : pass(A, id));
+  }
+  return out;
+}
+
+// Senaste vecka som weekly-sync borde ha hämtat: avslutad vecka vars slut ligger
+// minst 30 h bakåt (synken körs dagligen 05:15 UTC).
+export function expectedSyncedWeek(now = new Date()) {
+  const [last] = completedWeekStarts(1, now);
+  const ready = stockholmMidnight(addDays(last, 7)).getTime() + 30 * 3600_000;
+  return now.getTime() >= ready ? last : addDays(last, -7);
+}
+
+async function checkWeeklySync(ctx) {
+  const { supabase } = ctx;
+  const out = [];
+  const customers = await supabase.select('weekly_settings', 'select=user_id,ad_account_ids,users!inner(email,company_name)&active=eq.true');
+  if (!customers.length) return out;
+  const expected = expectedSyncedWeek();
+  for (const c of customers) {
+    const label = c.users.company_name || c.users.email;
+    for (const acc of c.ad_account_ids || []) {
+      const id = `jobs.weekly-sync ${label} ${acc}`;
+      const recheck = async () => {
+        const [row] = await supabase.select('weekly_metrics', `select=week_start&user_id=eq.${c.user_id}&ad_account_id=eq.${acc}&campaign_id=eq._konto&order=week_start.desc&limit=1`);
+        if (!row) return { ok: false, cause: `weekly-sync har aldrig hämtat veckodata för ${label} (${acc})` };
+        return row.week_start >= expected ? { ok: true } : { ok: false, cause: `weekly-sync har inte hämtat vecka ${expected} för ${label} (${acc}); senaste är ${row.week_start}` };
+      };
+      const r = await recheck();
+      out.push(r.ok ? pass(A, id) : fail(A, id, r.cause, { where: 'netlify/functions/weekly-sync.js (schema 15 5 * * *)', recheck }));
+    }
+  }
+  {
+    const id = 'jobs.weekly-sync fel';
+    const since = addDays(new Date().toISOString().slice(0, 10), -6);
+    const errs = await supabase.select('health_reports', `select=report_date,message,details&category=eq.weekly_sync&report_date=gte.${since}&order=report_date.desc`);
+    out.push(errs.length
+      ? fail(A, id, `Veckosynken misslyckades ${errs.length} gång(er) senaste 7 dygnen, senast ${errs[0].report_date}: ${errs[0].message}${errs[0].details?.error ? ` (${errs[0].details.error})` : ''}`, { where: 'netlify/functions/weekly-sync.js' })
       : pass(A, id));
   }
   return out;

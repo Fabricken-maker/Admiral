@@ -91,6 +91,8 @@ export const REQUIRED_TABLES = [
   'ga4_metrics',
   'campaign_assets',
   'rate_limits',
+  'weekly_settings',
+  'weekly_metrics',
 ];
 
 // Var i koden en tabell används — så att "kräver människa" kan peka ut platsen.
@@ -102,4 +104,5 @@ export const TABLE_USAGE = {
 export const EXPECTED_SCHEDULES = {
   'budget-adjust': '0 6 * * *',
   'nightly-health-check': '0 7 * * *',
+  'weekly-sync': '15 5 * * *',
 };

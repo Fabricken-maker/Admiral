@@ -902,6 +902,71 @@
     .budget-badge:hover { background: rgba(26,106,224,.25); }
     .budget-badge.active { background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.3); color: var(--green); }
 
+    /* ─── VECKOUTVECKLING (Modul C) ───────────────────────── */
+    .wk {
+      --wk-better:  #00d9ff;
+      --wk-worse:   #e39a9a;
+      --wk-neutral: rgba(255,255,255,.55);
+      padding: 1.4rem 1.5rem 1.3rem;
+    }
+    .wk-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.3rem; }
+    .wk-title { font-size: .92rem; font-weight: 700; }
+    .wk-period { display: flex; align-items: center; gap: .55rem; margin-top: .3rem; font-size: .78rem; color: var(--t60); }
+    .wk-prelim {
+      font-size: .66rem; font-weight: 600; letter-spacing: .04em;
+      padding: .14rem .5rem; border-radius: 100px;
+      border: 1px dashed rgba(255,255,255,.3); color: var(--t60);
+    }
+    .wk-controls { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; }
+    .wk-select {
+      background: var(--t04); border: 1px solid var(--border); border-radius: 7px;
+      color: var(--t60); font: inherit; font-size: .74rem; padding: .32rem .6rem; max-width: 15rem;
+    }
+    .wk-select:focus-visible { outline: 2px solid var(--wk-better); outline-offset: 1px; }
+
+    .wk-overall { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.4rem; }
+    .wk-big-arrow { font-size: 3rem; line-height: 1; font-weight: 300; width: 2.6rem; text-align: center; }
+    .wk-overall-word { font-size: 1.25rem; font-weight: 700; letter-spacing: -.01em; }
+    .wk-explain { margin-top: .25rem; font-size: .8rem; color: var(--t60); }
+
+    .wk-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
+    .wk-metrics.three { grid-template-columns: repeat(3, 1fr); }
+    .wk-m-label { font-size: .66rem; text-transform: uppercase; letter-spacing: .1em; color: var(--t40); font-weight: 600; }
+    .wk-m-value { font-size: 1.35rem; font-weight: 700; letter-spacing: -.02em; margin: .3rem 0 .45rem; font-variant-numeric: tabular-nums; }
+    .wk-cmp { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: .35rem; font-size: .76rem; line-height: 1.6; font-variant-numeric: tabular-nums; }
+    .wk-cmp span { white-space: nowrap; }
+    .wk-cmp .wk-ref { color: var(--t40); font-size: .7rem; margin-left: auto; }
+    .wk-cmp.secondary { opacity: .72; }
+    .wk-arrow { font-weight: 700; width: .8rem; display: inline-block; text-align: center; }
+
+    .is-better  { color: var(--wk-better); }
+    .is-worse   { color: var(--wk-worse); }
+    .is-neutral, .is-unchanged { color: var(--wk-neutral); }
+    .is-insufficient { color: var(--t40); }
+
+    .wk-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .wk-chart { margin: 0; }
+    .wk-chart figcaption { font-size: .7rem; color: var(--t40); margin-bottom: .5rem; }
+    .wk-canvas { position: relative; height: 150px; }
+    .wk-empty { position: absolute; inset: 0; display: grid; place-items: center; font-size: .75rem; color: var(--t40); }
+    .wk-note { font-size: .8rem; color: var(--t60); }
+    .wk [hidden] { display: none !important; }
+
+    @media (max-width: 920px) {
+      .wk-metrics, .wk-metrics.three { grid-template-columns: repeat(2, 1fr); gap: 1.2rem; }
+      .wk-charts { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .wk { padding: 1.1rem 1rem; }
+      .wk-head { flex-direction: column; }
+      .wk-controls { justify-content: flex-start; }
+      .wk-big-arrow { font-size: 2.4rem; width: 2rem; }
+      .wk-overall-word { font-size: 1.1rem; }
+      .wk-cmp { margin-bottom: .3rem; }
+      .wk-cmp .wk-ref { flex-basis: 100%; margin-left: 1.15rem; line-height: 1.2; }
+      .wk-cmp.is-insufficient .wk-ref { margin-left: 0; }
+    }
+
     /* ─── RESPONSIVE ──────────────────────────────────────── */
     @media (max-width: 1200px) {
       .kpi-row { grid-template-columns: repeat(3, 1fr); }
@@ -1159,6 +1224,35 @@
 
       <!-- Scrollable content -->
       <div class="scroll-area">
+
+        <!-- VECKOUTVECKLING (Modul C) -->
+        <section class="panel wk" id="weekly-panel" style="display:none" aria-labelledby="wk-title">
+          <div class="wk-head">
+            <div>
+              <h2 class="wk-title" id="wk-title">Veckan som gick</h2>
+              <div class="wk-period"><span id="wk-period"></span><span class="wk-prelim" id="wk-prelim" hidden title="Meta justerar siffror upp till 72 timmar efter veckoslut">Preliminär</span></div>
+            </div>
+            <div class="wk-controls">
+              <select id="wk-customer" class="wk-select" hidden aria-label="Kund" onchange="loadWeekly()"></select>
+              <select id="wk-campaign" class="wk-select" hidden aria-label="Kampanj" onchange="loadWeekly(true)"></select>
+            </div>
+          </div>
+          <div id="wk-body">
+            <div class="wk-overall" id="wk-overall"></div>
+            <div class="wk-metrics" id="wk-metrics"></div>
+            <div class="wk-charts">
+              <figure class="wk-chart">
+                <figcaption>Spend och resultat per vecka</figcaption>
+                <div class="wk-canvas"><canvas id="wk-chart-volume" aria-label="Spend och resultat per vecka"></canvas></div>
+              </figure>
+              <figure class="wk-chart">
+                <figcaption id="wk-chart2-title">Kostnad per resultat per vecka</figcaption>
+                <div class="wk-canvas"><canvas id="wk-chart-efficiency"></canvas><div class="wk-empty" id="wk-chart2-empty" hidden>För lite data</div></div>
+              </figure>
+            </div>
+          </div>
+          <div class="wk-note" id="wk-note" hidden></div>
+        </section>
 
         <!-- KPI ROW -->
         <div class="kpi-row">
@@ -2103,6 +2197,178 @@
     loadFunnel();
     loadAssets();
 
+    // ── Veckoutveckling (Modul C) ─────────────────────────────
+    // Siffror, pilar och utfall räknas i /api/weekly (weekly_metrics från Meta).
+    // Här formateras och ritas de bara.
+    let wkCharts = [];
+    let wkCustomersLoaded = false;
+    const WK_ARROW = { up: '↑', down: '↓', flat: '→' };
+    const WK_ARROW_SV = { up: 'upp', down: 'ner', flat: 'oförändrat' };
+    const WK_MONTHS = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+
+    function wkDate(d) {
+      const [, m, day] = d.split('-').map(Number);
+      return `${day} ${WK_MONTHS[m - 1]}`;
+    }
+
+    function wkFormat(key, v) {
+      if (v === null || v === undefined) return '—';
+      if (key === 'roas') return v.toLocaleString('sv-SE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      if (key === 'results') return Math.round(v).toLocaleString('sv-SE');
+      return Math.round(v).toLocaleString('sv-SE') + ' kr';
+    }
+
+    function wkPct(change) {
+      const p = Math.round(change * 100);
+      return (p > 0 ? '+' : p < 0 ? '−' : '±') + Math.abs(p) + ' %';
+    }
+
+    function wkCmp(c, ref, secondary) {
+      const cls = secondary ? ' secondary' : '';
+      if (!c || c.status !== 'ok') {
+        return `<div class="wk-cmp is-insufficient${cls}"><span>För lite data</span><span class="wk-ref">${ref}</span></div>`;
+      }
+      return `<div class="wk-cmp is-${c.outcome}${cls}"><span class="wk-arrow" role="img" aria-label="${WK_ARROW_SV[c.direction]}">${WK_ARROW[c.direction]}</span>`
+        + `<span>${escapeHtml(c.word)}</span><span>${wkPct(c.change)}</span><span class="wk-ref">${ref}</span></div>`;
+    }
+
+    async function loadWeekly(keepCampaign = false) {
+      const panel = document.getElementById('weekly-panel');
+      try {
+        const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const isAdmin = user.email === 'admin@admiralai.se';
+        const custSel = document.getElementById('wk-customer');
+        const campSel = document.getElementById('wk-campaign');
+
+        if (isAdmin && !wkCustomersLoaded) {
+          const r = await fetch('/api/weekly?customers=1', { headers }).then(r => r.json());
+          const list = r.customers || [];
+          if (!list.length) { panel.style.display = 'none'; return; }
+          custSel.innerHTML = list.map(c => `<option value="${c.user_id}">${escapeHtml(c.name)}</option>`).join('');
+          custSel.hidden = false;
+          wkCustomersLoaded = true;
+        }
+
+        const params = new URLSearchParams();
+        if (isAdmin) params.set('user_id', custSel.value);
+        if (keepCampaign && campSel.value) params.set('campaign_id', campSel.value);
+        const res = await fetch('/api/weekly?' + params, { headers });
+        if (!res.ok) { panel.style.display = 'none'; return; }
+        const d = await res.json();
+        if (!d.enabled) { panel.style.display = 'none'; return; }
+        panel.style.display = '';
+        renderWeekly(d, keepCampaign);
+      } catch (e) {
+        panel.style.display = 'none';
+      }
+    }
+
+    function renderWeekly(d, keepCampaign) {
+      const body = document.getElementById('wk-body');
+      const note = document.getElementById('wk-note');
+      const campSel = document.getElementById('wk-campaign');
+      if (!keepCampaign) {
+        const camps = d.campaigns || [];
+        campSel.innerHTML = '<option value="">Alla kampanjer</option>'
+          + camps.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name || c.id)}</option>`).join('');
+        campSel.hidden = camps.length < 2;
+      }
+
+      if (d.status !== 'ok') {
+        body.hidden = true;
+        note.hidden = false;
+        note.textContent = 'Veckosiffrorna hämtas från Meta varje morgon. Veckovyn visas efter första hämtningen.';
+        document.getElementById('wk-period').textContent = '';
+        document.getElementById('wk-prelim').hidden = true;
+        return;
+      }
+      body.hidden = false;
+      note.hidden = true;
+      document.getElementById('wk-period').textContent = `Vecka ${d.week.iso_week} · ${wkDate(d.week.start)} – ${wkDate(d.week.end)}`;
+      document.getElementById('wk-prelim').hidden = !d.week.preliminary;
+
+      const o = d.overall;
+      const explain = o.explanation ? `<div class="wk-explain">${escapeHtml(o.explanation)}</div>` : '';
+      document.getElementById('wk-overall').innerHTML = o.status === 'ok'
+        ? `<span class="wk-big-arrow is-${o.outcome}" aria-hidden="true">${WK_ARROW[o.direction]}</span><div><div class="wk-overall-word is-${o.outcome}">${escapeHtml(o.word)}</div>${explain}</div>`
+        : `<div><div class="wk-overall-word is-insufficient">För lite data</div>${explain}</div>`;
+
+      const grid = document.getElementById('wk-metrics');
+      grid.classList.toggle('three', d.metrics.length === 3);
+      grid.innerHTML = d.metrics.map(m => `
+        <div class="wk-m">
+          <div class="wk-m-label">${escapeHtml(m.label)}</div>
+          <div class="wk-m-value">${wkFormat(m.key, m.value)}</div>
+          ${wkCmp(m.vs_prev, 'förra veckan')}
+          ${wkCmp(m.vs_avg, 'snitt 4 v', true)}
+        </div>`).join('');
+
+      renderWeeklyCharts(d);
+    }
+
+    function renderWeeklyCharts(d) {
+      wkCharts.forEach(c => c.destroy());
+      wkCharts = [];
+      const cyan = '#00d9ff';
+      const tick = 'rgba(255,255,255,.4)';
+      const labels = d.series.map(w => 'v.' + w.iso_week);
+      const tickFont = { size: 10 };
+      const options = (scales) => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { align: 'end', labels: { color: tick, boxWidth: 7, boxHeight: 7, usePointStyle: true, font: tickFont } },
+          tooltip: {
+            callbacks: {
+              title: items => { const w = d.series[items[0].dataIndex]; return `Vecka ${w.iso_week}${w.preliminary ? ' (preliminär)' : ''}`; },
+              label: c => `${c.dataset.label}: ${wkFormat(c.dataset.wkKey, c.raw)}`,
+            },
+          },
+        },
+        scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: tick, font: tickFont } }, ...scales },
+      });
+      const yAxis = (extra) => ({ beginAtZero: true, border: { display: false }, ticks: { color: tick, font: tickFont, maxTicksLimit: 4 }, ...extra });
+
+      wkCharts.push(new Chart(document.getElementById('wk-chart-volume'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { type: 'bar', label: 'Spend', wkKey: 'spend', data: d.series.map(w => w.spend), yAxisID: 'y', order: 2, borderRadius: 3,
+              backgroundColor: d.series.map(w => w.preliminary ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.18)') },
+            { type: 'line', label: 'Resultat', wkKey: 'results', data: d.series.map(w => w.results), yAxisID: 'y1', order: 1,
+              borderColor: cyan, backgroundColor: cyan, borderWidth: 2, pointRadius: 2.5, cubicInterpolationMode: 'monotone' },
+          ],
+        },
+        options: options({
+          y: yAxis({ position: 'left', grid: { color: 'rgba(255,255,255,.06)' }, ticks: { color: tick, font: tickFont, maxTicksLimit: 4, callback: v => v.toLocaleString('sv-SE') + ' kr' } }),
+          // Minst 0–5 på resultataxeln så att enstaka resultat inte ritas som toppar.
+          y1: yAxis({ position: 'right', suggestedMax: 5, grid: { display: false }, ticks: { color: tick, font: tickFont, maxTicksLimit: 4, precision: 0 } }),
+        }),
+      }));
+
+      const key = d.chart.metric;
+      const values = d.series.map(w => w[key]);
+      document.getElementById('wk-chart2-title').textContent = `${d.chart.label} per vecka`;
+      document.getElementById('wk-chart2-empty').hidden = values.some(v => v !== null);
+      const datasets = [{ label: d.chart.label, wkKey: key, data: values, borderColor: cyan, backgroundColor: cyan, borderWidth: 2, pointRadius: 2.5, cubicInterpolationMode: 'monotone', spanGaps: false }];
+      if (d.chart.target) {
+        datasets.push({ label: 'Mål', wkKey: key, data: labels.map(() => d.chart.target), borderColor: 'rgba(255,255,255,.35)', borderWidth: 1, borderDash: [4, 4], pointRadius: 0, pointHoverRadius: 0 });
+      }
+      wkCharts.push(new Chart(document.getElementById('wk-chart-efficiency'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: options({
+          y: yAxis({ grid: { color: 'rgba(255,255,255,.06)' }, ticks: { color: tick, font: tickFont, maxTicksLimit: 4, callback: v => key === 'roas' ? v.toLocaleString('sv-SE') : v.toLocaleString('sv-SE') + ' kr' } }),
+        }),
+      }));
+    }
+
+    loadWeekly();
+
     // ── Uppdatera-knapp ──────────────────────────────────────
     async function refreshAll() {
       const btn = document.getElementById('refresh-btn');
@@ -2110,7 +2376,7 @@
       btn.disabled = true;
       tlLoaded = false; // återladda timeline vid nästa öppning
       notifLoaded = false;
-      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus(), loadInsights(), loadGoals(), loadFunnel(), loadAssets(), loadCampaigns(_selectedAccountId)]);
+      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus(), loadInsights(), loadGoals(), loadFunnel(), loadAssets(), loadWeekly(true), loadCampaigns(_selectedAccountId)]);
       setTimeout(() => { btn.classList.remove('spinning'); btn.disabled = false; }, 600);
     }
 

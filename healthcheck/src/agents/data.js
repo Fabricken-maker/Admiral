@@ -11,6 +11,7 @@ import { pass, fail } from '../lib/result.js';
 import { canonicalInsight, PURCHASE_TYPES, ZERO_INSIGHT } from '../lib/metrics.js';
 import { compareMetrics, bracketCheck, round } from '../lib/compare.js';
 import { stockholmDate, addDays, monthStart } from '../lib/time.js';
+import { checkWeekly } from './data-weekly.js';
 
 const A = 'data';
 
@@ -24,6 +25,7 @@ export async function run(ctx) {
   const results = [];
   results.push(...await checkPassThrough(ctx));
   results.push(...await checkStored(ctx));
+  results.push(...await checkWeekly(ctx));
   return results;
 }
 

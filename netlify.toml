@@ -173,11 +173,20 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/weekly"
+  to = "/.netlify/functions/weekly"
+  status = 200
+  force = true
+
 [functions."budget-adjust"]
   schedule = "0 6 * * *"
 
 [functions."nightly-health-check"]
   schedule = "0 7 * * *"
+
+[functions."weekly-sync"]
+  schedule = "15 5 * * *"
 
 # SPA routing - all other paths go to index.html
 [[redirects]]
