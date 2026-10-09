@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail, buildAdminDailyReport, buildTokenExpiryEmail } from './lib/send-email.js';
 import { fireWebhook } from './lib/fire-webhooks.js';
+import { readToken } from './lib/token-store.js';
 import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -51,9 +52,14 @@ const handler = async () => {
   } catch (e) { /* silent */ }
 
   // Hämta alla användare med kopplat Meta-token
-  const { data: tokens } = await supabase
+  const { data: tokenUsers } = await supabase
     .from('meta_tokens')
-    .select('user_id, access_token, expires_at');
+    .select('user_id');
+  const tokens = [];
+  for (const t of tokenUsers || []) {
+    const row = await readToken(supabase, t.user_id).catch(() => null);
+    if (row) tokens.push({ user_id: t.user_id, access_token: row.access_token, expires_at: row.expires_at });
+  }
 
   for (const userToken of (tokens || [])) {
     const userId = userToken.user_id;

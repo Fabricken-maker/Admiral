@@ -24,6 +24,9 @@ export const SUPABASE_WRITE_RULES = {
   weekly_metrics: ['PATCH', 'POST'], // omsynk av veckorader från Meta (Modul C)
 };
 
+// Enda RPC som får skriva: lagrar ett Meta-token krypterat i Vault (förnyelse/kryptering).
+export const SUPABASE_WRITE_RPC = ['meta_token_put'];
+
 export function redact(url) {
   return String(url)
     .replace(/(access_token|input_token|fb_exchange_token|client_secret)=[^&\s]+/gi, '$1=[REDACTED]')
@@ -53,6 +56,7 @@ export function checkRequest(method, rawUrl, { baseUrl, supabaseUrl } = {}) {
   if (supabaseUrl && host === new URL(supabaseUrl).hostname.toLowerCase()) {
     if (m === 'GET' || m === 'HEAD') return;
     if (m === 'DELETE') throw new WriteBlockedError(m, rawUrl, 'radering i Supabase är spärrat');
+    if (m === 'POST' && SUPABASE_WRITE_RPC.includes(url.pathname.replace(/^\/rest\/v1\/rpc\//, ''))) return;
     const match = url.pathname.match(/^\/rest\/v1\/([a-z0-9_]+)$/);
     if (!match) throw new WriteBlockedError(m, rawUrl, 'endast REST-tabellskrivning är tillåten (ingen SQL/RPC/auth)');
     const allowed = SUPABASE_WRITE_RULES[match[1]];

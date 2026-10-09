@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { createClient } from '@supabase/supabase-js';
 import { getCorsHeaders } from './lib/cors.js';
+import { readToken } from './lib/token-store.js';
 import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -16,11 +17,7 @@ const handler = async (event) => {
     userId = decoded.id;
   } catch { return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Unauthorized' }) }; }
 
-  const { data } = await supabase
-    .from('meta_tokens')
-    .select('access_token, expires_at')
-    .eq('user_id', userId)
-    .single();
+  const data = await readToken(supabase, userId).catch(() => null);
 
   if (!data) return { statusCode: 200, headers: cors, body: JSON.stringify({ connected: false }) };
 

@@ -93,6 +93,11 @@ export const REQUIRED_TABLES = [
   'rate_limits',
   'weekly_settings',
   'weekly_metrics',
+  'write_settings',
+  'proposals',
+  'approvals',
+  'meta_write_log',
+  'meta_recommendations',
 ];
 
 // Var i koden en tabell används — så att "kräver människa" kan peka ut platsen.
@@ -105,4 +110,6 @@ export const EXPECTED_SCHEDULES = {
   'budget-adjust': '0 6 * * *',
   'nightly-health-check': '0 7 * * *',
   'weekly-sync': '15 5 * * *',
+  'proposals-maintenance': '*/15 * * * *',
+  'recommendations-sync': '45 4 * * *',
 };

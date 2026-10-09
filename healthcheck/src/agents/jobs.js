@@ -5,6 +5,8 @@
 //  - GA4-synk → /api/ga4/insights levererar data
 //  - ChromaDB (Sofias minne på VPS:en) → svarar och växer
 //  - weekly-sync (05:15 UTC) → weekly_metrics har senaste avslutade vecka, inga synkfel
+//  - godkännandeflödet (Modul D) → inga godkännanden som fastnat, inga overifierade skrivningar,
+//    inga ändringar i Meta utan godkännande (se jobs-approvals.js)
 // budget-adjust och nightly-health-check startas aldrig om av modulen:
 // budget-adjust ändrar budgetar i Meta och nightly-health-check skickar mejl/webhooks.
 // Tillåten reparation: omstart av ChromaDB-containern om den inte svarar.
@@ -13,6 +15,7 @@ import { promisify } from 'node:util';
 import { pass, fail, skip } from '../lib/result.js';
 import { fetchJson } from '../lib/http.js';
 import { addDays, completedWeekStarts, stockholmMidnight } from '../lib/time.js';
+import { checkApprovals } from './jobs-approvals.js';
 
 const A = 'jobs';
 const run$ = promisify(execFile);
@@ -33,6 +36,7 @@ export async function run(ctx) {
     checkGa4(ctx),
     checkChroma(ctx),
     checkWeeklySync(ctx),
+    checkApprovals(ctx),
   ]);
   return results.flat();
 }

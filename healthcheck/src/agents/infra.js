@@ -122,13 +122,14 @@ export async function run(ctx) {
 async function checkMetaTokens(ctx) {
   const { supabase, meta, config } = ctx;
   const out = [];
-  const rows = await supabase.select('meta_tokens', 'select=id,user_id,access_token,expires_at,users!inner(email,company_name,status)&users.status=eq.active');
+  const rows = await supabase.select('meta_tokens', 'select=id,user_id,expires_at,meta_user_id,token_secret_id,users!inner(email,company_name,status)&users.status=eq.active');
   for (const row of rows) {
+    out.push(await checkTokenEncrypted(ctx, row));
     const who = `${row.users.email}${row.users.company_name ? ` (${row.users.company_name})` : ''}`;
     const id = `infra.meta-token user ${row.user_id}`;
     const where = `meta_tokens user_id ${row.user_id}`;
     const inspect = async () => {
-      const [cur] = await supabase.select('meta_tokens', `select=access_token,expires_at&id=eq.${row.id}`);
+      const [cur] = await supabase.rpc('meta_token_get', { p_user_id: row.user_id });
       const d = await meta.debugToken(cur.access_token);
       const exp = d.expires_at ? new Date(d.expires_at * 1000) : null; // 0 = utgånget/aldrig
       const dataExp = d.data_access_expires_at ? new Date(d.data_access_expires_at * 1000) : null;
@@ -169,6 +170,46 @@ async function checkMetaTokens(ctx) {
   return out;
 }
 
+// Modul D: Meta-token ska ligga krypterade i Supabase Vault. Ett okrypterat token flyttas dit
+// (samma token, samma utgångsdatum) via meta_token_put.
+async function checkTokenEncrypted(ctx, row) {
+  const who = `${row.users.email}${row.users.company_name ? ` (${row.users.company_name})` : ''}`;
+  const id = `infra.meta-token krypterat user ${row.user_id}`;
+  if (row.token_secret_id) return pass(A, id);
+  const recheck = async () => {
+    const [cur] = await ctx.supabase.select('meta_tokens', `select=token_secret_id&id=eq.${row.id}`);
+    return cur?.token_secret_id ? { ok: true } : { ok: false, cause: `Meta-token för ${who} är fortfarande okrypterat` };
+  };
+  const result = fail(A, id, `Meta-token för ${who} lagras okrypterat`, { where: `meta_tokens user_id ${row.user_id} (access_token)`, human: false, recheck });
+  const action = { kind: 'encrypt-token', description: `Flytta Meta-token för ${who} till Supabase Vault`, before: { encrypted: false } };
+  if (!(await vaultCodeLive(ctx))) {
+    result.cause += '. Krypteringen görs först när Modul D (läsning via Vault) är driftsatt i Admiral';
+    return result;
+  }
+  if (ctx.dryRun) result.action = { ...action, ok: false, skipped: 'torrkörning' };
+  else {
+    try {
+      const [cur] = await ctx.supabase.rpc('meta_token_get', { p_user_id: row.user_id });
+      await ctx.supabase.rpc('meta_token_put', { p_user_id: row.user_id, p_token: cur.access_token, p_expires_at: cur.expires_at, p_meta_user_id: cur.meta_user_id }, { write: true });
+      result.action = { ...action, ok: true, after: { encrypted: true } };
+    } catch (e) {
+      result.action = { ...action, ok: false, error: e.message };
+    }
+  }
+  result.human = !result.action.ok;
+  return result;
+}
+
+// Läser driftsatt Admiral token via Vault? (Modul D: /api/write-settings finns.) Annars skulle ett
+// krypterat token se tomt ut för den gamla koden, som läser meta_tokens.access_token direkt.
+export async function vaultCodeLive(ctx) {
+  if (ctx._vaultLive === undefined) {
+    const r = await ctx.admiral.api('/api/write-settings');
+    ctx._vaultLive = r.status === 401 || r.status === 200;
+  }
+  return ctx._vaultLive;
+}
+
 async function renewToken(ctx, row, who, state) {
   const { meta, supabase } = ctx;
   const action = { kind: 'token-renewal', description: `Förnya Meta-token för ${who}`, before: { expires_at: state.exp?.toISOString() ?? null } };
@@ -183,11 +224,13 @@ async function renewToken(ctx, row, who, state) {
 
     // Föregående tillstånd sparas lokalt (chmod 600) så att bytet kan backas.
     const rollbackFile = saveRollback(ctx, `meta-token-user-${row.user_id}`, { table: 'meta_tokens', id: row.id, access_token: state.token, expires_at: state.dbExpires });
-    await supabase.patch('meta_tokens', `id=eq.${row.id}`, {
-      access_token: res.access_token,
-      expires_at: newExp.toISOString(),
-      updated_at: new Date().toISOString(),
-    });
+    if (await vaultCodeLive(ctx)) {
+      await supabase.rpc('meta_token_put', {
+        p_user_id: row.user_id, p_token: res.access_token, p_expires_at: newExp.toISOString(), p_meta_user_id: row.meta_user_id ?? null,
+      }, { write: true });
+    } else {
+      await supabase.patch('meta_tokens', `id=eq.${row.id}`, { access_token: res.access_token, expires_at: newExp.toISOString(), updated_at: new Date().toISOString() });
+    }
     return { ...action, ok: true, after: { expires_at: newExp.toISOString() }, rollback: rollbackFile };
   } catch (e) {
     return { ...action, ok: false, error: e.message };

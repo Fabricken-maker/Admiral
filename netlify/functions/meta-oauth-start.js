@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { getCorsHeaders } from './lib/cors.js';
+import { createState } from './lib/oauth-state.js';
 import { modern } from './lib/modern.js';
 
 const handler = async (event) => {
@@ -15,8 +16,8 @@ const handler = async (event) => {
     return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 
-  // Encode userId in state so we can link the token after callback
-  const state = Buffer.from(JSON.stringify({ userId, ts: Date.now() })).toString('base64');
+  // Signerad state: kopplar token till rätt användare efter callback och går inte att förfalska
+  const state = createState(userId, process.env.JWT_SECRET);
 
   const params = new URLSearchParams({
     client_id: process.env.META_APP_ID,
