@@ -39,5 +39,14 @@ export function createSupabase({ url, key, timeoutMs = 20_000 }) {
     return res.json;
   }
 
-  return { select, probe, patch, insert };
+  // RPC: GET för läsfunktioner (STABLE), POST för meta_token_put (spärren tillåter bara den).
+  async function rpc(fn, args = {}, { write = false } = {}) {
+    const res = write
+      ? await fetchJson(`${rest}/rpc/${fn}`, { method: 'POST', headers, body: JSON.stringify(args), timeoutMs })
+      : await fetchJson(`${rest}/rpc/${fn}?${new URLSearchParams(args)}`, { headers, timeoutMs });
+    if (!res.ok) throw new Error(`Supabase rpc ${fn}: HTTP ${res.status} ${res.json?.message || ''}`.trim());
+    return res.json;
+  }
+
+  return { select, probe, patch, insert, rpc };
 }

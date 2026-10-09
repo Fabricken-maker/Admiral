@@ -42,7 +42,7 @@ export function createContext(config, { trigger = 'manual', dryRun = false, opti
     async getValidMetaToken(userId) {
       if (!tokenCache.has(userId)) {
         tokenCache.set(userId, (async () => {
-          const [row] = await supabase.select('meta_tokens', `select=access_token&user_id=eq.${userId}`);
+          const [row] = await supabase.rpc('meta_token_get', { p_user_id: userId });
           if (!row) return null;
           const d = await meta.debugToken(row.access_token).catch(() => ({}));
           return d.is_valid && (d.scopes || []).includes('ads_read') ? row.access_token : null;
