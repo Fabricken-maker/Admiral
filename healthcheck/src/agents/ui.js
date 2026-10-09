@@ -95,8 +95,22 @@ async function renderDashboard(ctx, admin) {
           const td = tr.querySelectorAll('td');
           return { name: tr.querySelector('.nm')?.textContent.trim() ?? null, spend: td[2]?.textContent.trim() ?? null, cells: td.length };
         }),
-        charts: { spendChart: chart('spendChart'), bokaChart: chart('bokaChart'), audChart: chart('audChart') },
+        charts: {
+          spendChart: chart('spendChart'), bokaChart: chart('bokaChart'), audChart: chart('audChart'),
+          wkVolume: chart('wk-chart-volume'), wkEfficiency: chart('wk-chart-efficiency'),
+        },
         timelinePlaceholder: visible('tl-placeholder-banner'),
+        weekly: document.getElementById('weekly-panel') ? {
+          visible: visible('weekly-panel'),
+          period: text('wk-period'),
+          preliminary: document.getElementById('wk-prelim')?.hidden === false,
+          overall: document.querySelector('#wk-overall .wk-overall-word')?.textContent.trim() ?? null,
+          metrics: [...document.querySelectorAll('#wk-metrics .wk-m')].map((m) => ({
+            label: m.querySelector('.wk-m-label')?.textContent.trim() ?? null,
+            value: m.querySelector('.wk-m-value')?.textContent.trim() ?? null,
+            comparisons: [...m.querySelectorAll('.wk-cmp')].map((x) => x.textContent.replace(/\s+/g, ' ').trim()),
+          })),
+        } : null,
       };
     });
 
@@ -274,6 +288,9 @@ export function evaluate(snap, where) {
       : pass(A, id));
   }
 
+  // ── Veckoutveckling (Modul C) mot /api/weekly ──
+  out.push(...evaluateWeekly(find('/api/weekly?customers'), find('/api/weekly?user_id'), dom, where));
+
   // ── Hårdkodad data i paneler ──
   if (snap.search && campaigns) {
     const id = 'ui.sök platshållare';
@@ -291,6 +308,48 @@ export function evaluate(snap, where) {
       : pass(A, id));
   }
   return out;
+}
+
+// Veckokortet ska visa exakt det /api/weekly räknade fram: vecka, preliminär-märkning,
+// helhetsomdöme, måttens värden och ord, samt diagrammens datapunkter.
+export function evaluateWeekly(customers, weekly, dom, where) {
+  if (!customers?.customers?.length) return []; // ingen kund har veckovy (eller äldre driftsatt version)
+  const id = 'ui.veckovy';
+  const at = where('function renderWeekly');
+  if (!weekly) return [fail(A, id, 'Dashboarden hämtade aldrig /api/weekly för kunden trots att kunder har veckovy', { where: where('async function loadWeekly') })];
+  if (!weekly.enabled || weekly.status !== 'ok') return [pass(A, id, { note: 'ingen vecka att visa' })];
+  const w = dom.weekly;
+  if (!w?.visible) return [fail(A, id, 'Veckokortet visas inte trots att /api/weekly har en vecka', { where: at })];
+
+  const problems = [];
+  if (!String(w.period || '').startsWith(`Vecka ${weekly.week.iso_week} `)) problems.push(`perioden "${w.period}" ≠ vecka ${weekly.week.iso_week}`);
+  if (w.preliminary !== weekly.week.preliminary) problems.push(`Preliminär-märkningen ${w.preliminary ? 'visas' : 'saknas'} men API:t säger ${weekly.week.preliminary ? 'preliminär' : 'slutlig'}`);
+  const overall = weekly.overall.status === 'ok' ? weekly.overall.word : 'För lite data';
+  if (w.overall !== overall) problems.push(`helhetsomdömet "${w.overall}" ≠ "${overall}"`);
+  if (w.metrics.length !== weekly.metrics.length) problems.push(`${w.metrics.length} mått visas, API:t har ${weekly.metrics.length}`);
+  weekly.metrics.forEach((m, i) => {
+    const shown = w.metrics[i];
+    if (!shown) return;
+    if (shown.label !== m.label) problems.push(`mått ${i + 1}: "${shown.label}" ≠ "${m.label}"`);
+    if (!sameNumber(shown.value, m.value)) problems.push(`${m.label}: visar "${shown.value}", API:t ger ${m.value}`);
+    [m.vs_prev, m.vs_avg].forEach((c, j) => {
+      if (!String(shown.comparisons[j] || '').includes(c.word)) problems.push(`${m.label}: jämförelse ${j + 1} visar "${shown.comparisons[j]}", förväntat ${c.word}`);
+    });
+  });
+  const series = (k) => weekly.series.map((s) => s[k]);
+  const same = (a, b) => a && a.length === b.length && a.every((v, i) => (v === null && b[i] === null) || Number(v) === Number(b[i]));
+  const vol = dom.charts?.wkVolume;
+  if (!vol) problems.push('diagrammet Spend och resultat renderades inte');
+  else {
+    if (!same(vol.datasets[0]?.data, series('spend'))) problems.push('spend-staplarna avviker från /api/weekly');
+    if (!same(vol.datasets[1]?.data, series('results'))) problems.push('resultatlinjen avviker från /api/weekly');
+  }
+  const eff = dom.charts?.wkEfficiency;
+  if (!eff) problems.push(`diagrammet ${weekly.chart.label} renderades inte`);
+  else if (!same(eff.datasets[0]?.data, series(weekly.chart.metric))) problems.push(`${weekly.chart.label}-linjen avviker från /api/weekly`);
+  else if (weekly.chart.target && !eff.datasets[1]?.data?.every((v) => Number(v) === Number(weekly.chart.target))) problems.push(`mållinjen visar inte ${weekly.chart.target}`);
+
+  return [problems.length ? fail(A, id, `Veckokortet stämmer inte med /api/weekly: ${problems.slice(0, 4).join('; ')}`, { where: at }) : pass(A, id)];
 }
 
 // Samma fönster som loadInsights(): tidigaste month_start bland tidslinjens kampanjer, annars 30 dagar.

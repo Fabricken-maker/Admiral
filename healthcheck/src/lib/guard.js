@@ -21,6 +21,7 @@ export const SUPABASE_WRITE_RULES = {
   spend_log: ['PATCH'],
   budget_plans: ['PATCH'],
   meta_tokens: ['PATCH'],
+  weekly_metrics: ['PATCH', 'POST'], // omsynk av veckorader från Meta (Modul C)
 };
 
 export function redact(url) {
