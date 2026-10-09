@@ -11,11 +11,12 @@ import jwt from 'jsonwebtoken';
 import { createClient } from '@supabase/supabase-js';
 import { getCorsHeaders } from './lib/cors.js';
 import { buildWeeklyView, listCampaigns, completedWeekStarts } from './lib/weekly.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const ADMIN_EMAIL = process.env.ADMIRAL_ADMIN_EMAIL || 'admin@admiralai.se';
 
-export const handler = async (event) => {
+const handler = async (event) => {
   const cors = getCorsHeaders(event, 'GET, OPTIONS');
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors, body: '' };
   if (event.httpMethod !== 'GET') return { statusCode: 405, headers: cors, body: JSON.stringify({ error: 'Method not allowed' }) };
@@ -79,3 +80,5 @@ export const handler = async (event) => {
   const campaign = campaignId ? { id: campaignId, name: rows.find((r) => r.campaign_id === campaignId)?.campaign_name || campaignId } : null;
   return json(200, { enabled: true, user_id: customerId, campaign, campaigns, ...view });
 };
+
+export default modern(handler);

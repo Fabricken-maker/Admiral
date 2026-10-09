@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { getMetaToken } from './lib/get-meta-token.js';
 import { syncCustomer } from './lib/weekly-sync.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const ADMIN_EMAIL = process.env.ADMIRAL_ADMIN_EMAIL || 'admin@admiralai.se';
@@ -20,7 +21,7 @@ async function tokensFor(userId, adminId) {
   return tokens;
 }
 
-export const handler = async () => {
+const handler = async () => {
   const today = new Date().toISOString().split('T')[0];
   const { data: admin } = await supabase.from('users').select('id').eq('email', ADMIN_EMAIL).maybeSingle();
   const { data: customers, error } = await supabase.from('weekly_settings').select('*').eq('active', true);
@@ -48,3 +49,5 @@ export const handler = async () => {
   }
   return { statusCode: 200, body: JSON.stringify({ synced: results }) };
 };
+
+export default modern(handler);
