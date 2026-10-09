@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { checkRequest, installGuard, WriteBlockedError } from '../src/lib/guard.js';
 import { createMetaClient } from '../src/lib/meta.js';
 
-const opts = { baseUrl: 'https://admiralai.se', supabaseUrl: 'https://lptnrjqycqqiqhhzajbc.supabase.co' };
+const opts = { baseUrl: 'https://admiralai.se', supabaseUrl: 'https://exempel.supabase.co' };
 const blocked = (m, u) => assert.throws(() => checkRequest(m, u, opts), WriteBlockedError, `${m} ${u} ska spärras`);
 const allowed = (m, u) => assert.doesNotThrow(() => checkRequest(m, u, opts), `${m} ${u} ska tillåtas`);
 
