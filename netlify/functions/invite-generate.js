@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -25,7 +26,7 @@ function authAdmin(event) {
   return payload;
 }
 
-export const handler = async (event) => {
+const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' };
 
   try { authAdmin(event); }
@@ -70,3 +71,5 @@ export const handler = async (event) => {
 
   return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
 };
+
+export default modern(handler);

@@ -9,6 +9,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const FORTNOX_TOKEN  = process.env.FORTNOX_ACCESS_TOKEN;
@@ -57,7 +58,7 @@ async function fortnoxPost(path, body) {
   return json;
 }
 
-export const handler = async (event) => {
+const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
 
@@ -171,3 +172,5 @@ export const handler = async (event) => {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
   }
 };
+
+export default modern(handler);

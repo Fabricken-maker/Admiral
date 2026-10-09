@@ -6,11 +6,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail, buildAdminDailyReport, buildTokenExpiryEmail } from './lib/send-email.js';
 import { fireWebhook } from './lib/fire-webhooks.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'hej@admiralai.se';
 
-export const handler = async () => {
+const handler = async () => {
   const today = new Date().toISOString().split('T')[0];
   const allFindings = [];
 
@@ -188,3 +189,5 @@ export const handler = async () => {
     body: JSON.stringify({ date: today, users: tokens?.length || 0, findings: allFindings.length, criticals, warnings })
   };
 };
+
+export default modern(handler);

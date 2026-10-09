@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-export const handler = async (event) => {
+const handler = async (event) => {
   const { code, state, error } = event.queryStringParameters || {};
 
   if (error) {
@@ -61,3 +62,5 @@ export const handler = async (event) => {
     return { statusCode: 302, headers: { Location: `/setup-wizard.html?meta_error=${encodeURIComponent(err.message)}` } };
   }
 };
+
+export default modern(handler);

@@ -10,6 +10,7 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { fireWebhook } from './lib/fire-webhooks.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -41,7 +42,7 @@ async function authenticate(event) {
   if (data.scope !== 'admin') throw new Error('Admin-nyckel krävs');
 }
 
-export const handler = async (event) => {
+const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' };
 
   try { await authenticate(event); }
@@ -109,3 +110,5 @@ export const handler = async (event) => {
 
   return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
 };
+
+export default modern(handler);

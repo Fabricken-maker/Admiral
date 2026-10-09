@@ -9,7 +9,7 @@
     "dev": "nodemon src/index.js",
     "migrate": "node migrations/run.js",
     "test": "jest",
-    "test:weekly": "node --test test/*.test.mjs",
+    "test:functions": "node --test test/*.test.mjs",
     "build": "echo 'No build step needed'",
     "deploy": "npm run migrate && npm start"
   },

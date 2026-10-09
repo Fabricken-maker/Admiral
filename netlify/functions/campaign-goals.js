@@ -6,10 +6,11 @@
 import jwt from 'jsonwebtoken';
 import { createClient } from '@supabase/supabase-js';
 import { getCorsHeaders } from './lib/cors.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-export const handler = async (event) => {
+const handler = async (event) => {
   const cors = getCorsHeaders(event, 'GET, PUT, OPTIONS');
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors, body: '' };
 
@@ -86,3 +87,5 @@ export const handler = async (event) => {
 
   return { statusCode: 405, headers: cors, body: JSON.stringify({ error: 'Method not allowed' }) };
 };
+
+export default modern(handler);

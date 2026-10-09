@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { adminToolDefinitions, callAdminTool } from './lib/mcp-tools-admin.js';
 import { customerToolDefinitions, callCustomerTool } from './lib/mcp-tools-customer.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -52,7 +53,7 @@ function err(id, code, message) {
 }
 
 // ── Handler ─────────────────────────────────────────────────────────────────
-export const handler = async (event) => {
+const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST')    return { statusCode: 405, headers: CORS, body: JSON.stringify({ error: 'Method not allowed' }) };
 
@@ -128,3 +129,5 @@ export const handler = async (event) => {
     return err(id, -32000, e.message || 'Internt serverfel');
   }
 };
+
+export default modern(handler);
