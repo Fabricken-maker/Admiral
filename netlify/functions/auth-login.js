@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { modern } from './lib/modern.js';
 
 // Mock database (same as register)
 const users = {
@@ -13,7 +14,7 @@ const users = {
   }
 };
 
-export const handler = async (event, context) => {
+const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -110,3 +111,5 @@ export const handler = async (event, context) => {
     };
   }
 };
+
+export default modern(handler);

@@ -4,6 +4,7 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { getMetaToken } from './lib/get-meta-token.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -32,7 +33,7 @@ async function withRetry(fn, label, maxAttempts = 3) {
   throw lastErr;
 }
 
-export const handler = async () => {
+const handler = async () => {
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
 
@@ -263,3 +264,5 @@ export const handler = async () => {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };
+
+export default modern(handler);

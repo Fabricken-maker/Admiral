@@ -8,6 +8,7 @@
 import jwt from 'jsonwebtoken';
 import { createClient } from '@supabase/supabase-js';
 import { getCorsHeaders } from './lib/cors.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -110,7 +111,7 @@ async function runGA4Report(propertyId, accessToken, days, bokaEvent) {
   }));
 }
 
-export const handler = async (event) => {
+const handler = async (event) => {
   const cors = CORS(event);
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors, body: '' };
 
@@ -173,3 +174,5 @@ export const handler = async (event) => {
     return { statusCode: 500, headers: cors, body: JSON.stringify({ error: e.message }) };
   }
 };
+
+export default modern(handler);

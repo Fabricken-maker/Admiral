@@ -6,10 +6,11 @@
 import { createClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
 import { getCorsHeaders } from './lib/cors.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-export const handler = async (event) => {
+const handler = async (event) => {
   const CORS = { 'Content-Type': 'application/json', ...getCorsHeaders(event, 'GET, OPTIONS') };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' };
 
@@ -107,3 +108,5 @@ export const handler = async (event) => {
     body: JSON.stringify({ campaigns, summary })
   };
 };
+
+export default modern(handler);

@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken';
 import { getCorsHeaders } from './lib/cors.js';
+import { modern } from './lib/modern.js';
 
-export const handler = async (event, context) => {
+const handler = async (event, context) => {
   const cors = getCorsHeaders(event, 'GET, OPTIONS');
 
   if (event.httpMethod === 'OPTIONS') {
@@ -68,3 +69,5 @@ export const handler = async (event, context) => {
     };
   }
 };
+
+export default modern(handler);
