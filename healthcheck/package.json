@@ -1,0 +1,17 @@
+{
+  "name": "admiral-healthcheck",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Admiral Weekly Health Check — kontrollerar och reparerar, föreslår inget",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "start": "node bin/run.mjs --trigger=scheduled",
+    "manual": "node bin/run.mjs --trigger=manual",
+    "watchdog": "node bin/watchdog.mjs"
+  },
+  "dependencies": {
+    "puppeteer-core": "25.13.0"
+  }
+}
