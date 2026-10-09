@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { storeToken } from './lib/token-store.js';
+import { verifyState } from './lib/oauth-state.js';
 import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -16,10 +18,7 @@ const handler = async (event) => {
 
   let userId;
   try {
-    const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
-    userId = decoded.userId;
-    // Reject stale states (>10 min)
-    if (Date.now() - decoded.ts > 600000) throw new Error('State expired');
+    userId = verifyState(state, process.env.JWT_SECRET).userId; // signerad, högst 10 min gammal
   } catch {
     return { statusCode: 302, headers: { Location: '/setup-wizard.html?meta_error=invalid_state' } };
   }
@@ -48,14 +47,8 @@ const handler = async (event) => {
     const meRes = await fetch(`https://graph.facebook.com/v25.0/me?access_token=${accessToken}`);
     const meData = await meRes.json();
 
-    // Upsert token for this user
-    await supabase.from('meta_tokens').upsert({
-      user_id: userId,
-      access_token: accessToken,
-      expires_at: expiresAt,
-      meta_user_id: meData.id || null,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id' });
+    // Spara token krypterat (Supabase Vault) för denna användare
+    await storeToken(supabase, { userId, accessToken, expiresAt, metaUserId: meData.id || null });
 
     return { statusCode: 302, headers: { Location: '/setup-wizard.html?meta_connected=1' } };
   } catch (err) {
