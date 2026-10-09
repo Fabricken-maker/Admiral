@@ -179,6 +179,30 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/proposals"
+  to = "/.netlify/functions/proposals"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/proposals/*"
+  to = "/.netlify/functions/proposals"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/write-settings"
+  to = "/.netlify/functions/write-settings"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/write-settings/*"
+  to = "/.netlify/functions/write-settings"
+  status = 200
+  force = true
+
 [functions."budget-adjust"]
   schedule = "0 6 * * *"
 
@@ -187,6 +211,12 @@
 
 [functions."weekly-sync"]
   schedule = "15 5 * * *"
+
+[functions."proposals-maintenance"]
+  schedule = "*/15 * * * *"
+
+[functions."recommendations-sync"]
+  schedule = "45 4 * * *"
 
 # SPA routing - all other paths go to index.html
 [[redirects]]
