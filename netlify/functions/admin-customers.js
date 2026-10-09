@@ -23,7 +23,7 @@ export const handler = async (event) => {
   // Hämta alla kunder med token-status och aktiva budgetplaner
   const { data: users } = await supabase
     .from('users')
-    .select('id, email, name, created_at')
+    .select('id, email, company_name, created_at')
     .neq('email', ADMIN_EMAIL)
     .order('created_at', { ascending: false });
 
@@ -42,7 +42,7 @@ export const handler = async (event) => {
     return {
       id: u.id,
       email: u.email,
-      name: u.name,
+      name: u.company_name,
       created_at: u.created_at,
       meta_connected: !!token,
       token_days_left: daysLeft,

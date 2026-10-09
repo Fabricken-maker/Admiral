@@ -135,7 +135,9 @@ export const handler = async (event) => {
   }
 
   const budgetPlanId = event.queryStringParameters?.budget_plan_id;
-  const days = parseInt(event.queryStringParameters?.days || '30');
+  // Begränsa days till rimligt fönster (1–365) för att skydda GA4-quota
+  const rawDays = parseInt(event.queryStringParameters?.days || '30');
+  const days = Number.isFinite(rawDays) ? Math.min(365, Math.max(1, rawDays)) : 30;
   const bokaEvent = process.env.GA4_BOKA_EVENT || 'boka_click';
 
   // Verifiera att användaren har tillgång till denna budget_plan

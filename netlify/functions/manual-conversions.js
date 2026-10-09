@@ -24,6 +24,29 @@ export const handler = async (event) => {
     return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Unauthorized' }) };
   }
 
+  // ── GET — lista kampanjer för rollen ──────────────────────
+  if (event.httpMethod === 'GET' && event.queryStringParameters?.list_plans === '1') {
+    let planQ = supabase
+      .from('budget_plans')
+      .select('id, campaign_name, user_id, status')
+      .order('id', { ascending: false });
+    if (!isAdmin) planQ = planQ.eq('user_id', userId);
+    const { data: plans, error: pe } = await planQ;
+    if (pe) return { statusCode: 500, headers: cors, body: JSON.stringify({ error: pe.message }) };
+
+    // För admin: berika med kundnamn
+    if (isAdmin && plans?.length) {
+      const userIds = [...new Set(plans.map(p => p.user_id))];
+      const { data: users } = await supabase.from('users').select('id, company_name, email').in('id', userIds);
+      const uMap = Object.fromEntries((users || []).map(u => [u.id, u]));
+      for (const p of plans) {
+        const u = uMap[p.user_id];
+        p.customer_name = u?.company_name || u?.email || `User #${p.user_id}`;
+      }
+    }
+    return { statusCode: 200, headers: cors, body: JSON.stringify({ plans: plans || [] }) };
+  }
+
   // ── GET — hämta konverteringar ────────────────────────────
   if (event.httpMethod === 'GET') {
     const bpId = event.queryStringParameters?.budget_plan_id;
@@ -52,13 +75,24 @@ export const handler = async (event) => {
     return { statusCode: 200, headers: cors, body: JSON.stringify({ conversions: data, totals }) };
   }
 
-  // ── POST — lägg till konvertering (admin) ─────────────────
+  // ── POST — lägg till konvertering (admin + kund på egna planer) ──
   if (event.httpMethod === 'POST') {
-    if (!isAdmin) return { statusCode: 403, headers: cors, body: JSON.stringify({ error: 'Kräver admin' }) };
-
     const { budget_plan_id, conversion_date, courses_sold, revenue_sek, notes } = JSON.parse(event.body || '{}');
     if (!budget_plan_id || !conversion_date) {
       return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'budget_plan_id och conversion_date krävs' }) };
+    }
+
+    // Spärra framtida datum
+    const today = new Date().toISOString().slice(0, 10);
+    if (conversion_date > today) {
+      return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Datum får inte ligga i framtiden' }) };
+    }
+
+    // Kunder får bara skriva på egna planer
+    if (!isAdmin) {
+      const { data: own } = await supabase
+        .from('budget_plans').select('id').eq('id', budget_plan_id).eq('user_id', userId).single();
+      if (!own) return { statusCode: 403, headers: cors, body: JSON.stringify({ error: 'Åtkomst nekad till kampanj' }) };
     }
 
     const { data, error } = await supabase
