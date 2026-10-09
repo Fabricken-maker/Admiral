@@ -967,6 +967,54 @@
       .wk-cmp.is-insufficient .wk-ref { margin-left: 0; }
     }
 
+    /* ─── FÖRSLAG (Modul D) ───────────────────────────────── */
+    .pr, #pr-confirm { --pr-accent: #00d9ff; --pr-worse: #e39a9a; }
+    .pr { padding: 1.4rem 1.5rem 1.3rem; }
+    #pr-confirm .modal { width: calc(100% - 2rem); }
+    .pr-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+    .pr-controls { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .pr-btn {
+      font: inherit; font-size: .78rem; font-weight: 600; border-radius: 8px; padding: .45rem .95rem; cursor: pointer;
+      border: 1px solid var(--border-hover); background: transparent; color: var(--t60);
+    }
+    .pr-btn.primary { background: var(--pr-accent); border-color: var(--pr-accent); color: #04121c; }
+    .pr-btn:disabled { opacity: .5; cursor: default; }
+    .pr-btn:focus-visible { outline: 2px solid var(--pr-accent); outline-offset: 2px; }
+    .pr-stop { font: inherit; font-size: .72rem; background: transparent; border: 1px solid var(--border); color: var(--t60); border-radius: 7px; padding: .32rem .7rem; cursor: pointer; }
+    .pr-stop.on { border-color: var(--pr-worse); color: var(--pr-worse); }
+    .pr-state { font-size: .8rem; color: var(--pr-worse); border: 1px solid rgba(227,154,154,.35); border-radius: 9px; padding: .6rem .8rem; margin-bottom: 1rem; }
+    .pr-item { border-top: 1px solid var(--border); padding: 1rem 0; }
+    .pr-item:first-child { border-top: 0; padding-top: .2rem; }
+    .pr-title { font-size: .9rem; font-weight: 600; line-height: 1.4; }
+    .pr-why { font-size: .8rem; color: var(--t60); margin-top: .3rem; line-height: 1.45; }
+    .pr-exp { font-size: .8rem; margin-top: .25rem; color: #fff; }
+    .pr-exp b { color: var(--t40); font-weight: 600; }
+    .pr-actions { display: flex; align-items: center; gap: .5rem; margin-top: .75rem; flex-wrap: wrap; }
+    .pr-valid { margin-left: auto; font-size: .7rem; color: var(--t40); }
+    .pr-result { font-size: .78rem; margin-top: .6rem; }
+    .pr-result.done { color: var(--pr-accent); }
+    .pr-result.failed { color: var(--pr-worse); }
+    .pr-result.verifying { color: var(--t60); }
+    .pr-more { font: inherit; font-size: .75rem; background: none; border: 0; color: var(--t60); cursor: pointer; padding: .2rem 0 .6rem; }
+    .pr-recent-title { font-size: .66rem; text-transform: uppercase; letter-spacing: .1em; color: var(--t40); font-weight: 600; margin: .8rem 0 .4rem; }
+    .pr-row { display: flex; align-items: baseline; gap: .6rem; font-size: .76rem; padding: .35rem 0; color: var(--t60); }
+    .pr-row .st { min-width: 6.5rem; font-weight: 600; }
+    .pr-row .st.done { color: var(--pr-accent); }
+    .pr-row .st.failed { color: var(--pr-worse); }
+    .pr-row .tx { flex: 1; }
+    .pr-row .undo { font: inherit; font-size: .72rem; background: none; border: 0; color: var(--pr-accent); cursor: pointer; padding: 0; }
+    .pr-empty { font-size: .8rem; color: var(--t40); }
+    .pr-admin { margin-top: 1rem; font-size: .78rem; color: var(--t60); }
+    .pr-admin summary { cursor: pointer; color: var(--t40); }
+    .pr-admin-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: .5rem; margin-top: .6rem; align-items: end; }
+    .pr [hidden] { display: none !important; }
+    @media (max-width: 600px) {
+      .pr { padding: 1.1rem 1rem; }
+      .pr-head { flex-direction: column; align-items: flex-start; }
+      .pr-valid { margin-left: 0; width: 100%; }
+      .pr-admin-grid { grid-template-columns: 1fr 1fr; }
+    }
+
     /* ─── RESPONSIVE ──────────────────────────────────────── */
     @media (max-width: 1200px) {
       .kpi-row { grid-template-columns: repeat(3, 1fr); }
@@ -1111,6 +1159,19 @@
   </div>
 
   <!-- ── BUDGET MODAL ─────────────────────────────────────── -->
+  <!-- Bekräftelse av förslag (Modul D) -->
+  <div class="modal-backdrop" id="pr-confirm" role="dialog" aria-modal="true" aria-labelledby="pr-confirm-title">
+    <div class="modal">
+      <div class="modal-title" id="pr-confirm-title">Bekräfta ändringen</div>
+      <div class="modal-sub" id="pr-confirm-who"></div>
+      <p id="pr-confirm-text" style="font-size:1rem;font-weight:600;line-height:1.45;margin-bottom:1.4rem"></p>
+      <div style="display:flex;gap:.6rem;justify-content:flex-end">
+        <button class="pr-btn" onclick="closePrConfirm()">Avbryt</button>
+        <button class="pr-btn primary" id="pr-confirm-btn">Bekräfta</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="budget-modal">
     <div class="modal">
       <div class="modal-title">⚡ Aktivera Admiral-budget</div>
@@ -1252,6 +1313,32 @@
             </div>
           </div>
           <div class="wk-note" id="wk-note" hidden></div>
+        </section>
+
+        <!-- FÖRSLAG (Modul D) -->
+        <section class="panel pr" id="proposals-panel" style="display:none" aria-labelledby="pr-title">
+          <div class="pr-head">
+            <h2 class="wk-title" id="pr-title">Förslag</h2>
+            <div class="pr-controls">
+              <select id="pr-customer" class="wk-select" hidden aria-label="Kund" onchange="loadProposals()"></select>
+              <button class="pr-stop" id="pr-stop" onclick="toggleKillSwitch()">Stoppa alla ändringar</button>
+            </div>
+          </div>
+          <div class="pr-state" id="pr-state" role="status" hidden></div>
+          <div id="pr-pending"></div>
+          <button class="pr-more" id="pr-more" hidden onclick="prShowAll = true; renderProposals(prData)"></button>
+          <div id="pr-recent"></div>
+          <details class="pr-admin" id="pr-admin" hidden>
+            <summary>Skapa förslag (Fabricken)</summary>
+            <div class="pr-admin-grid">
+              <label>Typ<select class="form-select" id="pr-new-type"><option value="budget_change">Dagsbudget</option><option value="ad_status">Annonsstatus</option></select></label>
+              <label>Nivå<select class="form-select" id="pr-new-level"><option value="adset">Annonsuppsättning</option><option value="campaign">Kampanj</option><option value="ad">Annons</option></select></label>
+              <label>Objekt-id<input class="form-input" id="pr-new-object" inputmode="numeric"></label>
+              <label>Ny dagsbudget (kr) / status<input class="form-input" id="pr-new-value" placeholder="t.ex. 60 eller PAUSED"></label>
+              <button class="pr-btn" onclick="createProposal()">Skapa</button>
+            </div>
+            <div class="pr-result" id="pr-new-result"></div>
+          </details>
         </section>
 
         <!-- KPI ROW -->
@@ -1588,6 +1675,7 @@
 
   <script>
     // ── AUTH ──────────────────────────────────────────────────
+    const _isAdminUser = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}').email === 'admin@admiralai.se'; } catch { return false; } })();
     (function() {
       const token = localStorage.getItem('token');
       if (!token) { window.location.href = '/'; return; }
@@ -2367,7 +2455,177 @@
       }));
     }
 
+    // ── Förslag (Modul D) ─────────────────────────────────────
+    // Kunden godkänner eller avstår. Efter Godkänn visas en sista bekräftelse med beloppet.
+    // Ändringen skickas av servern genom skrivgrinden, som verifierar mot Meta och loggar.
+    let prData = null;
+    let prShowAll = false;
+    let prCustomersLoaded = false;
+    const PR_MAX_VISIBLE = 3;
+
+    function prHeaders(json) {
+      const h = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
+      if (json) h['Content-Type'] = 'application/json';
+      return h;
+    }
+    function prCustomer() {
+      const sel = document.getElementById('pr-customer');
+      return _isAdminUser && sel.value ? sel.value : null;
+    }
+    function prDate(iso) {
+      return new Date(iso).toLocaleString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm' });
+    }
+
+    async function loadProposals() {
+      const panel = document.getElementById('proposals-panel');
+      try {
+        if (_isAdminUser && !prCustomersLoaded) {
+          const r = await fetch('/api/proposals?customers=1', { headers: prHeaders() }).then(r => r.json());
+          const sel = document.getElementById('pr-customer');
+          sel.innerHTML = (r.customers || []).map(c => `<option value="${c.user_id}">${escapeHtml(c.name)}</option>`).join('');
+          sel.hidden = !(r.customers || []).length;
+          prCustomersLoaded = true;
+        }
+        const c = prCustomer();
+        const res = await fetch('/api/proposals' + (c ? `?user_id=${c}` : ''), { headers: prHeaders() });
+        if (!res.ok) { panel.style.display = 'none'; return; }
+        prData = await res.json();
+        const visible = prData.settings.configured && (prData.pending.length || prData.recent.length || prData.settings.kill_switch || _isAdminUser);
+        panel.style.display = visible ? '' : 'none';
+        if (visible) renderProposals(prData);
+      } catch (e) {
+        panel.style.display = 'none';
+      }
+    }
+
+    function renderProposals(d) {
+      const state = document.getElementById('pr-state');
+      const stop = document.getElementById('pr-stop');
+      stop.classList.toggle('on', d.settings.kill_switch);
+      stop.textContent = d.settings.kill_switch ? (_isAdminUser ? 'Släpp nödstoppet' : 'Ändringar stoppade') : 'Stoppa alla ändringar';
+      stop.disabled = d.settings.kill_switch && !_isAdminUser;
+      if (d.settings.kill_switch) {
+        state.hidden = false;
+        state.textContent = `Alla ändringar i Meta är stoppade sedan ${prDate(d.settings.kill_switch_at)}. Inga förslag kan genomföras.`;
+      } else if (!d.settings.writes_enabled) {
+        state.hidden = false;
+        state.textContent = 'Admiral har inte skrivbehörighet för det här kontot. Förslag kan inte genomföras.';
+      } else state.hidden = true;
+
+      const list = prShowAll ? d.pending : d.pending.slice(0, PR_MAX_VISIBLE);
+      const pending = document.getElementById('pr-pending');
+      pending.innerHTML = list.length ? list.map(p => `
+        <div class="pr-item" id="pr-${p.id}">
+          <div class="pr-title">${escapeHtml(p.title)}</div>
+          <div class="pr-why">${escapeHtml(p.reason)}</div>
+          ${p.expected ? `<div class="pr-exp"><b>Förväntat:</b> ${escapeHtml(p.expected)}</div>` : ''}
+          <div class="pr-actions">
+            <button class="pr-btn primary" onclick="openPrConfirm(${p.id})" ${d.settings.kill_switch || !d.settings.writes_enabled ? 'disabled' : ''}>Godkänn</button>
+            <button class="pr-btn" onclick="rejectProposal(${p.id})">Avstå</button>
+            <span class="pr-valid">Gäller till ${prDate(p.valid_until)}</span>
+          </div>
+          <div class="pr-result" id="pr-res-${p.id}" role="status"></div>
+        </div>`).join('') : '<div class="pr-empty">Inga förslag just nu.</div>';
+      const more = document.getElementById('pr-more');
+      more.hidden = prShowAll || d.pending.length <= PR_MAX_VISIBLE;
+      more.textContent = `Visa fler (${d.pending.length - PR_MAX_VISIBLE})`;
+
+      document.getElementById('pr-recent').innerHTML = d.recent.length ? `<div class="pr-recent-title">Senaste ändringar</div>` + d.recent.map(w => `
+        <div class="pr-row">
+          <span class="st ${w.status}">${w.status === 'done' ? '✓ ' : w.status === 'failed' ? '✕ ' : '… '}${escapeHtml(w.status_label || '')}</span>
+          <span class="tx">${escapeHtml(w.title || '')}<br><span style="color:var(--t40)">${escapeHtml(w.by)} · ${prDate(w.at)}${w.error ? ` · ${escapeHtml(w.error)}` : ''}</span></span>
+          ${w.undoable ? `<button class="undo" onclick="undoWrite(${w.write_id}, this)">Ångra</button>` : ''}
+        </div>`).join('') : '';
+      document.getElementById('pr-admin').hidden = !_isAdminUser;
+    }
+
+    let prPendingConfirm = null;
+    function openPrConfirm(id) {
+      const p = prData.pending.find(x => x.id === id);
+      if (!p) return;
+      prPendingConfirm = p;
+      document.getElementById('pr-confirm-text').textContent = p.confirmation_text;
+      document.getElementById('pr-confirm-who').textContent = prData.on_behalf ? 'Du godkänner å kundens vägnar. Det loggas.' : 'Ändringen görs i Meta direkt efter bekräftelsen.';
+      const btn = document.getElementById('pr-confirm-btn');
+      btn.disabled = false;
+      btn.textContent = 'Bekräfta';
+      btn.onclick = () => approveProposal(p);
+      document.getElementById('pr-confirm').classList.add('open');
+      btn.focus();
+    }
+    function closePrConfirm() {
+      document.getElementById('pr-confirm').classList.remove('open');
+      prPendingConfirm = null;
+    }
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && prPendingConfirm) closePrConfirm(); });
+
+    async function approveProposal(p) {
+      const btn = document.getElementById('pr-confirm-btn');
+      btn.disabled = true;
+      btn.textContent = 'Verifierar…';
+      const out = document.getElementById(`pr-res-${p.id}`);
+      try {
+        const res = await fetch(`/api/proposals/${p.id}/approve`, { method: 'POST', headers: prHeaders(true), body: JSON.stringify({ confirmation_text: p.confirmation_text }) });
+        const r = await res.json();
+        closePrConfirm();
+        if (out) {
+          out.className = `pr-result ${r.status || 'failed'}`;
+          out.textContent = r.status === 'done' ? 'Genomförd. Meta visar det nya värdet.'
+            : r.status === 'verifying' ? 'Verifierar. Meta har tagit emot ändringen.'
+            : `Misslyckades: ${r.error || 'okänt fel'}`;
+        }
+        setTimeout(loadProposals, 1800);
+      } catch (e) {
+        closePrConfirm();
+        if (out) { out.className = 'pr-result failed'; out.textContent = `Misslyckades: ${e.message}`; }
+      }
+    }
+
+    async function rejectProposal(id) {
+      await fetch(`/api/proposals/${id}/reject`, { method: 'POST', headers: prHeaders(true), body: '{}' });
+      loadProposals();
+    }
+
+    async function undoWrite(writeId, btn) {
+      if (!confirm('Ångra ändringen? Det tidigare värdet återställs i Meta.')) return;
+      btn.disabled = true;
+      btn.textContent = 'Ångrar…';
+      const r = await fetch(`/api/proposals/writes/${writeId}/undo`, { method: 'POST', headers: prHeaders(true), body: '{}' }).then(r => r.json()).catch(e => ({ error: e.message }));
+      if (r.status !== 'done' && r.status !== 'verifying') alert(`Kunde inte ångra: ${r.error || 'okänt fel'}`);
+      loadProposals();
+    }
+
+    async function toggleKillSwitch() {
+      const on = prData?.settings.kill_switch;
+      if (!on && !confirm('Stoppa alla ändringar i Meta för kontot? Inga förslag kan genomföras förrän Fabricken släpper stoppet.')) return;
+      const c = prCustomer();
+      const body = JSON.stringify(c ? { user_id: Number(c) } : {});
+      await fetch(`/api/write-settings/${on ? 'resume' : 'stop'}`, { method: 'POST', headers: prHeaders(true), body });
+      loadProposals();
+    }
+
+    async function createProposal() {
+      const out = document.getElementById('pr-new-result');
+      const type = document.getElementById('pr-new-type').value;
+      const value = document.getElementById('pr-new-value').value.trim();
+      const body = {
+        user_id: prCustomer() ? Number(prCustomer()) : undefined,
+        type, object_type: document.getElementById('pr-new-level').value,
+        object_id: document.getElementById('pr-new-object').value.trim(),
+      };
+      if (type === 'budget_change') body.daily_budget_sek = Number(value.replace(',', '.'));
+      else body.status = value.toUpperCase();
+      out.className = 'pr-result verifying';
+      out.textContent = 'Skapar…';
+      const res = await fetch('/api/proposals', { method: 'POST', headers: prHeaders(true), body: JSON.stringify(body) });
+      const r = await res.json();
+      out.className = `pr-result ${res.ok ? 'done' : 'failed'}`;
+      out.textContent = res.ok ? `Förslaget är skapat: ${r.proposal.title}` : r.error;
+      if (res.ok) loadProposals();
+    }
+
     loadWeekly();
+    loadProposals();
 
     // ── Uppdatera-knapp ──────────────────────────────────────
     async function refreshAll() {
@@ -2376,7 +2634,7 @@
       btn.disabled = true;
       tlLoaded = false; // återladda timeline vid nästa öppning
       notifLoaded = false;
-      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus(), loadInsights(), loadGoals(), loadFunnel(), loadAssets(), loadWeekly(true), loadCampaigns(_selectedAccountId)]);
+      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus(), loadInsights(), loadGoals(), loadFunnel(), loadAssets(), loadWeekly(true), loadProposals(), loadCampaigns(_selectedAccountId)]);
       setTimeout(() => { btn.classList.remove('spinning'); btn.disabled = false; }, 600);
     }
 
@@ -2954,17 +3212,11 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Aktivering misslyckades');
 
-        // Update badge to show active
-        document.querySelectorAll('.budget-badge').forEach(b => {
-          if (b.getAttribute('onclick')?.includes(_activeCampaignId)) {
-            b.textContent = `⚡ ${(budget/1000).toFixed(0)}k/mån`;
-            b.classList.add('active');
-            b.onclick = null;
-          }
-        });
-
         closeBudgetModal();
-        alert(`✅ Admiral aktiverat!\n${data.adsets_updated} annonsgrupper uppdaterade\nDaglig budget: ${parseFloat(data.daily_budget_sek).toLocaleString('sv-SE')} kr`);
+        const created = (data.proposals || []).filter(p => p.proposal_id).length;
+        const rejected = (data.proposals || []).filter(p => p.rejected);
+        alert(`Budgetplanen är sparad.\n${created} förslag väntar på godkännande under Förslag.${rejected.length ? `\n${rejected.length} avvisades: ${rejected[0].rejected}` : ''}`);
+        loadProposals();
       } catch (e) {
         alert(`❌ ${e.message}`);
         btn.textContent = 'Aktivera →';
@@ -3043,8 +3295,6 @@
           const isPaused = c.status === 'PAUSED';
           const toggleClass = isActive ? 'active' : isPaused ? 'paused' : 'paused';
           const toggleLabel = isActive ? '● Aktiv' : isPaused ? '⏸ Pausad' : c.status;
-          const nextStatus = isActive ? 'PAUSED' : 'ACTIVE';
-          const nextLabel = isActive ? 'Pausa' : 'Aktivera';
 
           // ROAS: använd Metas pixel-ROAS först, fallback till manuell
           const manual = findManual(c.name);
@@ -3073,20 +3323,16 @@
               </div>
             </td>
             <td>
-              <button class="status-toggle ${toggleClass}" id="st-${escapeHtml(c.id)}"
-                data-action="toggle-status" data-cid="${escapeHtml(c.id)}" data-next="${nextStatus}"
-                title="${nextLabel} kampanj">
-                ${toggleLabel}
-              </button>
+              <span class="status-toggle ${toggleClass}" id="st-${escapeHtml(c.id)}" style="cursor:default">${toggleLabel}</span>
             </td>
             <td>${spend}</td>
             <td class="${roasClass}">${roasStr}</td>
             <td class="${konvClass}">${konvStr}</td>
             <td>${totalConv > 0 ? totalConv : '—'}</td>
-            <td><span class="budget-badge" data-action="open-budget"
+            <td>${_isAdminUser ? `<span class="budget-badge" data-action="open-budget"
                 data-cname="${escapeHtml(c.name)}"
                 data-cid="${escapeHtml(c.id)}"
-                data-aaid="${escapeHtml(c.ad_account_id)}">+ Budget</span></td>
+                data-aaid="${escapeHtml(c.ad_account_id)}">+ Budget</span>` : ''}</td>
           </tr>`;
         }).join('');
 
@@ -3097,9 +3343,7 @@
             const el = e.target.closest('[data-action]');
             if (!el) return;
             const a = el.dataset.action;
-            if (a === 'toggle-status') {
-              toggleCampaignStatus(el.dataset.cid, el.dataset.next, el);
-            } else if (a === 'open-budget') {
+            if (a === 'open-budget') {
               openBudgetModal(el.dataset.cname, el.dataset.cid, el.dataset.aaid);
             }
           });
@@ -3192,34 +3436,6 @@
         `).join('');
       } catch (e) {
         // Silently fail — report panel just stays hidden
-      }
-    }
-
-    async function toggleCampaignStatus(campaignId, newStatus, btn) {
-      btn.disabled = true;
-      btn.textContent = '…';
-      try {
-        const res = await fetch('/api/meta/campaign/update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({ campaign_id: campaignId, status: newStatus })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Fel');
-
-        // Update button to reflect new state
-        const isNowActive = newStatus === 'ACTIVE';
-        btn.className = `status-toggle ${isNowActive ? 'active' : 'paused'}`;
-        btn.textContent = isNowActive ? '● Aktiv' : '⏸ Pausad';
-        btn.title = isNowActive ? 'Pausa kampanj' : 'Aktivera kampanj';
-        btn.onclick = () => toggleCampaignStatus(campaignId, isNowActive ? 'PAUSED' : 'ACTIVE', btn);
-      } catch (e) {
-        alert(`❌ ${e.message}`);
-      } finally {
-        btn.disabled = false;
       }
     }
 

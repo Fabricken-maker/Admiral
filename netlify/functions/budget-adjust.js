@@ -1,9 +1,16 @@
 /**
  * Admiral Budget Adjuster — körs dagligen via Netlify Scheduled Functions
- * Justerar ad set-budgetar baserat på ROAS + pacing mot månadsplan
+ * Räknar ut nya ad set-/kampanjbudgetar från ROAS + pacing mot månadsplan.
+ *
+ * Modul D: ändrar ALDRIG något i Meta själv. Varje budgetändring blir ett förslag som kunden
+ * (eller Fabricken å kundens vägnar) godkänner i dashboarden. Skrivningen sker sedan genom
+ * skrivgrinden (lib/meta-write.js) med gränser, verifiering och Ångra.
  */
 import { createClient } from '@supabase/supabase-js';
 import { getMetaToken } from './lib/get-meta-token.js';
+import { createRepo } from './lib/write-repo.js';
+import { tokensForCustomer } from './lib/token-store.js';
+import { buildProposal, ProposalRejected } from './lib/build-proposal.js';
 import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -59,7 +66,24 @@ const handler = async () => {
 
     const results = [];
 
+    const repo = createRepo(supabase);
+    // Ett budgetförslag i stället för en skrivning. Avvisas förslaget (gränser, ingen
+    // skrivbehörighet, nödstopp) noteras skälet i resultatet.
+    const propose = async (plan, objectType, objectId, dailyCents) => {
+      try {
+        const p = await buildProposal({
+          supabase, repo, tokens: await tokensForCustomer(supabase, plan.user_id),
+          spec: { userId: plan.user_id, type: 'budget_change', objectType, objectId, dailyBudgetSek: dailyCents / 100, source: 'budget_adjust' },
+        });
+        return { object_id: objectId, proposal_id: p.id };
+      } catch (e) {
+        if (e instanceof ProposalRejected) return { object_id: objectId, rejected: e.message };
+        throw e;
+      }
+    };
+
     for (const plan of plans) {
+      const proposals = [];
       try {
         // Hämta kundens egna Meta-token
         const token = await getMetaToken(plan.user_id);
@@ -129,16 +153,7 @@ const handler = async () => {
             const currentCents  = parseInt(campData.daily_budget);
             const diff = Math.abs(newDailyCents - currentCents) / Math.max(1, currentCents);
             if (diff > 0.05 && newDailyCents >= 50) {
-              await withRetry(async () => {
-                const r = await fetch(`https://graph.facebook.com/v25.0/${plan.campaign_id}`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ daily_budget: newDailyCents, access_token: token })
-                });
-                const d = await r.json();
-                if (d.error) throw new Error(d.error.message);
-                return d;
-              }, `update campaign daily_budget ${plan.campaign_id}`);
+              proposals.push(await propose(plan, 'campaign', plan.campaign_id, newDailyCents));
             }
           }
           // Vid lifetime_budget: rör ej, Meta hanterar pacing själv
@@ -181,25 +196,15 @@ const handler = async () => {
             return { ...as, new_daily_cents: newDailyBudgetCents, roas };
           });
 
-          await Promise.all(
-            updatedAllocs.map(as =>
-              withRetry(async () => {
-                const r = await fetch(`https://graph.facebook.com/v25.0/${as.ad_set_id}`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ daily_budget: as.new_daily_cents, access_token: token })
-                });
-                const d = await r.json();
-                if (d.error) throw new Error(d.error.message);
-                return d;
-              }, `update adset ${as.ad_set_id}`)
-            )
-          );
+          for (const as of updatedAllocs) {
+            const diff = Math.abs(as.new_daily_cents - Number(as.daily_budget_cents || 0)) / Math.max(1, Number(as.daily_budget_cents || 0));
+            if (diff > 0.05 && as.new_daily_cents >= 50) proposals.push(await propose(plan, 'adset', as.ad_set_id, as.new_daily_cents));
+          }
 
+          // Budgeten i ad_set_allocations ändras inte här: den ändras först när förslaget genomförts.
           await Promise.all(
             updatedAllocs.map(as =>
               supabase.from('ad_set_allocations').update({
-                daily_budget_cents: as.new_daily_cents,
                 allocation_pct: totalRoas > 0 ? (as.roas / totalRoas) * 100 : 0,
                 last_roas: as.roas,
                 last_spend: totalSpentSEK / Math.max(1, allocs.length),
@@ -249,7 +254,8 @@ const handler = async () => {
           real_roas: Number(realRoas.toFixed(2)),
           budget_left: budgetLeft,
           new_daily_total: newDailyTotal,
-          pacing_ratio: pacingRatio
+          pacing_ratio: pacingRatio,
+          proposals
         });
       } catch (planErr) {
         results.push({ plan_id: plan.id, error: planErr.message });
