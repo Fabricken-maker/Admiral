@@ -39,6 +39,10 @@ async function renderDashboard(ctx, admin) {
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 1440, height: 1000 });
+    // Dashboardens service worker (PWA) tar kontroll mitt i laddningen (skipWaiting + clients.claim).
+    // API-svar som går via den kan då inte läsas av webbläsarstyrningen, och kontrollen missar dem.
+    // API-anropen är network-only i service workern, så sidan beter sig likadant utan den.
+    await page.setBypassServiceWorker(true);
     await page.setRequestInterception(true);
     page.on('request', (req) => {
       const m = req.method();
@@ -77,6 +81,18 @@ async function renderDashboard(ctx, admin) {
 
     await page.goto(`${config.baseUrl}/dashboard.html`, { waitUntil: 'networkidle0', timeout: 90_000 });
     await new Promise((r) => setTimeout(r, 1500)); // låt Chart.js-animationer och sena fetch-kedjor landa
+    // Veckokortet och förslagskortet hämtar i två steg (kundlista, sedan kundens data). Vänta tills
+    // båda kedjorna landat, högst 15 s, så att en långsam sidladdning inte ser ut som ett fel.
+    await page.waitForFunction(() => {
+      const done = (panelId, markerId) => {
+        const panel = document.getElementById(panelId);
+        if (!panel) return true;
+        const marker = document.getElementById(markerId);
+        return panel.style.display !== 'none' ? !!marker && marker.textContent.trim() !== '' : true;
+      };
+      return typeof loadWeekly !== 'function' || (done('weekly-panel', 'wk-period') && done('proposals-panel', 'pr-pending'));
+    }, { timeout: 15_000 }).catch(() => {});
+    await new Promise((r) => setTimeout(r, 500));
 
     snap.dom = await page.evaluate(() => {
       const text = (id) => document.getElementById(id)?.textContent.trim() ?? null;
@@ -182,7 +198,8 @@ export function evaluate(snap, where) {
   const accounts = find('/api/meta/accounts')?.accounts;
   const campaigns = find('/api/meta/campaigns')?.campaigns;
   const timeline = find('/api/timeline');
-  const conversions = find('/api/conversions?') ?? api['/api/conversions'];
+  // KPI-korten bygger på /api/conversions utan parametrar (summorna); ?list_plans=1 saknar summor.
+  const conversions = api['/api/conversions'] ?? find('/api/conversions?');
   const ga4 = find('/api/ga4/insights');
   const dom = snap.dom || {};
 
