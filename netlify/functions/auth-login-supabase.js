@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getCorsHeaders } from './lib/cors.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -22,7 +23,7 @@ async function incrementRateLimit(key, existing) {
   );
 }
 
-export const handler = async (event, context) => {
+const handler = async (event, context) => {
   const corsHeaders = getCorsHeaders(event, 'POST, OPTIONS');
 
   if (event.httpMethod === 'OPTIONS') {
@@ -69,11 +70,11 @@ export const handler = async (event, context) => {
       };
     }
 
-    // ── Hämta användare ───────────────────────────────────────
+    // ── Hämta användare (case-insensitive match) ─────────────
     const { data: user, error: queryError } = await supabase
       .from('users')
       .select('*')
-      .eq('email', email)
+      .ilike('email', email)
       .single();
 
     if (queryError || !user) {
@@ -118,6 +119,26 @@ export const handler = async (event, context) => {
 
     // Update last login
     await supabase.from('users').update({ last_login_at: new Date().toISOString() }).eq('id', user.id);
+
+    // ── Auto-detect setup completion ──────────────────────────
+    // Kraven: Meta-token finns + minst en budget_plan finns
+    let setupCompleted = user.setup_completed ?? false;
+    if (!setupCompleted) {
+      try {
+        const [{ data: metaTok }, { data: plans }] = await Promise.all([
+          supabase.from('meta_tokens').select('user_id').eq('user_id', user.id).maybeSingle(),
+          supabase.from('budget_plans').select('id').eq('user_id', user.id).limit(1)
+        ]);
+        if (metaTok && plans && plans.length > 0) {
+          setupCompleted = true;
+          // Persistera så vi slipper kolla nästa gång
+          await supabase.from('users').update({ setup_completed: true }).eq('id', user.id);
+        }
+      } catch (e) {
+        console.error('Setup auto-detect failed:', e.message);
+      }
+    }
+    user.setup_completed = setupCompleted;
 
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET;
@@ -166,3 +187,5 @@ export const handler = async (event, context) => {
     };
   }
 };
+
+export default modern(handler);

@@ -3,10 +3,11 @@ import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendEmail, buildWelcomeEmail } from './lib/send-email.js';
 import { getCorsHeaders } from './lib/cors.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-export const handler = async (event, context) => {
+const handler = async (event, context) => {
   const corsHeaders = getCorsHeaders(event, 'POST, OPTIONS');
 
   if (event.httpMethod === 'OPTIONS') {
@@ -169,3 +170,5 @@ export const handler = async (event, context) => {
     };
   }
 };
+
+export default modern(handler);

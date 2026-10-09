@@ -5,17 +5,13 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
+import { getCorsHeaders } from './lib/cors.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
-const CORS = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-};
-
-export const handler = async (event) => {
+const handler = async (event) => {
+  const CORS = { 'Content-Type': 'application/json', ...getCorsHeaders(event, 'GET, OPTIONS') };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' };
 
   const authHeader = event.headers['authorization'] || event.headers['Authorization'] || '';
@@ -40,7 +36,7 @@ export const handler = async (event) => {
     .select(`
       id, campaign_name, monthly_budget, total_spent,
       status, month_start, month_end,
-      users(id, name, company_name, email)
+      users(id, company_name, email)
     `)
     .lte('month_start', windowEnd)
     .gte('month_end',   windowStart)
@@ -79,7 +75,7 @@ export const handler = async (event) => {
   const campaigns = (plans || []).map(p => ({
     id:           p.id,
     name:         p.campaign_name,
-    customer:     p.users?.name || p.users?.company_name || p.users?.email || '—',
+    customer:     p.users?.company_name || p.users?.email || '—',
     status:       p.status,
     month_start:  p.month_start,
     month_end:    p.month_end,
@@ -101,3 +97,5 @@ export const handler = async (event) => {
     })
   };
 };
+
+export default modern(handler);

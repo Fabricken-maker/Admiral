@@ -1,11 +1,12 @@
 import jwt from 'jsonwebtoken';
 import { createClient } from '@supabase/supabase-js';
 import { getCorsHeaders } from './lib/cors.js';
+import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const ADMIN_EMAIL = 'admin@admiralai.se';
 
-export const handler = async (event) => {
+const handler = async (event) => {
   const cors = getCorsHeaders(event, 'GET, OPTIONS');
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors };
 
@@ -23,7 +24,7 @@ export const handler = async (event) => {
   // Hämta alla kunder med token-status och aktiva budgetplaner
   const { data: users } = await supabase
     .from('users')
-    .select('id, email, name, created_at')
+    .select('id, email, company_name, created_at')
     .neq('email', ADMIN_EMAIL)
     .order('created_at', { ascending: false });
 
@@ -42,7 +43,7 @@ export const handler = async (event) => {
     return {
       id: u.id,
       email: u.email,
-      name: u.name,
+      name: u.company_name,
       created_at: u.created_at,
       meta_connected: !!token,
       token_days_left: daysLeft,
@@ -56,3 +57,5 @@ export const handler = async (event) => {
 
   return { statusCode: 200, headers: cors, body: JSON.stringify({ customers }) };
 };
+
+export default modern(handler);

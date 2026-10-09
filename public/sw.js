@@ -4,7 +4,7 @@
  *   API-anrop (/api/*, /auth/*) → network-only (alltid färsk data)
  *   Skal (HTML, ikoner, manifest)  → cache-first, uppdateras i bakgrunden
  */
-const CACHE = 'admiral-v2';
+const CACHE = 'admiral-v4';
 const SHELL = [
   '/',
   '/index.html',
@@ -44,7 +44,19 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Statiska resurser → cache-first, stale-while-revalidate
+  // HTML-sidor → network-first (alltid senaste UI, cache som offline-fallback)
+  const isHTML = e.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/';
+  if (isHTML) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+        return res;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Övriga statiska resurser → cache-first, stale-while-revalidate
   e.respondWith(
     caches.match(e.request).then(cached => {
       const networkFetch = fetch(e.request).then(res => {
@@ -52,7 +64,7 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(e.request, res.clone()));
         }
         return res;
-      }).catch(() => cached); // fallback till cache om offline
+      }).catch(() => cached);
 
       return cached || networkFetch;
     })

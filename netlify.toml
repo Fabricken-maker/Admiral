@@ -161,6 +161,18 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/campaign-goals"
+  to = "/.netlify/functions/campaign-goals"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/campaign-assets"
+  to = "/.netlify/functions/campaign-assets"
+  status = 200
+  force = true
+
 [functions."budget-adjust"]
   schedule = "0 6 * * *"
 

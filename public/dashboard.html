@@ -398,8 +398,8 @@
     /* ─── KPI CARDS ───────────────────────────────────────── */
     .kpi-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.9rem;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.7rem;
     }
 
     .kpi {
@@ -903,10 +903,17 @@
     .budget-badge.active { background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.3); color: var(--green); }
 
     /* ─── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width: 1200px) {
+      .kpi-row { grid-template-columns: repeat(3, 1fr); }
+    }
     @media (max-width: 920px) {
       .kpi-row { grid-template-columns: repeat(2, 1fr); }
       .insights-inner { grid-template-columns: 1fr; }
       .bottom-row { grid-template-columns: 1fr; }
+      #insights-summary { grid-template-columns: repeat(3, 1fr) !important; }
+    }
+    @media (max-width: 600px) {
+      #insights-summary { grid-template-columns: repeat(2, 1fr) !important; }
     }
 
     @media (max-width: 600px) {
@@ -1243,6 +1250,40 @@
               <path id="spark-conv-area" d="" fill="url(#sg4)"/>
             </svg>
           </div>
+
+          <!-- ROAS -->
+          <div class="kpi" style="background:linear-gradient(135deg,rgba(52,211,153,.10),var(--panel-bg))">
+            <div class="kpi-head">
+              <div class="kpi-ico">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#34d399" stroke-width="1.5" stroke-linecap="round">
+                  <path d="M2 13 L7 6 L10 10 L14 3"/>
+                  <path d="M10 3 L14 3 L14 7"/>
+                </svg>
+              </div>
+              <span class="kpi-badge" id="kpi-badge-roas" style="display:none"></span>
+            </div>
+            <div class="kpi-val" id="kpi-roas" style="color:#34d399">—</div>
+            <div class="kpi-lbl">ROAS 30d</div>
+            <div id="kpi-roas-sub" style="font-size:.6rem;color:var(--t40);margin-top:.3rem;height:14px">intäkt / spend</div>
+          </div>
+
+          <!-- KONV % -->
+          <div class="kpi" style="background:linear-gradient(135deg,rgba(96,165,250,.10),var(--panel-bg))">
+            <div class="kpi-head">
+              <div class="kpi-ico">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round">
+                  <circle cx="8" cy="8" r="6"/>
+                  <path d="M5 11 L11 5"/>
+                  <circle cx="6" cy="6" r=".5" fill="#60a5fa"/>
+                  <circle cx="10" cy="10" r=".5" fill="#60a5fa"/>
+                </svg>
+              </div>
+              <span class="kpi-badge" id="kpi-badge-konv" style="display:none"></span>
+            </div>
+            <div class="kpi-val" id="kpi-konv" style="color:#60a5fa">—</div>
+            <div class="kpi-lbl">KONV % 30d</div>
+            <div id="kpi-konv-sub" style="font-size:.6rem;color:var(--t40);margin-top:.3rem;height:14px">kurser / klick</div>
+          </div>
         </div>
 
         <!-- DAILY REPORT -->
@@ -1265,30 +1306,71 @@
           </div>
         </div>
 
+        <!-- KAMPANJMÅL & PROGRESS -->
+        <div class="panel" id="goals-panel" style="display:none">
+          <div class="panel-head">
+            <span class="panel-title">🎯 Mål &amp; Progress</span>
+            <button class="more-btn" onclick="loadGoals()" title="Uppdatera" style="margin-left:auto">↻</button>
+          </div>
+          <div id="goals-list"></div>
+        </div>
+
+        <!-- FÖRSÄLJNINGSTRATT -->
+        <div class="panel" id="funnel-panel" style="display:none">
+          <div class="panel-head">
+            <span class="panel-title">🪣 Försäljningstratt</span>
+            <span style="font-size:.65rem;color:var(--t40);margin-left:.6rem">Visningar → Klick → Landningssida → Boka-klick → Köp</span>
+            <button class="more-btn" onclick="loadFunnel()" title="Uppdatera" style="margin-left:auto">↻</button>
+          </div>
+          <div id="funnel-list"></div>
+        </div>
+
+        <!-- KREATIVA TILLGÅNGAR -->
+        <div class="panel" id="assets-panel" style="display:none">
+          <div class="panel-head">
+            <span class="panel-title">🎨 Kreativa tillgångar</span>
+            <span style="font-size:.65rem;color:var(--t40);margin-left:.6rem">Bilder, videor, copy &amp; länkar</span>
+            <button onclick="openAssetEditor()" style="margin-left:auto;padding:.35rem .85rem;background:rgba(26,106,224,.2);border:1px solid rgba(26,106,224,.35);color:#4fc3f7;border-radius:6px;font-size:.7rem;cursor:pointer;font-weight:600">+ Lägg till</button>
+            <button class="more-btn" onclick="loadAssets()" title="Uppdatera" style="margin-left:.4rem">↻</button>
+          </div>
+          <div id="assets-list"></div>
+        </div>
+
         <!-- PERFORMANCE INSIGHTS -->
         <div class="panel">
           <div class="panel-head">
             <span class="panel-title">Performance Insights</span>
-            <button class="more-btn" onclick="loadInsights()" title="Uppdatera">↻</button>
+            <span id="insights-since" style="font-size:.65rem;color:var(--t40);margin-left:.6rem"></span>
+            <button class="more-btn" onclick="loadInsights()" title="Uppdatera" style="margin-left:auto">↻</button>
           </div>
 
           <!-- Sammanfattningsrad -->
-          <div id="insights-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1.2rem">
-            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.85rem">
-              <div style="font-size:.65rem;color:var(--t40);margin-bottom:.3rem">SESSIONER (Meta)</div>
-              <div id="ins-sessions" style="font-size:1.35rem;font-weight:700">—</div>
+          <div id="insights-summary" style="display:grid;grid-template-columns:repeat(6,1fr);gap:.6rem;margin-bottom:1.2rem">
+            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.75rem">
+              <div style="font-size:.6rem;color:var(--t40);margin-bottom:.3rem">SESSIONER (Meta)</div>
+              <div id="ins-sessions" style="font-size:1.25rem;font-weight:700">—</div>
             </div>
-            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.85rem">
-              <div style="font-size:.65rem;color:var(--t40);margin-bottom:.3rem">BOKA-KLICK</div>
-              <div id="ins-boka" style="font-size:1.35rem;font-weight:700">—</div>
+            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.75rem">
+              <div style="font-size:.6rem;color:var(--t40);margin-bottom:.3rem">BOKA-KLICK</div>
+              <div id="ins-boka" style="font-size:1.25rem;font-weight:700">—</div>
             </div>
-            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.85rem">
-              <div style="font-size:.65rem;color:var(--t40);margin-bottom:.3rem">SÅLDA KURSER</div>
-              <div id="ins-courses" style="font-size:1.35rem;font-weight:700">—</div>
+            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.75rem">
+              <div style="font-size:.6rem;color:var(--t40);margin-bottom:.3rem">SÅLDA KURSER</div>
+              <div id="ins-courses" style="font-size:1.25rem;font-weight:700">—</div>
             </div>
-            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.85rem">
-              <div style="font-size:.65rem;color:var(--t40);margin-bottom:.3rem">INTÄKT (manuell)</div>
-              <div id="ins-revenue" style="font-size:1.35rem;font-weight:700">—</div>
+            <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.75rem">
+              <div style="font-size:.6rem;color:var(--t40);margin-bottom:.3rem">INTÄKT</div>
+              <div id="ins-revenue" style="font-size:1.25rem;font-weight:700">—</div>
+            </div>
+            <div style="background:linear-gradient(135deg,rgba(52,211,153,.12),rgba(52,211,153,.04));border:1px solid rgba(52,211,153,.25);border-radius:10px;padding:.75rem">
+              <div style="font-size:.6rem;color:var(--t40);margin-bottom:.3rem">ROAS</div>
+              <div id="ins-roas" style="font-size:1.25rem;font-weight:700;color:#34d399">—</div>
+              <div id="ins-roas-sub" style="font-size:.55rem;color:var(--t40);margin-top:.2rem">intäkt / spend</div>
+            </div>
+            <div style="background:linear-gradient(135deg,rgba(26,106,224,.12),rgba(26,106,224,.04));border:1px solid rgba(26,106,224,.25);border-radius:10px;padding:.75rem">
+              <div style="font-size:.6rem;color:var(--t40);margin-bottom:.3rem">KONV %</div>
+              <div id="ins-konv" style="font-size:1.25rem;font-weight:700;color:#60a5fa">—</div>
+              <div id="ins-konv-sub" style="font-size:.55rem;color:var(--t40);margin-top:.2rem">kurser / klick</div>
             </div>
           </div>
 
@@ -1327,6 +1409,7 @@
               <div>
                 <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">DATUM</label>
                 <input id="conv-date" type="date" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.78rem"/>
+                <div style="font-size:.6rem;color:var(--t40);margin-top:.2rem">Bakåtdatera går — framtida datum spärras.</div>
               </div>
               <div>
                 <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">KURSER SÅLDA</label>
@@ -1350,7 +1433,7 @@
           <div class="panel">
             <div class="panel-head">
               <span class="panel-title">Toppkampanjer</span>
-              <button class="more-btn" onclick="loadCampaigns()" title="Uppdatera">↻</button>
+              <button class="more-btn" onclick="loadCampaigns(_selectedAccountId)" title="Uppdatera">↻</button>
             </div>
             <div class="camp-tbl-wrap">
             <table class="camp-tbl">
@@ -1360,12 +1443,13 @@
                   <th>Status</th>
                   <th>Spend 30d</th>
                   <th>ROAS</th>
+                  <th>KONV %</th>
                   <th>Konv.</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody id="camp-tbody">
-                <tr><td colspan="6" style="color:var(--t40);text-align:center;padding:1.2rem">Hämtar kampanjer…</td></tr>
+                <tr><td colspan="7" style="color:var(--t40);text-align:center;padding:1.2rem">Hämtar kampanjer…</td></tr>
               </tbody>
             </table>
             </div>
@@ -1490,6 +1574,32 @@
         if (ctr)  showBadge('kpi-badge-clicks', ctr + '% CTR',     parseFloat(ctr) > 1);
         if (totConv === 0 && totClicks > 0) showBadge('kpi-badge-conv', 'Inga konv. ännu', false);
 
+        // ── ROAS & KONV % ────────────────────────────────────────
+        // Hämta manuella konverteringar (intäkt + sålda kurser) för ROAS/KONV
+        fetch('/api/conversions', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+          .then(r => r.json())
+          .then(conv => {
+            const revenue = conv?.totals?.revenue_sek || 0;
+            const courses = conv?.totals?.courses_sold || 0;
+            const roas    = totSpend > 0 ? (revenue / totSpend) : 0;
+            // KONV %: sålda kurser / Meta-klick × 100 (proxy för köp-konvertering)
+            const konv    = totClicks > 0 ? (courses / totClicks * 100) : 0;
+
+            document.getElementById('kpi-roas').textContent = roas > 0 ? roas.toFixed(2) + '×' : '—';
+            document.getElementById('kpi-roas-sub').textContent = totSpend > 0
+              ? `${Math.round(revenue).toLocaleString('sv-SE')} / ${Math.round(totSpend).toLocaleString('sv-SE')} kr`
+              : 'intäkt / spend';
+            document.getElementById('kpi-konv').textContent = konv > 0 ? konv.toFixed(2) + ' %' : '—';
+            document.getElementById('kpi-konv-sub').textContent = totClicks > 0
+              ? `${courses} / ${totClicks.toLocaleString('sv-SE')} klick`
+              : 'kurser / klick';
+
+            // Badge på ROAS
+            if (roas >= 1) showBadge('kpi-badge-roas', 'Lönsam', true);
+            else if (roas > 0) showBadge('kpi-badge-roas', 'Under 1×', false);
+          })
+          .catch(() => {});
+
         // Hämta daglig data för sparklines (använder timeline-endpointen)
         fetchSparklineData();
 
@@ -1533,18 +1643,29 @@
     function toggleDropdown() {
       const btn = document.getElementById('user-btn');
       const dd  = document.getElementById('user-dropdown');
+      // Flytta dropdown till body-nivå (flyr topbar:s backdrop-filter stacking context)
+      if (dd.parentNode !== document.body) {
+        document.body.appendChild(dd);
+        dd.style.display = 'none';
+      }
       const isOpen = btn.classList.toggle('open');
       if (isOpen) {
-        // Positionera dropdown relativt viewport (flyr overflow:hidden)
         const rect = btn.getBoundingClientRect();
+        dd.style.display = 'block';
         dd.style.top   = (rect.bottom + 8) + 'px';
         dd.style.right = (window.innerWidth - rect.right) + 'px';
+      } else {
+        dd.style.display = 'none';
       }
     }
 
     document.addEventListener('click', function(e) {
       const btn = document.getElementById('user-btn');
-      if (!btn.contains(e.target)) btn.classList.remove('open');
+      const dd  = document.getElementById('user-dropdown');
+      if (!btn.contains(e.target) && !dd.contains(e.target)) {
+        btn.classList.remove('open');
+        dd.style.display = 'none';
+      }
     });
 
     // Keyboard shortcut ⌘K / Ctrl+K för sök
@@ -1737,6 +1858,20 @@
 
     // ── Tidslinjepanel ─────────────────────────────────────────────────────
     let tlLoaded = false;
+
+    // ── HTML-escape helper (XSS-skydd för user-supplied data) ────
+    const _escapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/[&<>"']/g, c => _escapeMap[c]);
+    }
+    // Säker JS-string-escape för inline onclick="foo('${x}')" (escapar både kvotor och backslash)
+    function escapeJsString(s) {
+      if (s === null || s === undefined) return '';
+      return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+    }
+    window.escapeHtml = escapeHtml;
+    window.escapeJsString = escapeJsString;
 
     // ── PLACEHOLDER-DATA för tidslinje ──────────────────────────
     const today = new Date();
@@ -1956,13 +2091,17 @@
     }
 
     // ── Initial load vid inloggning ──────────────────────────
-    // Sätt dagens datum som default i konverteringsformuläret
+    // Sätt dagens datum som default + max i konverteringsformuläret
     document.getElementById('conv-date').value = fmt(today);
+    document.getElementById('conv-date').setAttribute('max', fmt(today));
 
     loadAccounts();
     loadDailyReport();
     checkTokenStatus();
     loadInsights();
+    loadGoals();
+    loadFunnel();
+    loadAssets();
 
     // ── Uppdatera-knapp ──────────────────────────────────────
     async function refreshAll() {
@@ -1971,9 +2110,480 @@
       btn.disabled = true;
       tlLoaded = false; // återladda timeline vid nästa öppning
       notifLoaded = false;
-      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus(), loadInsights()]);
+      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus(), loadInsights(), loadGoals(), loadFunnel(), loadAssets(), loadCampaigns(_selectedAccountId)]);
       setTimeout(() => { btn.classList.remove('spinning'); btn.disabled = false; }, 600);
     }
+
+    // ── Kampanjmål & Progress ─────────────────────────────────
+    async function loadGoals() {
+      try {
+        const token = localStorage.getItem('token');
+        const user  = JSON.parse(localStorage.getItem('user') || '{}');
+        const isAdmin = user.email === 'admin@admiralai.se';
+        const res = await fetch('/api/campaign-goals', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) return;
+        const data = await res.json();
+        const plans = (data.plans || []).filter(p => p.status !== 'completed' || isAdmin);
+        if (!plans.length) return;
+        document.getElementById('goals-panel').style.display = 'block';
+
+        const fmtKr = n => Math.round(n).toLocaleString('sv-SE') + ' kr';
+        const pctBar = (val, target, color) => {
+          const pct = target > 0 ? Math.min(100, (val / target) * 100) : 0;
+          const overTarget = target > 0 && val > target;
+          return `<div style="background:rgba(255,255,255,.06);border-radius:6px;height:8px;overflow:hidden;margin-top:.3rem">
+            <div style="height:100%;width:${pct}%;background:${overTarget?'#34d399':color};transition:width .3s"></div>
+          </div>`;
+        };
+
+        document.getElementById('goals-list').innerHTML = plans.map(p => {
+          const pr = p.progress || {};
+          const hasGoals = p.target_courses_sold || p.target_revenue || p.target_roas || p.target_cpa;
+          const editBtn = `<button onclick="openGoalsEditor(${p.id})" style="font-size:.65rem;background:rgba(26,106,224,.15);border:1px solid rgba(26,106,224,.3);color:#4fc3f7;padding:.25rem .6rem;border-radius:6px;cursor:pointer">✏️ Redigera mål</button>`;
+
+          if (!hasGoals) {
+            return `<div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.7rem">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+                <div style="font-weight:600">${escapeHtml(p.campaign_name)}</div>
+                ${editBtn}
+              </div>
+              <div style="font-size:.72rem;color:var(--t40)">Inga mål satta ännu. Klicka "Redigera mål" för att börja.</div>
+            </div>`;
+          }
+
+          return `<div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.7rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem">
+              <div>
+                <div style="font-weight:600">${escapeHtml(p.campaign_name)}</div>
+                <div style="font-size:.65rem;color:var(--t40);margin-top:.15rem">${escapeHtml(p.month_start || '')} → ${escapeHtml(p.month_end || '')}</div>
+              </div>
+              ${editBtn}
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.85rem">
+
+              ${p.target_courses_sold ? `
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:.7rem">
+                  <span style="color:var(--t60)">🎓 Sålda kurser</span>
+                  <span style="font-weight:600;color:#34d399">${pr.courses || 0} / ${p.target_courses_sold}</span>
+                </div>
+                ${pctBar(pr.courses || 0, p.target_courses_sold, '#34d399')}
+              </div>` : ''}
+
+              ${p.target_revenue ? `
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:.7rem">
+                  <span style="color:var(--t60)">💎 Intäkt</span>
+                  <span style="font-weight:600;color:#f0c040">${fmtKr(pr.revenue || 0)} / ${fmtKr(p.target_revenue)}</span>
+                </div>
+                ${pctBar(pr.revenue || 0, p.target_revenue, '#f0c040')}
+              </div>` : ''}
+
+              ${p.target_roas ? `
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:.7rem">
+                  <span style="color:var(--t60)">📈 ROAS</span>
+                  <span style="font-weight:600;color:#60a5fa">${(pr.roas || 0).toFixed(2)}× / ${parseFloat(p.target_roas).toFixed(1)}×</span>
+                </div>
+                ${pctBar(pr.roas || 0, p.target_roas, '#60a5fa')}
+              </div>` : ''}
+
+              ${p.target_cpa ? `
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:.7rem">
+                  <span style="color:var(--t60)">🎯 CPA (lägre = bättre)</span>
+                  <span style="font-weight:600;color:${(pr.cpa||0) <= parseFloat(p.target_cpa) && pr.cpa > 0 ? '#34d399' : '#f87171'}">${pr.cpa > 0 ? fmtKr(pr.cpa) : '—'} / ${fmtKr(p.target_cpa)}</span>
+                </div>
+                ${(() => {
+                  // CPA: bra = under target. Räkna invert
+                  const cpa = pr.cpa || 0;
+                  const target = parseFloat(p.target_cpa);
+                  const pct = (cpa > 0 && target > 0) ? Math.min(100, (target / cpa) * 100) : 0;
+                  return `<div style="background:rgba(255,255,255,.06);border-radius:6px;height:8px;overflow:hidden;margin-top:.3rem">
+                    <div style="height:100%;width:${pct}%;background:${cpa <= target ? '#34d399' : '#f87171'};transition:width .3s"></div>
+                  </div>`;
+                })()}
+              </div>` : ''}
+
+            </div>
+
+            ${p.campaign_notes ? `<div style="margin-top:.85rem;padding-top:.7rem;border-top:1px solid var(--border);font-size:.72rem;color:var(--t60);font-style:italic">💬 ${escapeHtml(p.campaign_notes)}</div>` : ''}
+          </div>`;
+        }).join('');
+      } catch (e) { console.error('loadGoals:', e); }
+    }
+
+    function closeGoalsModal() {
+      document.querySelectorAll('.goals-modal-wrap').forEach(el => el.remove());
+    }
+
+    function openGoalsEditor(planId) {
+      const token = localStorage.getItem('token');
+      fetch(`/api/campaign-goals?budget_plan_id=${planId}`, { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(data => {
+          const p = data.plans?.[0];
+          if (!p) return alert('Kampanj hittades ej');
+          closeGoalsModal(); // säkerhetsstängning av eventuell tidigare modal
+          const modal = document.createElement('div');
+          modal.className = 'goals-modal-wrap';
+          modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+          modal.innerHTML = `
+            <div style="background:#0d1a2e;border:1px solid var(--border-hover);border-radius:14px;padding:1.5rem;max-width:480px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.6)">
+              <div style="font-size:1.1rem;font-weight:700;margin-bottom:.3rem">🎯 Sätt mål</div>
+              <div style="font-size:.78rem;color:var(--t60);margin-bottom:1.2rem">${p.campaign_name}</div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:.85rem">
+                <div>
+                  <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">SÅLDA KURSER (st)</label>
+                  <input id="g-courses" type="number" min="0" value="${p.target_courses_sold||''}" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.85rem"/>
+                </div>
+                <div>
+                  <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">INTÄKT (kr)</label>
+                  <input id="g-revenue" type="number" min="0" value="${p.target_revenue||''}" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.85rem"/>
+                </div>
+                <div>
+                  <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">ROAS-MÅL (×)</label>
+                  <input id="g-roas" type="number" step="0.1" min="0" value="${p.target_roas||''}" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.85rem"/>
+                </div>
+                <div>
+                  <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">CPA-MÅL (kr/kurs)</label>
+                  <input id="g-cpa" type="number" min="0" value="${p.target_cpa||''}" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.85rem"/>
+                </div>
+              </div>
+
+              <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">ANTECKNINGAR</label>
+              <textarea id="g-notes" rows="3" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.78rem;resize:vertical;margin-bottom:1.2rem">${escapeHtml(p.campaign_notes || '')}</textarea>
+
+              <div style="display:flex;gap:.5rem;justify-content:flex-end">
+                <button onclick="closeGoalsModal()" style="padding:.45rem 1rem;background:transparent;border:1px solid var(--border);color:var(--t60);border-radius:8px;cursor:pointer;font-size:.78rem">Avbryt</button>
+                <button onclick="saveGoals(${p.id}, this)" style="padding:.45rem 1.2rem;background:#1a6ae0;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:.78rem;font-weight:600">Spara</button>
+              </div>
+            </div>`;
+          // Stäng vid klick på överlay
+          modal.addEventListener('click', (e) => { if (e.target === modal) closeGoalsModal(); });
+          document.body.appendChild(modal);
+        })
+        .catch(e => alert('Kunde inte ladda kampanj: ' + e.message));
+    }
+
+    async function saveGoals(planId, btn) {
+      const token = localStorage.getItem('token');
+      const origLabel = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Sparar…';
+      try {
+        const v = id => document.getElementById(id)?.value;
+        const intOrNull   = (s) => { const n = parseInt(s);   return Number.isFinite(n) && n > 0 ? n : null; };
+        const floatOrNull = (s) => { const n = parseFloat(s); return Number.isFinite(n) && n > 0 ? n : null; };
+        const body = {
+          budget_plan_id: planId,
+          target_courses_sold: intOrNull(v('g-courses')),
+          target_revenue:      floatOrNull(v('g-revenue')),
+          target_roas:         floatOrNull(v('g-roas')),
+          target_cpa:          floatOrNull(v('g-cpa')),
+          campaign_notes:      (v('g-notes') || '').trim() || null
+        };
+        const res = await fetch('/api/campaign-goals', {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error('HTTP ' + res.status + ': ' + errText);
+        }
+        closeGoalsModal();
+        loadGoals();
+      } catch (e) {
+        alert('Kunde inte spara: ' + e.message);
+        btn.disabled = false; btn.textContent = origLabel;
+      }
+    }
+    window.closeGoalsModal = closeGoalsModal;
+    window.openGoalsEditor = openGoalsEditor;
+    window.saveGoals = saveGoals;
+    window.loadGoals = loadGoals;
+
+    // ── Försäljningstratt ─────────────────────────────────────
+    async function loadFunnel() {
+      try {
+        const token = localStorage.getItem('token');
+        const [metaRes, convRes] = await Promise.all([
+          fetch('/api/meta/campaigns', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).catch(() => null),
+          fetch('/api/conversions', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()).catch(() => null)
+        ]);
+
+        const campaigns = (metaRes?.campaigns || []).filter(c =>
+          c.status === 'ACTIVE' && (c.impressions > 0 || c.clicks > 0)
+        );
+        if (!campaigns.length) return;
+
+        // Map manuella konverteringar per kampanjnamn
+        const manualMap = {};
+        for (const cv of (convRes?.conversions || [])) {
+          const name = cv.budget_plans?.campaign_name;
+          if (!name) continue;
+          if (!manualMap[name]) manualMap[name] = { courses: 0, revenue: 0 };
+          manualMap[name].courses += parseInt(cv.courses_sold || 0);
+          manualMap[name].revenue += parseFloat(cv.revenue_sek || 0);
+        }
+        const findManual = (campName) => {
+          if (manualMap[campName]) return manualMap[campName];
+          const lc = campName.toLowerCase();
+          for (const key of Object.keys(manualMap)) {
+            const k = key.toLowerCase();
+            if (lc.includes(k) || k.includes(lc)) return manualMap[key];
+          }
+          return null;
+        };
+
+        document.getElementById('funnel-panel').style.display = 'block';
+
+        const fmtNum = n => n >= 1000 ? (n/1000).toFixed(n >= 10000 ? 0 : 1) + 'K' : Math.round(n).toLocaleString('sv-SE');
+
+        document.getElementById('funnel-list').innerHTML = campaigns.slice(0, 5).map(c => {
+          const manual = findManual(c.name) || { courses: 0, revenue: 0 };
+          const imp   = c.impressions || 0;
+          const clk   = c.clicks || 0;
+          const lpv   = c.landing_page_views || 0;
+          const sold  = manual.courses;
+
+          // Steg + bredder (procent av topp = visningar)
+          const steps = [
+            { label: 'Visningar',       value: imp,   color: '#4fc3f7', icon: '👁' },
+            { label: 'Klick',           value: clk,   color: '#1a6ae0', icon: '🖱' },
+            { label: 'Landningssida',   value: lpv,   color: '#a78bfa', icon: '📄' },
+            { label: 'Sålda kurser',    value: sold,  color: '#34d399', icon: '🎓' }
+          ];
+          const top = Math.max(imp, 1);
+
+          // Konverteringsprocent mellan steg
+          const cnv = (a, b) => a > 0 ? (b / a * 100) : 0;
+
+          return `<div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;margin-bottom:.7rem">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.85rem">
+              <div style="font-weight:600">${c.name}</div>
+              <div style="font-size:.65rem;color:var(--t40)">Senaste 30 dgr</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:.55rem">
+              ${steps.map((s, i) => {
+                const width = top > 0 ? Math.max(8, (s.value / top) * 100) : 8;
+                const prev  = i > 0 ? steps[i-1].value : null;
+                const dropPct = prev !== null ? cnv(prev, s.value) : null;
+                return `
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:.72rem;margin-bottom:.25rem">
+                      <span><span style="margin-right:.4rem">${s.icon}</span><span style="color:var(--t60)">${s.label}</span></span>
+                      <span style="font-weight:600;color:#fff">${fmtNum(s.value)}${dropPct !== null ? ` <span style="color:var(--t40);font-size:.65rem;font-weight:400">(${dropPct.toFixed(1)}% av föregående)</span>` : ''}</span>
+                    </div>
+                    <div style="background:rgba(255,255,255,.05);border-radius:6px;height:24px;overflow:hidden;position:relative">
+                      <div style="height:100%;width:${width}%;background:linear-gradient(90deg, ${s.color}aa, ${s.color}66);border-right:2px solid ${s.color};transition:width .4s"></div>
+                    </div>
+                  </div>`;
+              }).join('')}
+            </div>
+
+            <div style="margin-top:.85rem;padding-top:.7rem;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;font-size:.7rem">
+              <div>
+                <div style="color:var(--t40);font-size:.6rem">CTR (klick/visning)</div>
+                <div style="font-weight:600;color:#4fc3f7">${cnv(imp, clk).toFixed(2)}%</div>
+              </div>
+              <div>
+                <div style="color:var(--t40);font-size:.6rem">LP-view rate</div>
+                <div style="font-weight:600;color:#a78bfa">${cnv(clk, lpv).toFixed(1)}%</div>
+              </div>
+              <div>
+                <div style="color:var(--t40);font-size:.6rem">Köpkonvertering</div>
+                <div style="font-weight:600;color:#34d399">${lpv > 0 ? cnv(lpv, sold).toFixed(2) : '—'}%</div>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+      } catch (e) { console.error('loadFunnel:', e); }
+    }
+    window.loadFunnel = loadFunnel;
+
+    // ── Kreativa tillgångar ──────────────────────────────────
+    const ASSET_ICONS = { image: '🖼', video: '🎬', copy: '✏️', link: '🔗' };
+    const ASSET_COLORS = { image: '#4fc3f7', video: '#a78bfa', copy: '#f0c040', link: '#34d399' };
+
+    async function loadAssets() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/campaign-assets', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) return;
+        const data = await res.json();
+        const assets = data.assets || [];
+        document.getElementById('assets-panel').style.display = 'block';
+
+        if (!assets.length) {
+          document.getElementById('assets-list').innerHTML = `
+            <div style="text-align:center;padding:2rem 1rem;color:var(--t40);font-size:.78rem">
+              Inga kreativa tillgångar tillagda än. Klicka <strong style="color:#4fc3f7">+ Lägg till</strong> för att börja.
+            </div>`;
+          return;
+        }
+
+        // Gruppera per kampanj
+        const byCamp = {};
+        for (const a of assets) {
+          const cname = a.budget_plans?.campaign_name || 'Okänd kampanj';
+          if (!byCamp[cname]) byCamp[cname] = [];
+          byCamp[cname].push(a);
+        }
+
+        document.getElementById('assets-list').innerHTML = Object.entries(byCamp).map(([campName, list]) => `
+          <div style="margin-bottom:1.2rem">
+            <div style="font-size:.7rem;color:var(--t60);margin-bottom:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em">${campName} <span style="color:var(--t40);font-weight:400">— ${list.length} st</span></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.7rem">
+              ${list.map(a => {
+                const ic  = ASSET_ICONS[a.type] || '📎';
+                const col = ASSET_COLORS[a.type] || '#888';
+                // Tillåt bara http(s) i URL — blockera javascript:, data:, etc
+                const safeUrl = (a.url && /^https?:\/\//i.test(a.url)) ? a.url : null;
+                const thumb = a.type === 'image' && safeUrl
+                  ? `<img src="${escapeHtml(safeUrl)}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;background:#000" onerror="this.style.display='none'"/>`
+                  : a.type === 'video' && safeUrl
+                    ? `<div style="height:120px;border-radius:8px;background:linear-gradient(135deg,${col}33,${col}11);display:flex;align-items:center;justify-content:center;font-size:2.5rem">🎬</div>`
+                    : `<div style="height:120px;border-radius:8px;background:linear-gradient(135deg,${col}22,${col}08);display:flex;align-items:center;justify-content:center;font-size:2.2rem;border:1px solid ${col}33">${ic}</div>`;
+                return `
+                  <div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:.6rem;${a.active === false ? 'opacity:.45' : ''}">
+                    ${thumb}
+                    <div style="display:flex;justify-content:space-between;align-items:start;margin-top:.55rem;gap:.4rem">
+                      <div style="flex:1;min-width:0">
+                        <div style="font-size:.78rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(a.title)}">${escapeHtml(a.title)}</div>
+                        <div style="font-size:.6rem;color:var(--t40);margin-top:.15rem">
+                          <span style="color:${col}">●</span> ${escapeHtml(a.type.toUpperCase())}
+                          ${a.active === false ? ' • <span style="color:#f87171">Pausad</span>' : ' • <span style="color:#34d399">Aktiv</span>'}
+                        </div>
+                      </div>
+                      <div style="display:flex;gap:.2rem">
+                        ${safeUrl ? `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" style="background:rgba(26,106,224,.15);border:1px solid rgba(26,106,224,.3);color:#4fc3f7;border-radius:5px;padding:.2rem .35rem;font-size:.65rem;text-decoration:none" title="Öppna">↗</a>` : ''}
+                        <button onclick="openAssetEditor(${a.id})" style="background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--t60);border-radius:5px;padding:.2rem .35rem;font-size:.65rem;cursor:pointer" title="Redigera">✏️</button>
+                        <button onclick="deleteAsset(${a.id})" style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:#f87171;border-radius:5px;padding:.2rem .35rem;font-size:.65rem;cursor:pointer" title="Ta bort">✕</button>
+                      </div>
+                    </div>
+                    ${a.description ? `<div style="font-size:.65rem;color:var(--t60);margin-top:.4rem;line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeHtml(a.description)}</div>` : ''}
+                  </div>`;
+              }).join('')}
+            </div>
+          </div>`).join('');
+      } catch (e) { console.error('loadAssets:', e); }
+    }
+
+    async function openAssetEditor(assetId) {
+      const token = localStorage.getItem('token');
+      // Hämta plans för dropdown
+      const plansRes = await fetch('/api/conversions?list_plans=1', { headers: { 'Authorization': `Bearer ${token}` } });
+      const plansData = await plansRes.json();
+      const plans = plansData.plans || [];
+
+      let existing = null;
+      if (assetId) {
+        const r = await fetch('/api/campaign-assets', { headers: { 'Authorization': `Bearer ${token}` } });
+        const d = await r.json();
+        existing = (d.assets || []).find(a => a.id === assetId);
+      }
+
+      const modal = document.createElement('div');
+      modal.className = 'asset-modal-wrap';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+      modal.innerHTML = `
+        <div style="background:#0d1a2e;border:1px solid var(--border-hover);border-radius:14px;padding:1.4rem;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6)">
+          <div style="font-size:1.05rem;font-weight:700;margin-bottom:1rem">${existing ? '✏️ Redigera tillgång' : '🎨 Ny kreativ tillgång'}</div>
+
+          <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">KAMPANJ</label>
+          <select id="a-plan" ${existing ? 'disabled' : ''} style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.85rem;margin-bottom:.8rem">
+            ${plans.map(p => `<option value="${p.id}" ${existing && existing.budget_plan_id === p.id ? 'selected' : ''}>${escapeHtml(p.campaign_name)}${p.customer_name ? ' — ' + escapeHtml(p.customer_name) : ''}</option>`).join('')}
+          </select>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.8rem">
+            <div>
+              <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">TYP</label>
+              <select id="a-type" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.85rem">
+                <option value="image" ${existing?.type === 'image' ? 'selected' : ''}>🖼 Bild</option>
+                <option value="video" ${existing?.type === 'video' ? 'selected' : ''}>🎬 Video</option>
+                <option value="copy"  ${existing?.type === 'copy'  ? 'selected' : ''}>✏️ Copy/Text</option>
+                <option value="link"  ${existing?.type === 'link'  ? 'selected' : ''}>🔗 Länk</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">STATUS</label>
+              <select id="a-active" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.85rem">
+                <option value="true"  ${existing?.active !== false ? 'selected' : ''}>● Aktiv</option>
+                <option value="false" ${existing?.active === false ? 'selected' : ''}>⏸ Pausad</option>
+              </select>
+            </div>
+          </div>
+
+          <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">TITEL</label>
+          <input id="a-title" placeholder="t.ex. APE_Attention - Hero" value="${escapeHtml(existing?.title || '')}" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.85rem;margin-bottom:.8rem"/>
+
+          <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">URL (bild-/video-/landningssida)</label>
+          <input id="a-url" placeholder="https://…" value="${escapeHtml(existing?.url || '')}" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.78rem;margin-bottom:.8rem"/>
+
+          <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">BESKRIVNING / COPY</label>
+          <textarea id="a-desc" rows="3" placeholder="Annonstext, kreativ-koncept, idé…" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.78rem;resize:vertical;margin-bottom:.8rem">${escapeHtml(existing?.description || '')}</textarea>
+
+          <label style="font-size:.65rem;color:var(--t40);display:block;margin-bottom:.3rem">ANTECKNINGAR</label>
+          <textarea id="a-notes" rows="2" placeholder="A/B-test, performance-anteckningar…" style="width:100%;background:var(--t07);border:1px solid var(--border);color:#fff;border-radius:8px;padding:.45rem .6rem;font-size:.78rem;resize:vertical;margin-bottom:1.1rem">${escapeHtml(existing?.notes || '')}</textarea>
+
+          <div style="display:flex;gap:.5rem;justify-content:flex-end">
+            <button onclick="this.closest('.asset-modal-wrap').remove()" style="padding:.45rem 1rem;background:transparent;border:1px solid var(--border);color:var(--t60);border-radius:8px;cursor:pointer;font-size:.78rem">Avbryt</button>
+            <button onclick="saveAsset(${existing ? existing.id : 'null'}, this)" style="padding:.45rem 1.2rem;background:#1a6ae0;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:.78rem;font-weight:600">${existing ? 'Spara ändringar' : 'Lägg till'}</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+    }
+
+    async function saveAsset(existingId, btn) {
+      const token = localStorage.getItem('token');
+      btn.disabled = true; btn.textContent = 'Sparar…';
+      try {
+        const body = {
+          budget_plan_id: parseInt(document.getElementById('a-plan').value),
+          type:        document.getElementById('a-type').value,
+          title:       document.getElementById('a-title').value.trim(),
+          url:         document.getElementById('a-url').value.trim() || null,
+          description: document.getElementById('a-desc').value.trim() || null,
+          notes:       document.getElementById('a-notes').value.trim() || null,
+          active:      document.getElementById('a-active').value === 'true'
+        };
+        if (!body.title) { alert('Titel krävs'); btn.disabled = false; btn.textContent = existingId ? 'Spara ändringar' : 'Lägg till'; return; }
+
+        const method = existingId ? 'PUT' : 'POST';
+        const url = existingId ? `/api/campaign-assets?id=${existingId}` : '/api/campaign-assets';
+        const res = await fetch(url, {
+          method,
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error((await res.json()).error);
+        document.querySelectorAll('.asset-modal-wrap').forEach(el => el.remove());
+        loadAssets();
+      } catch (e) {
+        alert('Kunde inte spara: ' + e.message);
+        btn.disabled = false; btn.textContent = existingId ? 'Spara ändringar' : 'Lägg till';
+      }
+    }
+
+    async function deleteAsset(id) {
+      if (!confirm('Ta bort denna tillgång?')) return;
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/campaign-assets?id=${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return alert('Kunde inte ta bort');
+      loadAssets();
+    }
+
+    window.loadAssets = loadAssets;
+    window.openAssetEditor = openAssetEditor;
+    window.saveAsset = saveAsset;
+    window.deleteAsset = deleteAsset;
 
     // ── Service Worker (PWA) ─────────────────────────────────
     if ('serviceWorker' in navigator) {
@@ -2124,17 +2734,40 @@
         : '/api/meta/campaigns';
 
       try {
-        const res = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
+        const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
+        // Hämta Meta-kampanjer + manuella konverteringar parallellt
+        const [res, convRes] = await Promise.all([
+          fetch(url, { headers }),
+          fetch('/api/conversions', { headers }).then(r => r.json()).catch(() => null)
+        ]);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Fel');
 
         const campaigns = data.campaigns || [];
         if (!campaigns.length) {
-          tbody.innerHTML = '<tr><td colspan="6" style="color:var(--t40);text-align:center;padding:1.2rem">Inga kampanjer hittades</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" style="color:var(--t40);text-align:center;padding:1.2rem">Inga kampanjer hittades</td></tr>';
           return;
         }
+
+        // Bygg map: kampanjnamn → { revenue, courses } från manual_conversions
+        const manualMap = {};
+        for (const cv of (convRes?.conversions || [])) {
+          const name = cv.budget_plans?.campaign_name;
+          if (!name) continue;
+          if (!manualMap[name]) manualMap[name] = { revenue: 0, courses: 0 };
+          manualMap[name].revenue += parseFloat(cv.revenue_sek || 0);
+          manualMap[name].courses += parseInt(cv.courses_sold || 0);
+        }
+        // Fuzzy-match: prova både exakt och substring
+        const findManual = (campName) => {
+          if (manualMap[campName]) return manualMap[campName];
+          const lc = campName.toLowerCase();
+          for (const key of Object.keys(manualMap)) {
+            const k = key.toLowerCase();
+            if (lc.includes(k) || k.includes(lc)) return manualMap[key];
+          }
+          return null;
+        };
 
         const colors = ['#4fc3f7','#f0c040','#34d399','#f87171','#a78bfa','#fb923c'];
         tbody.innerHTML = campaigns.slice(0, 10).map((c, i) => {
@@ -2146,34 +2779,67 @@
           const toggleLabel = isActive ? '● Aktiv' : isPaused ? '⏸ Pausad' : c.status;
           const nextStatus = isActive ? 'PAUSED' : 'ACTIVE';
           const nextLabel = isActive ? 'Pausa' : 'Aktivera';
-          const roas = c.roas > 0 ? `${c.roas.toFixed(1)}×` : '—';
-          const roasClass = c.roas >= 2 ? 'v-pos' : '';
+
+          // ROAS: använd Metas pixel-ROAS först, fallback till manuell
+          const manual = findManual(c.name);
+          const manualRoas = (manual && c.spend > 0) ? (manual.revenue / c.spend) : 0;
+          const finalRoas = c.roas > 0 ? c.roas : manualRoas;
+          const roasStr = finalRoas > 0 ? `${finalRoas.toFixed(2)}×` : '—';
+          const roasClass = finalRoas >= 1 ? 'v-pos' : '';
+
+          // KONV %: använd manuell kurser/klick om finns, annars Metas conversions/klick
+          const manualKonv = (manual && c.clicks > 0) ? (manual.courses / c.clicks * 100) : 0;
+          const metaKonv   = (c.conversions > 0 && c.clicks > 0) ? (c.conversions / c.clicks * 100) : 0;
+          const finalKonv  = manualKonv > 0 ? manualKonv : metaKonv;
+          const konvStr    = finalKonv > 0 ? `${finalKonv.toFixed(2)} %` : '—';
+          const konvClass  = finalKonv >= 2 ? 'v-pos' : '';
+
           const spend = c.spend > 0 ? `${Math.round(c.spend).toLocaleString('sv-SE')} kr` : '—';
+          const totalConv = (manual?.courses || 0) + Math.round(c.conversions || 0);
           return `<tr>
             <td>
               <div class="camp-cell">
-                <div class="camp-av" style="background:${col}22;border:1px solid ${col}44;color:${col};font-size:.62rem;font-weight:700">${initials}</div>
+                <div class="camp-av" style="background:${col}22;border:1px solid ${col}44;color:${col};font-size:.62rem;font-weight:700">${escapeHtml(initials)}</div>
                 <div class="camp-info">
-                  <div class="nm">${c.name}</div>
-                  <div class="sm">${c.objective || ''}</div>
+                  <div class="nm">${escapeHtml(c.name)}</div>
+                  <div class="sm">${escapeHtml(c.objective || '')}</div>
                 </div>
               </div>
             </td>
             <td>
-              <button class="status-toggle ${toggleClass}" id="st-${c.id}"
-                onclick="toggleCampaignStatus('${c.id}', '${nextStatus}', this)"
+              <button class="status-toggle ${toggleClass}" id="st-${escapeHtml(c.id)}"
+                data-action="toggle-status" data-cid="${escapeHtml(c.id)}" data-next="${nextStatus}"
                 title="${nextLabel} kampanj">
                 ${toggleLabel}
               </button>
             </td>
             <td>${spend}</td>
-            <td class="${roasClass}">${roas}</td>
-            <td>${c.conversions > 0 ? Math.round(c.conversions) : '—'}</td>
-            <td><span class="budget-badge" onclick="openBudgetModal('${c.name.replace(/'/g,"\\'")}','${c.id}','${c.ad_account_id}')">+ Budget</span></td>
+            <td class="${roasClass}">${roasStr}</td>
+            <td class="${konvClass}">${konvStr}</td>
+            <td>${totalConv > 0 ? totalConv : '—'}</td>
+            <td><span class="budget-badge" data-action="open-budget"
+                data-cname="${escapeHtml(c.name)}"
+                data-cid="${escapeHtml(c.id)}"
+                data-aaid="${escapeHtml(c.ad_account_id)}">+ Budget</span></td>
           </tr>`;
         }).join('');
+
+        // Event delegation — bind bara en gång (idempotent)
+        if (!tbody.dataset.delegationBound) {
+          tbody.dataset.delegationBound = '1';
+          tbody.addEventListener('click', (e) => {
+            const el = e.target.closest('[data-action]');
+            if (!el) return;
+            const a = el.dataset.action;
+            if (a === 'toggle-status') {
+              toggleCampaignStatus(el.dataset.cid, el.dataset.next, el);
+            } else if (a === 'open-budget') {
+              openBudgetModal(el.dataset.cname, el.dataset.cid, el.dataset.aaid);
+            }
+          });
+        }
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red);text-align:center;padding:1.2rem">Kunde inte hämta kampanjer: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red);text-align:center;padding:1.2rem">Kunde inte hämta kampanjer: ${e.message}</td></tr>`;
       }
     }
 
@@ -2205,16 +2871,29 @@
     }
 
     async function reconnectMeta() {
+      const token = localStorage.getItem('token');
+      if (!token) { alert('Du är inte inloggad. Logga in på nytt.'); return; }
       try {
         const res = await fetch('/api/meta/oauth/start', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          headers: { 'Authorization': `Bearer ${token}` }
         });
+        if (!res.ok) {
+          const errText = await res.text();
+          alert('Server-fel ' + res.status + ': ' + errText);
+          return;
+        }
         const data = await res.json();
-        if (data.url) window.location.href = data.url;
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert('Saknar redirect-URL. Svar från server: ' + JSON.stringify(data));
+        }
       } catch (e) {
         alert('Kunde inte starta återkoppling: ' + e.message);
       }
     }
+    // Exponera globalt så inline onclick=... säkert hittar den
+    window.reconnectMeta = reconnectMeta;
 
     async function loadDailyReport() {
       try {
@@ -2359,9 +3038,30 @@
       const token = localStorage.getItem('token');
       const headers = { 'Authorization': `Bearer ${token}` };
 
-      // Kör GA4 + konverteringar parallellt
+      // Steg 1: Hämta timeline först för att hitta kampanjstart
+      const tlRes = await fetch('/api/timeline', { headers }).then(r => r.json()).catch(() => null);
+
+      // Beräkna tidigaste kampanjstart från aktiva budget_plans
+      const today = new Date();
+      let earliestStart = null;
+      for (const c of (tlRes?.campaigns || [])) {
+        if (c.month_start) {
+          const d = new Date(c.month_start);
+          if (!earliestStart || d < earliestStart) earliestStart = d;
+        }
+      }
+      // Fallback: 30 dagar
+      const fallbackStart = new Date(today.getTime() - 30 * 86400000);
+      const startDate = earliestStart && earliestStart < today ? earliestStart : fallbackStart;
+      const daysWindow = Math.max(1, Math.ceil((today - startDate) / 86400000));
+
+      // Visa "Sedan YYYY-MM-DD" i headern
+      const sinceLabel = document.getElementById('insights-since');
+      if (sinceLabel) sinceLabel.textContent = `Sedan ${startDate.toISOString().slice(0,10)} (${daysWindow} dgr)`;
+
+      // Steg 2: Hämta GA4 + konverteringar parallellt med dynamiskt fönster
       const [ga4Res, convRes] = await Promise.all([
-        fetch('/api/ga4/insights?days=30', { headers }).then(r => r.json()).catch(() => null),
+        fetch(`/api/ga4/insights?days=${daysWindow}`, { headers }).then(r => r.json()).catch(() => null),
         fetch('/api/conversions', { headers }).then(r => r.json()).catch(() => null)
       ]);
 
@@ -2372,16 +3072,39 @@
         document.getElementById('ga4-source-badge').style.display = '';
       }
 
+      // Filtrera spend till samma fönster
+      const startStr = startDate.toISOString().slice(0,10);
+      const windowSpend = (tlRes?.daily_spend || []).filter(d => d.date >= startStr);
+
       // Summering
       const totSessions = ga4Res?.totals?.sessions    || 0;
       const totBoka     = ga4Res?.totals?.boka_clicks || 0;
       const totCourses  = convRes?.totals?.courses_sold  || 0;
       const totRevenue  = convRes?.totals?.revenue_sek   || 0;
+      const totSpend    = windowSpend.reduce((s, d) => s + (parseFloat(d.actual) || 0), 0);
 
-      document.getElementById('ins-sessions').textContent = totSessions > 0 ? totSessions.toLocaleString('sv-SE') : '—';
-      document.getElementById('ins-boka').textContent     = totBoka > 0     ? totBoka.toLocaleString('sv-SE')     : '—';
-      document.getElementById('ins-courses').textContent  = totCourses > 0  ? totCourses                          : '—';
-      document.getElementById('ins-revenue').textContent  = totRevenue > 0  ? totRevenue.toLocaleString('sv-SE') + ' kr' : '—';
+      // GA4 finns? = vi har datakälla även om värdet är 0
+      const ga4Live = !ga4Res?.not_configured;
+
+      // ROAS = intäkt / spend
+      const roas = totSpend > 0 ? (totRevenue / totSpend) : 0;
+      // KONV %: sålda kurser / boka-klick (fallback till sessions)
+      const konvDenom = totBoka > 0 ? totBoka : totSessions;
+      const konv = konvDenom > 0 ? (totCourses / konvDenom * 100) : 0;
+
+      // Visa 0 istället för — när vi har datakälla (mer ärligt)
+      document.getElementById('ins-sessions').textContent = ga4Live ? totSessions.toLocaleString('sv-SE') : '—';
+      document.getElementById('ins-boka').textContent     = ga4Live ? totBoka.toLocaleString('sv-SE')     : '—';
+      document.getElementById('ins-courses').textContent  = totCourses.toLocaleString('sv-SE');
+      document.getElementById('ins-revenue').textContent  = totRevenue.toLocaleString('sv-SE') + ' kr';
+      document.getElementById('ins-roas').textContent     = totSpend > 0 ? (roas.toFixed(2) + '×') : '—';
+      document.getElementById('ins-roas-sub').textContent = totSpend > 0
+        ? `${Math.round(totRevenue).toLocaleString('sv-SE')} / ${Math.round(totSpend).toLocaleString('sv-SE')} kr`
+        : 'Inväntar spend-data';
+      document.getElementById('ins-konv').textContent     = konvDenom > 0 ? (konv.toFixed(2) + ' %') : '—';
+      document.getElementById('ins-konv-sub').textContent = konvDenom > 0
+        ? `${totCourses} / ${konvDenom} ${totBoka > 0 ? 'klick' : 'sess'}`
+        : (ga4Live ? 'Inväntar Meta-trafik' : 'kurser / klick');
 
       // Bygg daglabels från GA4 eller spend_log
       const dailySource = ga4Res?.daily?.length ? ga4Res.daily : null;
@@ -2395,11 +3118,10 @@
         buildBokaChart(['—'], [0]);
       }
 
-      // Spend vs kurser — använd spend_log per dag
-      const spendRes = await fetch('/api/timeline', { headers }).then(r => r.json()).catch(() => null);
-      if (spendRes?.daily_spend?.length) {
-        const labels   = spendRes.daily_spend.slice(-30).map(d => d.date.slice(5));
-        const spendDat = spendRes.daily_spend.slice(-30).map(d => d.actual);
+      // Spend vs kurser — använd kampanjens livslängd
+      if (windowSpend.length) {
+        const labels   = windowSpend.map(d => d.date.slice(5));
+        const spendDat = windowSpend.map(d => d.actual);
 
         // Matcha konverteringar per dag
         const convMap = {};
@@ -2411,45 +3133,30 @@
         buildSpendVsCourses(labels, spendDat, coursesDat);
       }
 
-      // Visa manuell inmatning för admin
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      if (user.email === 'admin@admiralai.se') {
-        document.getElementById('manual-conv-section').style.display = 'block';
-        loadConvHistory(convRes?.conversions || []);
-        populateConvPlanSelect();
-      }
+      // Visa manuell inmatning för ALLA (admin ser alla kampanjer, kund bara sina)
+      document.getElementById('manual-conv-section').style.display = 'block';
+      loadConvHistory(convRes?.conversions || []);
+      populateConvPlanSelect();
     }
 
     async function populateConvPlanSelect() {
       try {
         const token = localStorage.getItem('token');
-        const { data } = await fetch('/api/admin/campaigns', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json());
-        const sel = document.getElementById('conv-plan');
-        if (!data?.campaigns) return;
-        data.campaigns.filter(c => c.status === 'active').forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.id;
-          opt.textContent = `${c.campaign_name} (${c.customer_name})`;
-          sel.appendChild(opt);
-        });
-      } catch {}
-    }
-
-    // Korrekt fetch för admin/campaigns som returnerar { campaigns, summary }
-    async function populateConvPlanSelect() {
-      try {
-        const token = localStorage.getItem('token');
-        const res  = await fetch('/api/admin/campaigns', { headers: { 'Authorization': `Bearer ${token}` } });
+        const user  = JSON.parse(localStorage.getItem('user') || '{}');
+        const isAdmin = user.email === 'admin@admiralai.se';
+        const res  = await fetch('/api/conversions?list_plans=1', { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         const sel  = document.getElementById('conv-plan');
         sel.innerHTML = '<option value="">Välj kampanj…</option>';
-        (data.campaigns || []).filter(c => c.status === 'active').forEach(c => {
+        (data.plans || []).forEach(p => {
           const opt = document.createElement('option');
-          opt.value = c.id;
-          opt.textContent = `${c.campaign_name} — ${c.customer_name}`;
+          opt.value = p.id;
+          opt.textContent = isAdmin && p.customer_name
+            ? `${p.campaign_name} — ${p.customer_name}`
+            : p.campaign_name;
           sel.appendChild(opt);
         });
-      } catch {}
+      } catch (e) { console.error('populateConvPlanSelect:', e); }
     }
 
     function loadConvHistory(conversions) {
