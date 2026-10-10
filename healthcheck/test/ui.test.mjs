@@ -28,7 +28,8 @@ function snap(overrides = {}) {
     api: {
       '/api/meta/accounts': { accounts: [{ spend: 1234.56, impressions: 45678, clicks: 1500, conversions: 0 }] },
       '/api/meta/campaigns': { campaigns: [{ name: 'Kampanj A', spend: 987.65 }] },
-      '/api/conversions': { totals: { revenue_sek: 10000 } },
+      '/api/conversions': { totals: { revenue_sek: 99999 } },
+      '/api/conversions?since=2026-09-10': { totals: { revenue_sek: 10000 } },
       '/api/timeline': { campaigns: [], daily_spend: [] },
       '/api/reports': { reports: [{ id: 1 }] },
     },
@@ -48,6 +49,15 @@ const failures = (s) => evaluate(s, where).filter((r) => !r.ok);
 
 test('korrekt renderad dashboard ger inga fel', () => {
   assert.deepEqual(failures(snap()).map((f) => f.id), []);
+});
+
+test('ROAS 30d räknas på intäkterna för samma 30 dagar, inte alla perioder', () => {
+  const s = snap();
+  s.dom.kpi.roas = '81.00×'; // 99 999 kr för alla perioder / 1 234 kr
+  assert.deepEqual(failures(s).map((f) => f.id), ['ui.kpi roas']);
+  const missing = snap();
+  delete missing.api['/api/conversions?since=2026-09-10'];
+  assert.match(failures(missing).find((f) => f.id === 'ui.kpi roas').cause, /samma 30 dagar/);
 });
 
 test('KPI som avviker från källdatan fångas', () => {

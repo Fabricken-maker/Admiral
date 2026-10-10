@@ -198,8 +198,6 @@ export function evaluate(snap, where) {
   const accounts = find('/api/meta/accounts')?.accounts;
   const campaigns = find('/api/meta/campaigns')?.campaigns;
   const timeline = find('/api/timeline');
-  // KPI-korten bygger på /api/conversions utan parametrar (summorna); ?list_plans=1 saknar summor.
-  const conversions = api['/api/conversions'] ?? find('/api/conversions?');
   const ga4 = find('/api/ga4/insights');
   const dom = snap.dom || {};
 
@@ -236,12 +234,18 @@ export function evaluate(snap, where) {
         ? `KPI-kortet ${k} visar "${shown}" trots att källdatan är ${round2(v)}`
         : `KPI-kortet ${k} visar "${shown}", källdatan ger ${round2(v)}`, { where: where(`getElementById('kpi-${k}')`) }));
     }
-    const revenue = Number(conversions?.totals?.revenue_sek || 0);
-    const roas = expected.spend > 0 ? revenue / expected.spend : 0;
+    // ROAS 30d: intäkter för samma 30 dagar som spend (/api/conversions?since=), inte alla perioder.
+    const conv30 = find('/api/conversions?since=');
     const id = 'ui.kpi roas';
-    out.push(sameNumber(dom.kpi?.roas, roas)
-      ? pass(A, id)
-      : fail(A, id, `KPI-kortet ROAS visar "${dom.kpi?.roas}", källdatan ger ${roas.toFixed(2)}×`, { where: where("getElementById('kpi-roas')") }));
+    if (!conv30) {
+      out.push(fail(A, id, 'KPI-kortet ROAS hämtar inte intäkterna för samma 30 dagar som spend (/api/conversions?since=)', { where: where("getElementById('kpi-roas')") }));
+    } else {
+      const revenue = Number(conv30.totals?.revenue_sek || 0);
+      const roas = expected.spend > 0 ? revenue / expected.spend : 0;
+      out.push(sameNumber(dom.kpi?.roas, roas)
+        ? pass(A, id)
+        : fail(A, id, `KPI-kortet ROAS visar "${dom.kpi?.roas}", källdatan för 30 dagar ger ${roas.toFixed(2)}×`, { where: where("getElementById('kpi-roas')") }));
+    }
   } else {
     out.push(fail(A, 'ui.kpi', 'Dashboarden hämtade aldrig /api/meta/accounts — KPI-korten saknar källa', { where: where('async function loadAccounts') }));
   }
