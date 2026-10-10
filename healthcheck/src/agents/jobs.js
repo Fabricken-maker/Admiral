@@ -16,6 +16,7 @@ import { pass, fail, skip } from '../lib/result.js';
 import { fetchJson } from '../lib/http.js';
 import { addDays, completedWeekStarts, stockholmMidnight } from '../lib/time.js';
 import { checkApprovals } from './jobs-approvals.js';
+import { checkTokenNotices } from './jobs-notices.js';
 
 const A = 'jobs';
 const run$ = promisify(execFile);
@@ -37,6 +38,7 @@ export async function run(ctx) {
     checkChroma(ctx),
     checkWeeklySync(ctx),
     checkApprovals(ctx),
+    checkTokenNotices(ctx),
   ]);
   return results.flat();
 }

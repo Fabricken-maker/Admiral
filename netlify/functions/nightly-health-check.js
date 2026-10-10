@@ -4,7 +4,8 @@
  * Skickar daglig rapport till admin + token-varningar till kunder
  */
 import { createClient } from '@supabase/supabase-js';
-import { sendEmail, buildAdminDailyReport, buildTokenExpiryEmail } from './lib/send-email.js';
+import { sendEmail, buildAdminDailyReport } from './lib/send-email.js';
+import { healthFinding, sendTokenNotice } from './lib/token-notice.js';
 import { fireWebhook } from './lib/fire-webhooks.js';
 import { readToken } from './lib/token-store.js';
 import { modern } from './lib/modern.js';
@@ -67,16 +68,8 @@ const handler = async () => {
 
     // ── 1. Kontrollera tokenets giltighetstid ─────────────────
     try {
-      const exp = userToken.expires_at ? new Date(userToken.expires_at) : null;
-      if (exp) {
-        const daysLeft = Math.ceil((exp - Date.now()) / 86400000);
-        if (daysLeft <= 3) {
-          findings.push({ severity: 'critical', category: 'token', message: `Meta-token löper ut om ${daysLeft} dag(ar) — gå till inställningar och återkoppla Meta`, details: { days_left: daysLeft } });
-        } else if (daysLeft <= 7) {
-          findings.push({ severity: 'warning', category: 'token', message: `Meta-token löper ut om ${daysLeft} dagar — planera förnyelse`, details: { days_left: daysLeft } });
-        } else {
-          findings.push({ severity: 'info', category: 'token', message: `Meta-token är giltigt i ${daysLeft} dagar`, details: { days_left: daysLeft } });
-        }
+      if (userToken.expires_at) {
+        findings.push({ category: 'token', ...healthFinding(userToken.expires_at) });
       }
     } catch (e) {
       findings.push({ severity: 'critical', category: 'token', message: `Kunde inte verifiera Meta-token: ${e.message}` });
@@ -131,34 +124,28 @@ const handler = async () => {
       allFindings.push(...findings.map(f => ({ user_id: userId, ...f })));
     }
 
-    // ── Skicka token-varning till kunden om den löper ut ───────
-    const tokenFinding = findings.find(f => f.category === 'token' && (f.severity === 'critical' || f.severity === 'warning'));
-    if (tokenFinding) {
+    // ── Mejla kunden en gång per läge (7 dagar kvar, 3 dagar kvar, utgånget) ──
+    if (userToken.expires_at) {
       try {
         const { data: userRow } = await supabase
           .from('users')
-          .select('email, name')
+          .select('id, email, company_name')
           .eq('id', userId)
           .single();
 
-        if (userRow) {
-          const daysLeft = tokenFinding.details?.days_left ?? '?';
-          // E-post till kunden
-          await sendEmail({
-            to: userRow.email,
-            subject: tokenFinding.severity === 'critical'
-              ? `⚠️ Ditt Meta-token löper ut om ${daysLeft} dag${daysLeft !== 1 ? 'ar' : ''} — förnya nu`
-              : `🔔 Ditt Meta-token löper ut om ${daysLeft} dagar`,
-            html: buildTokenExpiryEmail({ name: userRow.name, daysLeft, severity: tokenFinding.severity })
-          });
-          // Webhook
-          const webhookEvent = tokenFinding.severity === 'critical' ? 'token.expired' : 'token.expiring';
-          await fireWebhook(webhookEvent, {
-            user_id: userId, email: userRow.email, name: userRow.name,
-            days_left: daysLeft, severity: tokenFinding.severity
-          });
+        const notice = await sendTokenNotice({ supabase, sendEmail, user: userRow, expiresAt: userToken.expires_at });
+        if (notice.sent) {
+          const daysLeft = findings.find(f => f.category === 'token')?.details?.days_left;
+          await fireWebhook(notice.state === 'utgatt' ? 'token.expired' : 'token.expiring', {
+            user_id: userId, email: userRow.email, company_name: userRow.company_name,
+            days_left: daysLeft, state: notice.state
+          }).catch(() => {});
+        } else if (notice.error) {
+          console.error(`[nightly-health-check] Mejl om Meta-kopplingen till användare ${userId} misslyckades: ${notice.error}`);
         }
-      } catch (e) { /* silent */ }
+      } catch (e) {
+        console.error(`[nightly-health-check] Mejl om Meta-kopplingen: ${e.message}`);
+      }
     }
 
     // ── Webhook: budget-avvikelse ───────────────────────────────

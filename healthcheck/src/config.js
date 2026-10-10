@@ -98,6 +98,7 @@ export const REQUIRED_TABLES = [
   'approvals',
   'meta_write_log',
   'meta_recommendations',
+  'notice_log',
 ];
 
 // Var i koden en tabell används — så att "kräver människa" kan peka ut platsen.
