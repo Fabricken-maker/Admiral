@@ -99,6 +99,8 @@ export const REQUIRED_TABLES = [
   'meta_write_log',
   'meta_recommendations',
   'notice_log',
+  'brand_profiles',
+  'creative_reviews',
 ];
 
 // Var i koden en tabell används — så att "kräver människa" kan peka ut platsen.
@@ -113,4 +115,5 @@ export const EXPECTED_SCHEDULES = {
   'weekly-sync': '15 5 * * *',
   'proposals-maintenance': '*/15 * * * *',
   'recommendations-sync': '45 4 * * *',
+  'reviews-sync': '30 5 * * *',
 };

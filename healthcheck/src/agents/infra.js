@@ -11,7 +11,7 @@ import { REQUIRED_TABLES, TABLE_USAGE, REQUIRED_NETLIFY_ENV, EXPECTED_SCHEDULES 
 
 const A = 'infra';
 
-const PAGES = ['/', '/login.html', '/dashboard.html', '/admin.html'];
+const PAGES = ['/', '/login.html', '/dashboard.html', '/admin.html', '/granskning.html'];
 
 // Endpoints som dashboarden och admin-vyn läser. Utan token → 401, med admin-token → 200.
 const ENDPOINTS = [
@@ -27,6 +27,8 @@ const ENDPOINTS = [
   { path: '/api/ga4/insights?days=7', shape: (j) => j && !j.error },
   { path: '/api/admin/customers', shape: (j) => j && !j.error },
   { path: '/api/admin/campaigns', shape: (j) => j && !j.error },
+  { path: '/api/reviews?customers=1', shape: (j) => Array.isArray(j?.customers) },
+  { path: '/api/brand-profile', shape: (j) => j && j.profile && Array.isArray(j.logos) },
 ];
 
 export async function run(ctx) {
