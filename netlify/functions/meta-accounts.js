@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getMetaToken } from './lib/get-meta-token.js';
 import { getCorsHeaders } from './lib/cors.js';
 import { modern } from './lib/modern.js';
+import { actionValue, PURCHASE_TYPES } from './lib/weekly.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -66,9 +67,8 @@ const handler = async (event) => {
           const insightData = await insightRes.json();
           const insight = insightData.data?.[0] || {};
 
-          const conversions = (insight.actions || [])
-            .filter(a => ['purchase', 'offsite_conversion.fb_pixel_purchase', 'omni_purchase'].includes(a.action_type))
-            .reduce((sum, a) => sum + parseInt(a.value || 0), 0);
+          // Köptyperna är samma köp: största värdet, aldrig summan.
+          const conversions = actionValue(insight.actions, PURCHASE_TYPES);
 
           return {
             id: acc.id,

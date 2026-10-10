@@ -35,10 +35,12 @@ const handler = async (event) => {
   // ── GET ────────────────────────────────────────────────
   if (event.httpMethod === 'GET') {
     const planId = event.queryStringParameters?.budget_plan_id;
+    // Kunder ser bara sina egna. "!inner" behövs: ett filter på den inbäddade budgetplanen
+    // filtrerar annars bara bort planen, inte raden (och då syntes andra kunders material).
     let q = supabase
       .from('campaign_assets')
       .select(`id, budget_plan_id, type, url, title, description, ad_set_id, notes, active, created_at,
-               budget_plans(campaign_name, user_id)`)
+               budget_plans${isAdmin ? '' : '!inner'}(campaign_name, user_id)`)
       .order('created_at', { ascending: false });
     if (planId) q = q.eq('budget_plan_id', planId);
     if (!isAdmin) q = q.eq('budget_plans.user_id', userId);

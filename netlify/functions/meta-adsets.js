@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { getMetaToken } from './lib/get-meta-token.js';
 import { getCorsHeaders } from './lib/cors.js';
 import { modern } from './lib/modern.js';
+import { actionValue, PURCHASE_TYPES } from './lib/weekly.js';
 
 const handler = async (event) => {
   const cors = getCorsHeaders(event, 'GET, OPTIONS');
@@ -35,12 +36,9 @@ const handler = async (event) => {
 
     const insightMap = {};
     for (const row of (insightData.data || [])) {
-      const purchases = (row.actions || [])
-        .filter(a => ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase'].includes(a.action_type))
-        .reduce((s, a) => s + parseFloat(a.value || 0), 0);
-      const revenue = (row.action_values || [])
-        .filter(a => ['purchase','offsite_conversion.fb_pixel_purchase','omni_purchase'].includes(a.action_type))
-        .reduce((s, a) => s + parseFloat(a.value || 0), 0);
+      // Köptyperna är samma köp: största värdet, aldrig summan.
+      const purchases = actionValue(row.actions, PURCHASE_TYPES);
+      const revenue = actionValue(row.action_values, PURCHASE_TYPES);
       const spend = parseFloat(row.spend || 0);
       insightMap[row.adset_id] = { spend, impressions: parseInt(row.impressions || 0), clicks: parseInt(row.clicks || 0), cpm: parseFloat(row.cpm || 0), conversions: purchases, roas: spend > 0 ? revenue / spend : 0 };
     }
