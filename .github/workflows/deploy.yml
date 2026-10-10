@@ -1,4 +1,8 @@
-name: Deploy Admiral Backend
+name: Admiral CI
+
+# Tester och hemlighetsskanning vid varje PR och push till main.
+# Driftsättning sker inte här: Netlify bygger och publicerar main automatiskt.
+# Hälsokollen på VPS:en uppdateras manuellt (rsync) efter merge.
 
 on:
   push:
@@ -6,84 +10,52 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  NODE_VERSION: '18'
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run tests
-        run: npm test
-      
-      - name: Check database migrations
-        run: npm run migrate -- --dry-run
+      - uses: actions/checkout@v7.0.1
 
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Deploy to VPS
-        env:
-          DEPLOY_KEY: ${{ secrets.VPS_SSH_KEY }}
-          DEPLOY_HOST: ${{ secrets.VPS_HOST }}
-          DEPLOY_USER: ${{ secrets.VPS_USER }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-            $DEPLOY_USER@$DEPLOY_HOST \
-            "cd /opt/admiral-backend && \
-             git pull origin main && \
-             npm ci --only=production && \
-             npm run migrate && \
-             sudo systemctl restart admiral"
-      
-      - name: Verify deployment
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-        run: |
-          sleep 5
-          curl -f http://$VPS_HOST:3001/health || exit 1
-      
-      - name: Notify on success
-        if: success()
-        run: echo "✅ Deployment successful"
-      
-      - name: Notify on failure
-        if: failure()
-        run: echo "❌ Deployment failed"
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            healthcheck/package-lock.json
+
+      - name: Installera beroenden
+        run: npm ci
+
+      - name: Funktionernas tester
+        run: npm run test:functions
+
+      - name: Installera hälsokollens beroenden
+        working-directory: healthcheck
+        run: npm ci
+
+      - name: Hälsokollens tester
+        working-directory: healthcheck
+        run: npm test
 
   security:
     runs-on: ubuntu-latest
-    
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Run npm audit
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: npm audit (information)
         run: npm audit --audit-level=moderate || true
-      
-      - name: Check for secrets
-        uses: trufflesecurity/trufflehog@main
+
+      # Vid push jämförs mot föregående commit på main, vid PR mot PR:ens bas.
+      - name: Leta efter hemligheter
+        uses: trufflesecurity/trufflehog@v3.97.5
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
+          base: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          head: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          extra_args: --only-verified

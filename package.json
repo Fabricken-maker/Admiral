@@ -8,7 +8,7 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "migrate": "node migrations/run.js",
-    "test": "jest",
+    "test": "node --test test/*.test.mjs",
     "test:functions": "node --test test/*.test.mjs",
     "build": "echo 'No build step needed'",
     "deploy": "npm run migrate && npm start"
@@ -29,7 +29,6 @@
     "pngjs": "7.0.0"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
     "nodemon": "^3.0.2"
   },
   "engines": {
