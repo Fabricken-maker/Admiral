@@ -22,3 +22,6 @@ yarn-error.log*
 *.key
 cert.pem
 key.pem
+
+# Supabase CLI
+supabase/.temp/
