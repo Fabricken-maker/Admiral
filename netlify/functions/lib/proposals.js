@@ -4,6 +4,7 @@
  * Värdemodell:
  *   budget_change, apply_recommendation: { budgets: { "<objekt-id>": dagsbudget i öre } }
  *   ad_status:                           { status: "ACTIVE" | "PAUSED" }
+ *   creative_swap:                       { ads: { "<annons-id>": "ACTIVE" | "PAUSED" } } (se creative-swap.js)
  */
 import { kr, monthlyFromDailyCents } from './simulate.js';
 
@@ -38,6 +39,13 @@ export function monthlyDelta(type, current, proposed) {
 }
 
 export function sameValue(type, a, b) {
+  if (type === 'creative_swap') {
+    // Jämför annonsernas status (och, när det finns, vilken annonsdesign den gamla annonsen har).
+    const ads = Object.entries(b?.ads || {});
+    const creatives = Object.entries(b?.creative_ids || {});
+    return ads.length > 0 && ads.every(([id, st]) => a?.ads?.[id] === st)
+      && creatives.every(([id, cid]) => String(a?.creative_ids?.[id]) === String(cid));
+  }
   if (isBudgetType(type)) {
     const ka = Object.keys(a?.budgets || {}).sort();
     const kb = Object.keys(b?.budgets || {}).sort();
@@ -94,8 +102,15 @@ export function checkLimits({ type, kind = 'change', current, proposed, settings
 const sek = (cents) => kr(Number(cents) / 100);
 const q = (name) => `”${name}”`;
 
+const variantName = (p) => `variant ${p.meta?.variant_label || 'B'}`;
+
 export function describe(p) {
   const prefix = p.kind === 'undo' ? 'Ångra: ' : '';
+  if (p.type === 'creative_swap') {
+    return p.kind === 'undo'
+      ? `${prefix}Starta annonsen ${q(p.object_name)} igen och pausa ${variantName(p)}.`
+      : `Byt annonsen ${q(p.object_name)} mot ${variantName(p)}.`;
+  }
   if (p.type === 'ad_status') {
     return `${prefix}${p.proposed_value.status === 'PAUSED' ? 'Pausa' : 'Starta'} annonsen ${q(p.object_name)}${p.proposed_value.status === 'PAUSED' ? '' : ' igen'}.`;
   }
@@ -110,6 +125,11 @@ export function describe(p) {
 }
 
 export function confirmationText(p) {
+  if (p.type === 'creative_swap') {
+    return p.kind === 'undo'
+      ? `Annonsen ${q(p.object_name)} startar igen och ${variantName(p)} pausas.`
+      : `Annonsen ${q(p.object_name)} pausas och ${variantName(p)} startar som en ny annons.`;
+  }
   if (p.type === 'ad_status') {
     return p.proposed_value.status === 'PAUSED' ? `Annonsen ${q(p.object_name)} pausas.` : `Annonsen ${q(p.object_name)} startar igen.`;
   }

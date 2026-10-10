@@ -49,5 +49,14 @@ export function createRepo(supabase) {
     async insertApproval(row) {
       return must(await supabase.from('approvals').insert(row).select().single(), 'approvals');
     },
+    // Modul E: varianten (granskningen i Modul B) och dess bild i den privata lagringen.
+    async getVariantReview(id) {
+      if (!id) return null;
+      return must(await supabase.from('creative_reviews').select('id, fatigue_id, status, verdict, decided_verdict, image_path, asset_key').eq('id', id).maybeSingle(), 'creative_reviews');
+    },
+    async getImageBytes(path) {
+      const blob = must(await supabase.storage.from('creatives').download(path), 'lagring');
+      return Buffer.from(await blob.arrayBuffer());
+    },
   };
 }

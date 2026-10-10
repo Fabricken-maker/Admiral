@@ -80,6 +80,24 @@
     .upload { border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; margin-bottom: 1.4rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem 1.2rem; }
     .upload .full { grid-column: 1 / -1; }
 
+    /* Trötta annonser (Modul E) */
+    .tired { margin-bottom: 1.8rem; }
+    .tired h2, .grid-title { font-size: .66rem; text-transform: uppercase; letter-spacing: .1em; color: var(--t40); font-weight: 600; margin-bottom: .7rem; }
+    .ti { display: flex; gap: 1rem; padding: 1rem 0; border-top: 1px solid var(--border); }
+    .ti:first-of-type { border-top: 0; padding-top: .2rem; }
+    .ti > .th { width: 5rem; height: 5rem; border-radius: 8px; background: var(--stage); flex: 0 0 auto; display: grid; place-items: center; overflow: hidden; }
+    .ti > .th img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .ti .bd { flex: 1; min-width: 0; }
+    .ti .nm { font-size: .88rem; font-weight: 600; }
+    .ti .nm small { font-weight: 400; color: var(--t40); margin-left: .4rem; }
+    .ti .sm { font-size: .78rem; color: var(--t60); margin-top: .2rem; }
+    .ti .vs { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .6rem; }
+    .ti .v { display: flex; gap: .5rem; align-items: center; border: 1px solid var(--border); border-radius: 9px; padding: .3rem .55rem .3rem .3rem; font-size: .74rem; color: inherit; }
+    .ti .v img { width: 2.4rem; height: 2.4rem; object-fit: contain; background: var(--stage); border-radius: 5px; }
+    .ti .v b { font-weight: 700; margin-right: .25rem; }
+    .ti .st { font-size: .74rem; color: var(--t60); margin-top: .55rem; }
+    .ti .ac { display: flex; gap: .45rem; margin-top: .6rem; flex-wrap: wrap; }
+
     /* ── Granskningsfönstret ────────────────── */
     .review { display: flex; height: calc(100vh - 3.4rem); }
     .stage-wrap { flex: 0 0 65%; display: flex; flex-direction: column; background: var(--stage); min-width: 0; }
@@ -221,7 +239,7 @@
     const c = d.counts;
     main.innerHTML = `<div class="wrap">
       <form class="upload" id="upload" hidden>
-        <div class="full"><label class="f" for="up-file">Bild (JPEG, PNG eller WebP)</label><input type="file" id="up-file" accept="image/jpeg,image/png,image/webp" required></div>
+        <div class="full"><label class="f" for="up-file">Bild (JPEG, PNG eller WebP)</label><input type="file" id="up-file" accept="image/jpeg,image/png,image/webp" required><input type="hidden" id="up-fatigue"><div class="hint" id="up-for" hidden></div></div>
         <div><label class="f" for="up-name">Namn</label><input class="input" id="up-name" placeholder="t.ex. Höstkampanj, variant B"></div>
         <div><label class="f" for="up-orig">Jämför med original</label><select class="select" id="up-orig" style="max-width:none;width:100%"><option value="">Inget original</option>${d.reviews.filter((r) => r.status === 'klar').map((r) => `<option value="${r.id}">${esc(r.ad_name || 'Bild')} (${r.asset_type})</option>`).join('')}</select></div>
         <div class="full"><label class="f" for="up-body">Annonstext</label><textarea class="textarea" id="up-body"></textarea></div>
@@ -231,6 +249,7 @@
       </form>
       ${!d.profile_exists ? `<div class="notice">Kunden har ingen varumärkesprofil. Färger, typsnitt och logotyp kan inte jämföras förrän den är ifylld. <a href="?profil=${d.user_id}">Fyll i varumärkesprofilen</a></div>` : ''}
       ${!d.ai_active ? `<div class="notice">Bildbedömningen med AI är inte aktiv. Logotyp, produktdetaljer, text i bilden och typsnitt bedöms manuellt.</div>` : ''}
+      ${fatigueHtml(d.fatigue || [])}
       <div class="counts">
         <div class="count"><div class="n v-godkand">${c.godkand}</div><div class="l">Godkänd</div></div>
         <div class="count"><div class="n v-granska">${c.granska}</div><div class="l">Granska</div></div>
@@ -246,7 +265,28 @@
         </a>`; }).join('')}</div>` : '<div class="empty">Inga granskningar ännu. Välj "Granska aktiva annonser" eller ladda upp en bild.</div>'}
     </div>`;
 
-    document.getElementById('new-btn').onclick = () => { document.getElementById('upload').hidden = false; };
+    const openUpload = (fatigue) => {
+      const form = document.getElementById('upload');
+      form.hidden = false;
+      document.getElementById('up-fatigue').value = fatigue ? fatigue.id : '';
+      const forEl = document.getElementById('up-for');
+      forEl.hidden = !fatigue;
+      forEl.textContent = fatigue ? `Variant till ”${fatigue.ad_name}”. Godkänd i granskningen blir den ett förslag om byte. Lämnas texterna tomma används annonsens texter.` : '';
+      if (fatigue?.original) document.getElementById('up-orig').value = fatigue.original.id;
+      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    document.getElementById('new-btn').onclick = () => openUpload(null);
+    main.querySelectorAll('[data-upload-for]').forEach((b) => b.onclick = () => openUpload((d.fatigue || []).find((f) => String(f.id) === b.dataset.uploadFor)));
+    main.querySelectorAll('[data-dismiss]').forEach((b) => b.onclick = async () => {
+      if (!confirm('Avfärda tröttheten för den här annonsen? Väntande förslag tas bort.')) return;
+      try { await post('/api/reviews', { action: 'dismiss_fatigue', id: Number(b.dataset.dismiss) }); overview(d.user_id); }
+      catch (err) { alert(err.message); }
+    });
+    main.querySelectorAll('[data-propose]').forEach((b) => b.onclick = async () => {
+      b.disabled = true;
+      try { await post('/api/reviews', { action: 'propose_variant', id: Number(b.dataset.propose) }); overview(d.user_id); }
+      catch (err) { alert(err.message); b.disabled = false; }
+    });
     document.getElementById('scan-btn').onclick = async (e) => {
       const msg = document.getElementById('scan-msg');
       e.target.disabled = true;
@@ -271,12 +311,43 @@
           action: 'upload', user_id: d.user_id, image_base64: await fileToBase64(file),
           name: document.getElementById('up-name').value || file.name,
           original_review_id: document.getElementById('up-orig').value || null,
+          fatigue_id: document.getElementById('up-fatigue').value || null,
           texts: { body: document.getElementById('up-body').value, title: document.getElementById('up-title').value, description: document.getElementById('up-desc').value },
         });
         go({ id: r.id });
       } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
     };
-    if (c.pagar) { clearTimeout(pollTimer); pollTimer = setTimeout(() => overview(d.user_id), 5000); }
+    if (c.pagar || (d.fatigue || []).some((f) => f.variants.some((v) => v.status === 'koar' || v.status === 'analyserar'))) { clearTimeout(pollTimer); pollTimer = setTimeout(() => overview(d.user_id), 5000); }
+  }
+
+  // ── Trötta annonser (Modul E) ─────────────────────────
+  const OPEN_PROPOSAL = ['pending', 'approved', 'verifying', 'done'];
+  function fatigueHtml(list) {
+    if (!list.length) return '';
+    return `<section class="tired" aria-label="Trötta annonser"><h2>Trötta annonser</h2>${list.map((f) => {
+      const open = f.status === 'trott';
+      const hasProposal = f.proposal && OPEN_PROPOSAL.includes(f.proposal.status);
+      const state = f.status === 'ersatt' ? `Ersatt ${esc(date(f.swapped_at))}.`
+        : f.status === 'avfardad' ? 'Avfärdad.'
+        : f.status === 'aterhamtad' ? 'Annonsen presterar som förut igen.'
+        : f.proposal ? `Förslag: ${esc(f.proposal.label)}${f.proposal.reason ? ` (${esc(f.proposal.reason)})` : ''}.`
+        : f.variants.some((v) => v.status !== 'klar') ? 'Varianterna granskas.'
+        : f.variants.length ? 'Ingen variant är godkänd ännu.' : 'Varianter tas fram.';
+      return `<div class="ti">
+        <div class="th">${f.original?.image_url ? `<img src="${esc(f.original.image_url)}" alt="">` : ''}</div>
+        <div class="bd">
+          <div class="nm">${esc(f.ad_name || f.ad_id)}<small>${esc(f.campaign_name || '')}</small></div>
+          ${f.summary ? `<div class="sm">Tappar effekt: ${esc(f.summary)}.</div>` : ''}
+          ${f.variants.length ? `<div class="vs">${f.variants.map((v) => {
+            const vv = v.status === 'klar' ? v.verdict : v.status === 'fel' ? 'fel' : 'pagar';
+            const canPropose = open && !hasProposal && v.status === 'klar' && v.verdict === 'godkand';
+            return `<span class="v"><a href="?id=${v.id}" style="display:contents;color:inherit">${v.image_url ? `<img src="${esc(v.image_url)}" alt="">` : ''}<span><b>${esc(v.label)}</b><span class="v-${vv}">${verdictWord(vv)}</span>${v.source === 'admiral' ? '<br><span style="color:var(--t40)">Nya texter</span>' : ''}</span></a>${canPropose ? `<button class="btn small" data-propose="${v.id}">Föreslå</button>` : ''}</span>`;
+          }).join('')}</div>` : ''}
+          <div class="st">${state}${f.status_note ? ` ${esc(f.status_note)}` : ''}</div>
+          ${open ? `<div class="ac"><button class="btn small" data-upload-for="${f.id}">Ladda upp variant</button><button class="btn small" data-dismiss="${f.id}">Avfärda</button></div>` : ''}
+        </div>
+      </div>`;
+    }).join('')}</section>`;
   }
 
   // ── Granskningsfönstret ───────────────────────────────

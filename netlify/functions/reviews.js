@@ -8,6 +8,9 @@
  * POST /api/reviews { action: 'upload', user_id, image_base64, texts, original_review_id? } → granska en ny bild
  * POST /api/reviews { action: 'decide', id, verdict, note }             → Fabrickens beslut (godkand/underkand/null)
  * POST /api/reviews { action: 'rerun', id }                             → granska igen (t.ex. efter ändrad profil)
+ * POST /api/reviews { action: 'dismiss_fatigue', id }                   → Modul E: avfärda en trött annons
+ * POST /api/reviews { action: 'propose_variant', id }                   → Modul E: gör förslag av en godkänd variant
+ * Uppladdning med fatigue_id blir en variant till den trötta annonsen (Modul E).
  *
  * Bara Fabricken (admin) i första versionen. Läser från Meta, skriver aldrig dit.
  */
@@ -24,6 +27,10 @@ import { storeImage, MAX_IMAGE_BYTES } from './lib/review-run.js';
 import { rankedFindings, FEATURE_LABELS } from './lib/review-rules.js';
 import { visionAvailable } from './lib/review-vision.js';
 import { triggerReviewRunner } from './lib/internal-auth.js';
+import { createRepo } from './lib/write-repo.js';
+import { tryPropose, supersedeForVariant, nextLabel } from './lib/fatigue-flow.js';
+import { fatigueSummary } from './lib/fatigue.js';
+import { isApprovedVariant } from './lib/meta-write.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const ADMIN_EMAIL = process.env.ADMIRAL_ADMIN_EMAIL || 'admin@admiralai.se';
@@ -97,17 +104,31 @@ const handler = async (event) => {
         descriptions: [String(body.texts?.description || '').trim()].filter(Boolean),
         cta: [],
       };
-      const originalId = body.original_review_id ? Number(body.original_review_id) : null;
+      // Modul E: en variant till en trött annons jämförs med annonsens bild och får nästa bokstav.
+      let fatigue = null;
+      let label = null;
+      if (body.fatigue_id) {
+        const { data: f } = await supabase.from('ad_fatigue').select('*').eq('id', Number(body.fatigue_id)).maybeSingle();
+        if (!f || f.user_id !== userId || f.status !== 'trott') return json(400, { error: 'Den trötta annonsen finns inte' });
+        fatigue = f;
+        label = await nextLabel(supabase, f.id);
+        if (!label) return json(400, { error: 'Annonsen har redan max antal varianter.' });
+      }
+      const originalId = body.original_review_id ? Number(body.original_review_id) : fatigue?.original_review_id || null;
       if (originalId) {
         const orig = await store.getReview(originalId);
         if (!orig || orig.user_id !== userId) return json(400, { error: 'Originalet finns inte för den här kunden' });
+        if (fatigue && !texts.bodies.length) Object.assign(texts, { bodies: orig.texts?.bodies?.slice(0, 1) || [], titles: orig.texts?.titles?.slice(0, 1) || [], descriptions: orig.texts?.descriptions?.slice(0, 1) || [] });
       }
       const assetKey = `upl:${stored.hash}`;
-      const contentKey = crypto.createHash('sha256').update(JSON.stringify({ assetKey, texts, originalId })).digest('hex');
+      const contentKey = crypto.createHash('sha256').update(JSON.stringify({ assetKey, texts, originalId, fatigue: fatigue?.id || null })).digest('hex');
       const [id] = await store.enqueue([{
-        user_id: userId, source: 'uppladdad', ad_name: String(body.name || '').trim().slice(0, 120) || 'Uppladdad bild',
+        user_id: userId, source: 'uppladdad',
+        ad_name: fatigue ? `${fatigue.ad_name || 'Annons'} – variant ${label}` : String(body.name || '').trim().slice(0, 120) || 'Uppladdad bild',
+        ad_account_id: fatigue?.ad_account_id || null, campaign_name: fatigue?.campaign_name || null,
         asset_key: assetKey, asset_type: 'bild', content_key: contentKey, original_review_id: originalId,
         image_path: stored.path, image_sha256: stored.hash, texts, created_by: actor.id,
+        fatigue_id: fatigue?.id || null, variant_label: label,
       }]);
       if (!id) {
         const { data } = await supabase.from('creative_reviews').select('id').eq('user_id', userId).eq('asset_key', assetKey).eq('content_key', contentKey).maybeSingle();
@@ -128,7 +149,30 @@ const handler = async (event) => {
         decided_at: verdict ? new Date().toISOString() : null,
         decision_note: verdict ? String(body.note || '').trim().slice(0, 500) || null : null,
       });
-      return json(200, await detail(store, await store.getReview(r.id)));
+      const updated = await store.getReview(r.id);
+      // Modul E: en godkänd variant blir förslag, en som inte längre är godkänd förlorar sitt förslag.
+      if (updated.fatigue_id) {
+        if (isApprovedVariant(updated)) await tryPropose({ supabase, repo: createRepo(supabase), store, review: updated, tokens: await tokensForCustomer(supabase, updated.user_id) });
+        else await supersedeForVariant(supabase, updated.id);
+      }
+      return json(200, await detail(store, updated));
+    }
+
+    if (body.action === 'dismiss_fatigue') {
+      const { data: f } = await supabase.from('ad_fatigue').select('id, status, proposal_id').eq('id', Number(body.id)).maybeSingle();
+      if (!f || f.status !== 'trott') return json(404, { error: 'Den trötta annonsen finns inte' });
+      await supabase.from('ad_fatigue').update({ status: 'avfardad', dismissed_by: actor.id, updated_at: new Date().toISOString() }).eq('id', f.id);
+      if (f.proposal_id) await supabase.from('proposals').update({ status: 'superseded', status_reason: 'Fabricken avfärdade tröttheten.', updated_at: new Date().toISOString() }).eq('id', f.proposal_id).eq('status', 'pending');
+      return json(200, { id: f.id, status: 'avfardad' });
+    }
+
+    if (body.action === 'propose_variant') {
+      const r = await store.getReview(Number(body.id));
+      if (!r?.fatigue_id) return json(404, { error: 'Varianten finns inte' });
+      if (!isApprovedVariant(r)) return json(400, { error: 'Bara godkända varianter kan bli förslag.' });
+      const result = await tryPropose({ supabase, repo: createRepo(supabase), store, review: r, tokens: await tokensForCustomer(supabase, r.user_id), replace: true });
+      if (result.rejected) return json(400, { error: result.rejected });
+      return json(200, { proposal_id: result.proposal?.id || result.proposal_id || null, skipped: result.skipped || null });
     }
 
     if (body.action === 'rerun') {
@@ -136,6 +180,7 @@ const handler = async (event) => {
       if (!r) return json(404, { error: 'Granskningen finns inte' });
       if (r.status === 'analyserar') return json(409, { error: 'Granskningen pågår redan' });
       await store.updateReview(r.id, { status: 'koar', attempts: 0, error: null });
+      if (r.fatigue_id) await supersedeForVariant(supabase, r.id);
       await triggerReviewRunner(originOf(event));
       return json(200, { id: r.id, status: 'koar' });
     }
@@ -163,7 +208,39 @@ async function overview(store, userId) {
     ai_active: visionAvailable(),
     counts,
     reviews: rows.map((r) => ({ ...publicRow(r), image_url: urls[r.image_path] || null })),
+    fatigue: await fatigueList(store, userId),
   };
+}
+
+// Modul E: trötta annonser (öppna och de senaste 8 veckornas byten) med varianter och förslag.
+const PROPOSAL_LABEL = { pending: 'Väntar på godkännande', approved: 'Godkänd', verifying: 'Verifierar', done: 'Genomförd', failed: 'Misslyckades', rejected: 'Avstådd', expired: 'Gick ut', superseded: 'Ersatt' };
+async function fatigueList(store, userId) {
+  const since = new Date(Date.now() - 56 * 86400000).toISOString();
+  const { data: rows } = await supabase.from('ad_fatigue').select('*').eq('user_id', userId)
+    .or(`status.eq.trott,updated_at.gte.${since}`).order('detected_at', { ascending: false }).limit(20);
+  if (!rows?.length) return [];
+  const ids = rows.map((f) => f.id);
+  const { data: variants } = await supabase.from('creative_reviews')
+    .select('id, fatigue_id, variant_label, source, status, verdict, decided_verdict, image_path, texts').in('fatigue_id', ids).order('variant_label');
+  const propIds = rows.map((f) => f.proposal_id).filter(Boolean);
+  const { data: props } = propIds.length ? await supabase.from('proposals').select('id, status, status_reason').in('id', propIds) : { data: [] };
+  const originals = await Promise.all(rows.map((f) => (f.original_review_id ? store.getReview(f.original_review_id) : null)));
+  const urls = await store.signedUrls([...(variants || []).map((v) => v.image_path), ...originals.map((o) => o?.image_path)]);
+  return rows.map((f, i) => {
+    const prop = (props || []).find((p) => p.id === f.proposal_id);
+    return {
+      id: f.id, ad_id: f.ad_id, ad_name: f.ad_name, campaign_name: f.campaign_name, status: f.status, status_note: f.status_note,
+      summary: f.metrics?.recent ? fatigueSummary(f.metrics) : null, week_start: f.week_start, detected_at: f.detected_at,
+      original: originals[i] ? { id: originals[i].id, image_url: urls[originals[i].image_path] || null } : null,
+      variants: (variants || []).filter((v) => v.fatigue_id === f.id).map((v) => ({
+        id: v.id, label: v.variant_label, source: v.source, status: v.status,
+        verdict: v.status === 'klar' ? effectiveVerdict(v) : null, image_url: urls[v.image_path] || null,
+        title: v.texts?.titles?.[0] || null,
+      })),
+      proposal: prop ? { id: prop.id, status: prop.status, label: PROPOSAL_LABEL[prop.status] || prop.status, reason: prop.status_reason } : null,
+      new_ad_id: f.new_ad_id, swapped_at: f.swapped_at, followup: f.followup,
+    };
+  });
 }
 
 async function detail(store, r) {
@@ -195,6 +272,7 @@ function publicRow(r) {
     asset_type: r.asset_type, source: r.source, status: r.status,
     verdict: r.verdict, verdict_reason: r.verdict_reason, decided_verdict: r.decided_verdict,
     effective_verdict: effectiveVerdict(r), original_review_id: r.original_review_id,
+    fatigue_id: r.fatigue_id || null, variant_label: r.variant_label || null,
     created_at: r.created_at, analyzed_at: r.analyzed_at,
   };
 }

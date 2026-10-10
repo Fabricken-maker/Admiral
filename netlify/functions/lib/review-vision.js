@@ -85,7 +85,7 @@ export function buildRequest({ image, logos = [], original = null, profile = {},
   content.push({ type: 'text', text: `${profileText(profile)}\n\nGranska annonsbilden.` });
   return {
     model,
-    max_tokens: 2000,
+    max_tokens: 4000,
     system: SYSTEM,
     output_config: { format: { type: 'json_schema', schema: responseSchema({ withOriginal: Boolean(original) }) } },
     messages: [{ role: 'user', content }],

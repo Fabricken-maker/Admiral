@@ -103,7 +103,7 @@ export function createReviewStore(supabase) {
 
     async listReviews(userId, limit = 200) {
       return must(await supabase.from('creative_reviews')
-        .select('id, user_id, ad_id, ad_name, ad_status, campaign_name, asset_key, asset_type, source, verdict, verdict_reason, status, decided_verdict, image_path, original_review_id, created_at, analyzed_at')
+        .select('id, user_id, ad_id, ad_name, ad_status, campaign_name, asset_key, asset_type, source, verdict, verdict_reason, status, decided_verdict, image_path, original_review_id, fatigue_id, variant_label, created_at, analyzed_at')
         .eq('user_id', userId).order('created_at', { ascending: false }).limit(limit), 'creative_reviews');
     },
 

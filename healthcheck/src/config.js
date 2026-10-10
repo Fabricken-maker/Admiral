@@ -101,6 +101,8 @@ export const REQUIRED_TABLES = [
   'notice_log',
   'brand_profiles',
   'creative_reviews',
+  'fatigue_settings',
+  'ad_fatigue',
 ];
 
 // Var i koden en tabell används — så att "kräver människa" kan peka ut platsen.
@@ -116,4 +118,5 @@ export const EXPECTED_SCHEDULES = {
   'proposals-maintenance': '*/15 * * * *',
   'recommendations-sync': '45 4 * * *',
   'reviews-sync': '30 5 * * *',
+  'fatigue-sync': '45 5 * * *',
 };
