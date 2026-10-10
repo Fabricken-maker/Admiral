@@ -6,6 +6,8 @@
  * GET /api/weekly?customers=1        → (admin) kunder som har veckovy
  *
  * Endast läsning. Siffrorna kommer från weekly_metrics (synkade från Meta av weekly-sync).
+ * swaps: Modul E:s byten av trötta annonser de senaste 8 veckorna, med den nya annonsen
+ * jämförd mot den gamla (uppföljning från fatigue-sync).
  */
 import jwt from 'jsonwebtoken';
 import { createClient } from '@supabase/supabase-js';
@@ -78,7 +80,19 @@ const handler = async (event) => {
 
   const view = buildWeeklyView(rows, settings, { campaignId });
   const campaign = campaignId ? { id: campaignId, name: rows.find((r) => r.campaign_id === campaignId)?.campaign_name || campaignId } : null;
-  return json(200, { enabled: true, user_id: customerId, campaign, campaigns, ...view });
+  return json(200, { enabled: true, user_id: customerId, campaign, campaigns, ...view, swaps: await swapsFor(customerId) });
 };
+
+async function swapsFor(customerId) {
+  const since = new Date(Date.now() - 56 * 86400000).toISOString();
+  const { data } = await supabase.from('ad_fatigue')
+    .select('id, ad_name, campaign_name, swapped_at, followup, proposals!ad_fatigue_proposal_id_fkey(meta)')
+    .eq('user_id', customerId).eq('status', 'ersatt').gte('swapped_at', since).order('swapped_at', { ascending: false });
+  return (data || []).map((f) => ({
+    id: f.id, ad_name: f.ad_name, campaign_name: f.campaign_name, swapped_at: f.swapped_at,
+    variant_label: f.proposals?.meta?.variant_label || null,
+    followup: f.followup ? { status: f.followup.status, word: f.followup.word || null, since: f.followup.since, metrics: f.followup.metrics || [] } : null,
+  }));
+}
 
 export default modern(handler);

@@ -9,6 +9,7 @@ import { modern } from './lib/modern.js';
 import { createRepo } from './lib/write-repo.js';
 import { tokensForCustomer } from './lib/token-store.js';
 import { reverify } from './lib/meta-write.js';
+import { markSwapDone, markSwapUndone } from './lib/fatigue-flow.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -24,7 +25,12 @@ const handler = async () => {
   const reverified = [];
   for (const w of open || []) {
     try {
-      reverified.push({ id: w.id, status: await reverify({ repo, writeLog: w, tokens: await tokensForCustomer(supabase, w.user_id) }) });
+      const status = await reverify({ repo, writeLog: w, tokens: await tokensForCustomer(supabase, w.user_id) });
+      reverified.push({ id: w.id, status });
+      if (status === 'done') {
+        const p = await repo.getProposal(w.proposal_id);
+        if (p?.type === 'creative_swap') await (p.kind === 'undo' ? markSwapUndone : markSwapDone)(supabase, p);
+      }
     } catch (e) {
       reverified.push({ id: w.id, error: e.message });
     }

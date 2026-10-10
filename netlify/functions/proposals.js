@@ -20,6 +20,8 @@ import { tokensForCustomer } from './lib/token-store.js';
 import { buildProposal, ProposalRejected } from './lib/build-proposal.js';
 import { executeApproved, createUndo, WriteBlocked } from './lib/meta-write.js';
 import { describe, normalizeWriteSettings, PUBLIC_STATUS } from './lib/proposals.js';
+import { isApprovedVariant } from './lib/meta-write.js';
+import { markSwapDone, markSwapUndone } from './lib/fatigue-flow.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const ADMIN_EMAIL = process.env.ADMIRAL_ADMIN_EMAIL || 'admin@admiralai.se';
@@ -128,6 +130,9 @@ async function runGate(repo, proposalId, customerId) {
   const tokens = await tokensForCustomer(supabase, customerId);
   try {
     const r = await executeApproved({ repo, proposalId, tokens });
+    // Modul E: ett genomfört (eller ångrat) byte av annons stäms av mot den trötta annonsen.
+    const p = await repo.getProposal(proposalId);
+    if (p?.type === 'creative_swap') await (p.kind === 'undo' ? markSwapUndone : markSwapDone)(supabase, p);
     return { ...r, status_label: PUBLIC_STATUS[r.status] };
   } catch (e) {
     if (!(e instanceof WriteBlocked)) throw e;
@@ -137,14 +142,41 @@ async function runGate(repo, proposalId, customerId) {
   }
 }
 
-function publicProposal(p) {
+function publicProposal(p, imageUrls = {}) {
   return {
     id: p.id, type: p.type, kind: p.kind, title: describe(p), reason: p.reason,
     support: p.reason_data?.support || [], verdict: p.reason_data?.verdict || null,
     expected: p.expected_outcome?.text || null, confirmation_text: p.confirmation_text,
     status: p.status, status_label: PUBLIC_STATUS[p.status], status_reason: p.status_reason,
     valid_until: p.valid_until, created_at: p.created_at,
+    ...(p.type === 'creative_swap' ? {
+      variant: {
+        label: p.meta?.variant_label || null, asset_type: p.meta?.asset_type || null, kind: p.meta?.variant_kind || null,
+        image_url: imageUrls[p.meta?.image_path] || null, texts: p.meta?.texts || {},
+      },
+    } : {}),
   };
+}
+
+// Modul E: bara förslag vars variant fortfarande är Godkänd i granskningen visas. Övriga ersätts.
+async function onlyApprovedVariants(pending) {
+  const swaps = pending.filter((p) => p.type === 'creative_swap' && p.kind === 'change');
+  if (!swaps.length) return { visible: pending, imageUrls: {} };
+  const ids = swaps.map((p) => p.meta?.variant_review_id).filter(Boolean);
+  const { data: reviews } = await supabase.from('creative_reviews').select('id, fatigue_id, status, verdict, decided_verdict').in('id', ids.length ? ids : [0]);
+  const ok = new Set((reviews || []).filter(isApprovedVariant).map((r) => String(r.id)));
+  const hidden = swaps.filter((p) => !ok.has(String(p.meta?.variant_review_id)));
+  if (hidden.length) {
+    await supabase.from('proposals').update({ status: 'superseded', status_reason: 'Varianten är inte godkänd i granskningen.', updated_at: new Date().toISOString() }).in('id', hidden.map((p) => p.id));
+  }
+  const visible = pending.filter((p) => !hidden.includes(p));
+  const paths = visible.filter((p) => p.type === 'creative_swap').map((p) => p.meta?.image_path).filter(Boolean);
+  let imageUrls = {};
+  if (paths.length) {
+    const { data } = await supabase.storage.from('creatives').createSignedUrls(paths, 3600);
+    imageUrls = Object.fromEntries((data || []).filter((d) => d.signedUrl).map((d) => [d.path, d.signedUrl]));
+  }
+  return { visible, imageUrls };
 }
 
 async function listForCustomer(customerId, actor) {
@@ -153,6 +185,7 @@ async function listForCustomer(customerId, actor) {
     supabase.from('proposals').select('*').eq('user_id', customerId).eq('status', 'pending').gt('valid_until', new Date().toISOString()).order('created_at', { ascending: false }),
     supabase.from('meta_write_log').select('id, proposal_id, object_id, action, status, error, actor_id, on_behalf, created_at, proposals(*)').eq('user_id', customerId).order('created_at', { ascending: false }).limit(10),
   ]);
+  const { visible, imageUrls } = await onlyApprovedVariants(pending || []);
   const latestPerObject = new Map();
   for (const w of writes || []) if (w.status !== 'failed' && !latestPerObject.has(w.object_id)) latestPerObject.set(w.object_id, w.id);
   const settings = normalizeWriteSettings(ws);
@@ -161,7 +194,7 @@ async function listForCustomer(customerId, actor) {
     is_admin: actor.isAdmin,
     on_behalf: customerId !== actor.id,
     settings: { configured: !!ws, writes_enabled: settings.writes_enabled, kill_switch: settings.kill_switch, kill_switch_at: ws?.kill_switch_at || null },
-    pending: (pending || []).map(publicProposal),
+    pending: visible.map((p) => publicProposal(p, imageUrls)),
     recent: (writes || []).map((w) => ({
       write_id: w.id,
       title: w.proposals ? describe(w.proposals) : null,

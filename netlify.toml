@@ -233,6 +233,9 @@
 [functions."reviews-sync"]
   schedule = "30 5 * * *"
 
+[functions."fatigue-sync"]
+  schedule = "45 5 * * *"
+
 # SPA routing - all other paths go to index.html
 [[redirects]]
   from = "/*"

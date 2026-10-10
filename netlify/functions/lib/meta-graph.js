@@ -12,6 +12,9 @@ export class MetaError extends Error {
   }
 }
 
+// Metas förklaring till användaren (error_user_msg) säger mer än "Invalid parameter".
+export const metaMessage = (e) => e.error_user_msg || e.message;
+
 export async function graphGet(path, params, token, fetchImpl = fetch) {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params || {})) {
@@ -20,7 +23,7 @@ export async function graphGet(path, params, token, fetchImpl = fetch) {
   qs.set('access_token', token);
   const res = await fetchImpl(`${GRAPH}/${path}?${qs}`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
   const json = await res.json();
-  if (json.error) throw new MetaError(`Meta: ${json.error.message}`, json.error.code);
+  if (json.error) throw new MetaError(`Meta: ${metaMessage(json.error)}`, json.error.code);
   return json;
 }
 

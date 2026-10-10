@@ -951,6 +951,13 @@
     .wk-empty { position: absolute; inset: 0; display: grid; place-items: center; font-size: .75rem; color: var(--t40); }
     .wk-note { font-size: .8rem; color: var(--t60); }
     .wk [hidden] { display: none !important; }
+    .wk-swaps { margin-top: 1.4rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+    .wk-swaps h3 { font-size: .66rem; text-transform: uppercase; letter-spacing: .1em; color: var(--t40); font-weight: 600; margin-bottom: .5rem; }
+    .wk-swap { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; align-items: baseline; font-size: .78rem; padding: .35rem 0; }
+    .wk-swap .nm { color: #fff; min-width: 14rem; flex: 1; }
+    .wk-swap .nm small { color: var(--t40); margin-left: .4rem; }
+    .wk-swap .cm { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .wk-swap .cm span { color: var(--t40); margin-right: .3rem; }
 
     @media (max-width: 920px) {
       .wk-metrics, .wk-metrics.three { grid-template-columns: repeat(2, 1fr); gap: 1.2rem; }
@@ -987,6 +994,10 @@
     .pr-item:first-child { border-top: 0; padding-top: .2rem; }
     .pr-title { font-size: .9rem; font-weight: 600; line-height: 1.4; }
     .pr-why { font-size: .8rem; color: var(--t60); margin-top: .3rem; line-height: 1.45; }
+    .pr-variant { display: flex; gap: .9rem; margin-top: .7rem; align-items: flex-start; }
+    .pr-variant img { width: 6.5rem; height: 6.5rem; object-fit: contain; background: #1f1f1f; border-radius: 8px; flex: 0 0 auto; }
+    .pr-variant .tx { font-size: .78rem; color: var(--t60); line-height: 1.45; min-width: 0; }
+    .pr-variant .tx b { display: block; color: #fff; font-weight: 600; margin-bottom: .2rem; }
     .pr-exp { font-size: .8rem; margin-top: .25rem; color: #fff; }
     .pr-exp b { color: var(--t40); font-weight: 600; }
     .pr-actions { display: flex; align-items: center; gap: .5rem; margin-top: .75rem; flex-wrap: wrap; }
@@ -1331,6 +1342,7 @@
               </figure>
             </div>
           </div>
+          <div class="wk-swaps" id="wk-swaps" hidden></div>
           <div class="wk-note" id="wk-note" hidden></div>
         </section>
 
@@ -2425,6 +2437,23 @@
         </div>`).join('');
 
       renderWeeklyCharts(d);
+      renderSwaps(d.swaps || []);
+    }
+
+    // Modul E: bytta annonser jämförs med den gamla annonsen (egen data från Meta).
+    function renderSwaps(swaps) {
+      const el = document.getElementById('wk-swaps');
+      el.hidden = !swaps.length;
+      if (!swaps.length) return;
+      el.innerHTML = '<h3>Bytta annonser</h3>' + swaps.map(sw => {
+        const f = sw.followup;
+        const cmp = !f ? '<span class="cm is-insufficient">Följs upp från nästa dag</span>'
+          : f.status !== 'ok' ? '<span class="cm is-insufficient">För lite data</span>'
+          : f.metrics.map(m => m.status === 'ok'
+              ? `<span class="cm is-${m.outcome}"><span>${escapeHtml(m.label)}</span><span class="wk-arrow" aria-hidden="true">${WK_ARROW[m.direction]}</span> ${escapeHtml(m.word)}</span>`
+              : `<span class="cm is-insufficient"><span>${escapeHtml(m.label)}</span>För lite data</span>`).join('');
+        return `<div class="wk-swap"><div class="nm">${sw.variant_label ? `Variant ${escapeHtml(sw.variant_label)}` : 'En variant'} ersatte ”${escapeHtml(sw.ad_name || '')}”<small>${wkDate(sw.swapped_at.slice(0, 10))}</small></div>${cmp}</div>`;
+      }).join('');
     }
 
     function renderWeeklyCharts(d) {
@@ -2550,6 +2579,10 @@
         <div class="pr-item" id="pr-${p.id}">
           <div class="pr-title">${escapeHtml(p.title)}</div>
           <div class="pr-why">${escapeHtml(p.reason)}</div>
+          ${p.variant ? `<div class="pr-variant">
+            ${p.variant.image_url ? `<img src="${escapeHtml(p.variant.image_url)}" alt="Variant ${escapeHtml(p.variant.label || '')}">` : ''}
+            <div class="tx"><b>${escapeHtml(p.variant.texts?.title || '')}</b>${escapeHtml(p.variant.texts?.body || '')}${p.variant.kind === 'text' ? `<br><span style="color:var(--t40)">Samma ${p.variant.asset_type === 'video' ? 'video' : 'bild'} som i dag, nya texter.</span>` : ''}</div>
+          </div>` : ''}
           ${p.expected ? `<div class="pr-exp"><b>Förväntat:</b> ${escapeHtml(p.expected)}</div>` : ''}
           <div class="pr-actions">
             <button class="pr-btn primary" onclick="openPrConfirm(${p.id})" ${d.settings.kill_switch || !d.settings.writes_enabled ? 'disabled' : ''}>Godkänn</button>
