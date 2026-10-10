@@ -51,16 +51,21 @@ const handler = async (event) => {
   // ── GET — hämta konverteringar ────────────────────────────
   if (event.httpMethod === 'GET') {
     const bpId = event.queryStringParameters?.budget_plan_id;
+    const since = event.queryStringParameters?.since;
+    if (since && !/^\d{4}-\d{2}-\d{2}$/.test(since)) {
+      return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'since anges som ÅÅÅÅ-MM-DD' }) };
+    }
 
+    // Kunder ser bara sina egna. "!inner" behövs: ett filter på den inbäddade budgetplanen
+    // filtrerar annars bara bort planen, inte raden (och då syntes andra kunders konverteringar).
     let query = supabase
       .from('manual_conversions')
       .select(`id, budget_plan_id, conversion_date, courses_sold, revenue_sek, notes, created_at,
-               budget_plans(campaign_name, user_id)`)
+               budget_plans${isAdmin ? '' : '!inner'}(campaign_name, user_id)`)
       .order('conversion_date', { ascending: false });
 
     if (bpId) query = query.eq('budget_plan_id', bpId);
-
-    // Kunder ser bara sina egna
+    if (since) query = query.gte('conversion_date', since);
     if (!isAdmin) {
       query = query.eq('budget_plans.user_id', userId);
     }

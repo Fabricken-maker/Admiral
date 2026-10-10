@@ -91,3 +91,14 @@ test('konsolfel, trasiga laddningar och skrivförsök fångas', () => {
     .map((f) => f.id).sort();
   assert.deepEqual(ids, ['ui.konsol', 'ui.laddning', 'ui.skrivning-vid-laddning']);
 });
+
+import { evaluateAudience } from '../src/agents/ui.js';
+
+test('målgruppsdiagrammet måste visa exakt /api/meta/audience', () => {
+  const audience = { enough: true, groups: [{ age: '25-34', share: 0.6123 }, { age: '35-44', share: 0.3877 }] };
+  const chart = (labels, data) => ({ labels, datasets: [{ data }] });
+  assert.equal(evaluateAudience(chart(['25-34', '35-44'], [61.2, 38.8]), audience).ok, true);
+  assert.equal(evaluateAudience(chart(['Ålder', 'Kön', 'Intressen', 'Geografi'], [40, 30, 20, 10]), audience).ok, false);
+  assert.equal(evaluateAudience(chart(['25-34'], [100]), null).ok, false, 'diagram utan data från API:t');
+  assert.equal(evaluateAudience(null, { enough: false, groups: [] }).ok, true, 'inget diagram vid för lite data');
+});

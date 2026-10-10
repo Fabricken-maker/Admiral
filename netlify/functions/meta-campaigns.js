@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getMetaToken } from './lib/get-meta-token.js';
 import { getCorsHeaders } from './lib/cors.js';
 import { modern } from './lib/modern.js';
+import { actionValue, PURCHASE_TYPES } from './lib/weekly.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -70,38 +71,47 @@ const handler = async (event) => {
     return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(t));
   };
 
+  // Alla sidor från Meta (tidigare bara de 20 första kampanjerna).
+  const MAX_PAGES = 20;
+  const getAllPages = async (url) => {
+    const data = [];
+    let next = url;
+    for (let i = 0; next && i < MAX_PAGES; i += 1) {
+      const json = await (await fetchWithTimeout(next)).json();
+      if (json.error) return { error: json.error, data };
+      data.push(...(json.data || []));
+      next = json.paging?.next || null;
+    }
+    return { data };
+  };
+
   try {
     const allCampaigns = [];
 
     await Promise.all(accountIds.map(async (actId) => {
-      let campRes, insightRes;
+      let campData, insightData;
       try {
-        [campRes, insightRes] = await Promise.all([
-          fetchWithTimeout(`https://graph.facebook.com/v25.0/${actId}/campaigns?fields=id,name,status,objective&limit=20&access_token=${token}`),
-          fetchWithTimeout(`https://graph.facebook.com/v25.0/${actId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,actions,action_values&date_preset=last_30d&limit=20&access_token=${token}`)
+        [campData, insightData] = await Promise.all([
+          getAllPages(`https://graph.facebook.com/v25.0/${actId}/campaigns?fields=id,name,status,objective&limit=100&access_token=${token}`),
+          getAllPages(`https://graph.facebook.com/v25.0/${actId}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,actions,action_values&date_preset=last_30d&limit=100&access_token=${token}`)
         ]);
       } catch (e) {
         // Timeout/network-fel: hoppa över detta konto, fortsätt med övriga
         return;
       }
-
-      const [campData, insightData] = await Promise.all([campRes.json(), insightRes.json()]);
       if (campData.error) return;
 
       const insightMap = {};
       for (const row of (insightData.data || [])) {
-        const purchases = (row.actions || [])
-          .filter(a => ['purchase', 'offsite_conversion.fb_pixel_purchase', 'omni_purchase'].includes(a.action_type))
-          .reduce((s, a) => s + parseFloat(a.value || 0), 0);
+        // Köptyperna är samma köp: största värdet, aldrig summan.
+        const purchases = actionValue(row.actions, PURCHASE_TYPES);
         const linkClicks = (row.actions || [])
           .filter(a => a.action_type === 'link_click')
           .reduce((s, a) => s + parseFloat(a.value || 0), 0);
         const landingPageViews = (row.actions || [])
           .filter(a => ['landing_page_view', 'omni_landing_page_view'].includes(a.action_type))
           .reduce((s, a) => Math.max(s, parseFloat(a.value || 0)), 0);
-        const revenue = (row.action_values || [])
-          .filter(a => ['purchase', 'offsite_conversion.fb_pixel_purchase', 'omni_purchase'].includes(a.action_type))
-          .reduce((s, a) => s + parseFloat(a.value || 0), 0);
+        const revenue = actionValue(row.action_values, PURCHASE_TYPES);
         const spend       = parseFloat(row.spend || 0);
         const clicks      = parseInt(row.clicks || 0);
         const impressions = parseInt(row.impressions || 0);

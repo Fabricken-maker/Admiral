@@ -12,6 +12,7 @@ import { createRepo } from './lib/write-repo.js';
 import { tokensForCustomer } from './lib/token-store.js';
 import { buildProposal, ProposalRejected } from './lib/build-proposal.js';
 import { modern } from './lib/modern.js';
+import { actionValue, PURCHASE_TYPES } from './lib/weekly.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -171,9 +172,8 @@ const handler = async () => {
           const roasMap = {};
           for (const row of (adsetInsightData.data || [])) {
             const spend = parseFloat(row.spend || 0);
-            const revenue = (row.action_values || [])
-              .filter(a => ['purchase', 'offsite_conversion.fb_pixel_purchase', 'omni_purchase'].includes(a.action_type))
-              .reduce((s, a) => s + parseFloat(a.value || 0), 0);
+            // Köptyperna är samma köp: största värdet, aldrig summan.
+            const revenue = actionValue(row.action_values, PURCHASE_TYPES);
             roasMap[row.adset_id] = spend > 0 ? revenue / spend : 1;
           }
 

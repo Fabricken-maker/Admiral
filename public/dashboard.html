@@ -755,6 +755,9 @@
 
     .al-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .al-pct { margin-left: auto; font-weight: 700; color: #fff; }
+    .aud-chart-wrap { position: relative; }
+    .aud-empty { position: absolute; inset: 0; display: grid; place-items: center; font-size: .78rem; color: var(--t40); text-align: center; }
+    .aud-empty[hidden] { display: none; }
 
     /* ─── BUDGET MODAL ────────────────────────────────────── */
     .modal-backdrop {
@@ -1110,9 +1113,7 @@
     <div id="tl-loading" style="color:rgba(255,255,255,.4);font-size:.82rem;text-align:center;padding:2rem">Laddar…</div>
 
     <!-- Placeholder-banner -->
-    <div id="tl-placeholder-banner" style="display:none;background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.25);border-radius:8px;padding:.55rem .8rem;margin-bottom:1rem;font-size:.72rem;color:#f0c040;display:none">
-      ⚠️ Exempeldata — dina riktiga kampanjer visas så snart data finns inlagd
-    </div>
+    <div id="tl-empty" style="display:none;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:1.2rem 1rem;margin-bottom:1rem;font-size:.78rem;color:rgba(255,255,255,.55);text-align:center"></div>
 
     <!-- Gantt -->
     <div id="tl-gantt" style="display:none">
@@ -1682,34 +1683,13 @@
 
           <div class="panel">
             <div class="panel-head">
-              <span class="panel-title">Målgruppsfördelning</span>
-              <button class="more-btn">•••</button>
+              <span class="panel-title">Visningar per ålder · 30 d</span>
             </div>
             <div class="aud-chart-wrap">
               <canvas id="audChart" style="max-height:145px;"></canvas>
+              <div id="aud-empty" class="aud-empty" hidden>Hämtar…</div>
             </div>
-            <div class="aud-legend">
-              <div class="aud-li">
-                <div class="al-dot" style="background:#1a6ae0"></div>
-                Ålder
-                <span class="al-pct">40%</span>
-              </div>
-              <div class="aud-li">
-                <div class="al-dot" style="background:#4fc3f7"></div>
-                Kön
-                <span class="al-pct">30%</span>
-              </div>
-              <div class="aud-li">
-                <div class="al-dot" style="background:#d08a08"></div>
-                Intressen
-                <span class="al-pct">20%</span>
-              </div>
-              <div class="aud-li">
-                <div class="al-dot" style="background:#f0c040"></div>
-                Geografi
-                <span class="al-pct">10%</span>
-              </div>
-            </div>
+            <div class="aud-legend" id="aud-legend"></div>
           </div>
         </div>
 
@@ -1801,8 +1781,10 @@
         if (totConv === 0 && totClicks > 0) showBadge('kpi-badge-conv', 'Inga konv. ännu', false);
 
         // ── ROAS & KONV % ────────────────────────────────────────
-        // Hämta manuella konverteringar (intäkt + sålda kurser) för ROAS/KONV
-        fetch('/api/conversions', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+        // Hämta manuella konverteringar (intäkt + sålda kurser) för ROAS/KONV, för samma
+        // 30 dagar som spend och klick (Metas last_30d), inte för alla perioder.
+        const since30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+        fetch(`/api/conversions?since=${since30}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
           .then(r => r.json())
           .then(conv => {
             const revenue = conv?.totals?.revenue_sek || 0;
@@ -1901,17 +1883,11 @@
     });
 
     // ── Notifikationspanel ──────────────────────────────────────────────────
-    const PLACEHOLDER_NOTIFS = [
-      { severity: 'critical', category: 'token',   message: 'Meta-token löper ut om 2 dagar — förnya nu', report_date: '2026-05-13' },
-      { severity: 'warning',  category: 'pacing',  message: 'Sommarkampanjen: spenderar för långsamt (58% av plan)', report_date: '2026-05-13' },
-      { severity: 'warning',  category: 'pacing',  message: 'Retargeting Q2: spenderar för snabbt (142% av plan)', report_date: '2026-05-12' },
-      { severity: 'info',     category: 'token',   message: 'Meta-token är giltigt i 45 dagar', report_date: '2026-05-13' },
-      { severity: 'info',     category: 'budget',  message: 'Varumärkeskampanj: pacing OK (97%)', report_date: '2026-05-12' },
-    ];
 
     let notifFilter = 'all';
     let notifLoaded = false;
     let notifData   = [];
+    let notifError  = false;
 
     function toggleNotif() {
       const panel = document.getElementById('notif-panel');
@@ -1933,9 +1909,11 @@
       try {
         const res = await fetch('/api/reports', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
         const data = await res.json();
-        notifData = data.reports?.length ? data.reports : PLACEHOLDER_NOTIFS.map(n => ({...n, _placeholder: true}));
+        notifData = res.ok ? (data.reports || []) : [];
+        notifError = !res.ok;
       } catch {
-        notifData = PLACEHOLDER_NOTIFS.map(n => ({...n, _placeholder: true}));
+        notifData = [];
+        notifError = true;
       }
       notifLoaded = true;
       renderNotifs();
@@ -1965,16 +1943,11 @@
 
       if (!filtered.length) {
         document.getElementById('notif-list').innerHTML =
-          '<div style="text-align:center;padding:3rem;color:rgba(255,255,255,.3);font-size:.82rem">Inga notifikationer</div>';
+          `<div style="text-align:center;padding:3rem;color:rgba(255,255,255,.3);font-size:.82rem">${notifError ? 'Notiserna kunde inte hämtas.' : 'Inga notifikationer'}</div>`;
         return;
       }
 
-      const placeholderBanner = notifData[0]?._placeholder
-        ? `<div style="margin:.8rem 1.4rem;padding:.5rem .8rem;background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2);border-radius:8px;font-size:.7rem;color:rgba(240,192,64,.8)">
-             Exempeldata — riktiga notiser visas från imorgon kl 07:00
-           </div>` : '';
-
-      document.getElementById('notif-list').innerHTML = placeholderBanner + filtered.map(n => `
+      document.getElementById('notif-list').innerHTML = filtered.map(n => `
         <div style="padding:.85rem 1.4rem;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:.75rem;align-items:flex-start">
           <span style="font-size:.85rem;margin-top:.05rem">${sevIcon[n.severity] || '⚪'}</span>
           <div style="flex:1;min-width:0">
@@ -1988,13 +1961,9 @@
     }
 
     // ── Sök ────────────────────────────────────────────────────────────────
-    const PLACEHOLDER_SEARCH = [
-      { type: 'campaign', label: 'Sommarkampanjen 2026', sub: 'Aktiv · 15 000 kr/mån',  icon: '📢' },
-      { type: 'campaign', label: 'Retargeting Q2',        sub: 'Aktiv · 8 000 kr/mån',   icon: '📢' },
-      { type: 'campaign', label: 'Varumärkeskampanj',     sub: 'Pausad · 12 000 kr/mån', icon: '📢' },
-      { type: 'adset',    label: 'Lookalike 1–3%',        sub: 'Sommarkampanjen · 7 200 kr/dag', icon: '🎯' },
-      { type: 'adset',    label: 'Retargeting 30d',       sub: 'Retargeting Q2 · 3 800 kr/dag',  icon: '🎯' },
-    ];
+    // Sökningen går igenom kampanjerna som kampanjtabellen har hämtat (riktiga data).
+    let searchIndex = [];
+    let searchShown = [];
 
     let searchIdx = -1;
 
@@ -2022,15 +1991,19 @@
     }
 
     function showSearchPlaceholder() {
-      const items = PLACEHOLDER_SEARCH;
-      renderSearchResults(items, true);
+      if (!searchIndex.length) {
+        searchShown = [];
+        document.getElementById('search-results').innerHTML = '<div style="padding:1.5rem;text-align:center;color:rgba(255,255,255,.3);font-size:.8rem">Kampanjerna hämtas…</div>';
+        return;
+      }
+      renderSearchResults(searchIndex.slice(0, 5), true);
     }
 
     function runSearch() {
       const q = document.getElementById('search-input').value.trim().toLowerCase();
       searchIdx = -1;
       if (!q) { showSearchPlaceholder(); return; }
-      const results = PLACEHOLDER_SEARCH.filter(i =>
+      const results = searchIndex.filter(i =>
         i.label.toLowerCase().includes(q) || i.sub.toLowerCase().includes(q)
       );
       renderSearchResults(results, false);
@@ -2038,12 +2011,13 @@
 
     function renderSearchResults(items, isPlaceholder) {
       const wrap = document.getElementById('search-results');
+      searchShown = items;
       if (!items.length) {
         wrap.innerHTML = '<div style="padding:1.5rem;text-align:center;color:rgba(255,255,255,.3);font-size:.8rem">Inga träffar</div>';
         return;
       }
       const header = isPlaceholder
-        ? '<div style="padding:.3rem .6rem .5rem;font-size:.63rem;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.08em">Senaste</div>'
+        ? '<div style="padding:.3rem .6rem .5rem;font-size:.63rem;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.08em">Störst spend senaste 30 dagarna</div>'
         : '';
       wrap.innerHTML = header + items.map((item, i) => `
         <div class="search-result-row" data-idx="${i}" onclick="selectSearchItem(${i})"
@@ -2078,8 +2052,13 @@
     }
 
     function selectSearchItem(idx) {
-      // Placeholder: visa att det fungerar, länka till rätt sida när kampanjsidor finns
+      const item = searchShown[idx];
       closeSearch();
+      if (!item) return;
+      const row = document.getElementById(`camp-row-${item.id}`);
+      const target = row || document.getElementById('camp-tbody');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (row) { row.style.background = 'rgba(0,217,255,.08)'; setTimeout(() => { row.style.background = ''; }, 1800); }
     }
 
     // ── Tidslinjepanel ─────────────────────────────────────────────────────
@@ -2099,60 +2078,9 @@
     window.escapeHtml = escapeHtml;
     window.escapeJsString = escapeJsString;
 
-    // ── PLACEHOLDER-DATA för tidslinje ──────────────────────────
+    // Datum för tidslinjen och konverteringsformuläret
     const today = new Date();
     const fmt = d => d.toISOString().split('T')[0];
-    const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
-
-    const PLACEHOLDER_CAMPAIGNS = [
-      {
-        id: 'p1', name: 'Sommarkampanj 2026', customer: 'Exempelkund AB',
-        status: 'active',
-        month_start: fmt(new Date(today.getFullYear(), today.getMonth(), 1)),
-        month_end:   fmt(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
-        monthly_budget: 25000, total_spent: 11200, progress_pct: 45
-      },
-      {
-        id: 'p2', name: 'Brand Awareness Q2', customer: 'Demo Butik',
-        status: 'active',
-        month_start: fmt(new Date(today.getFullYear(), today.getMonth(), 1)),
-        month_end:   fmt(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
-        monthly_budget: 15000, total_spent: 9300, progress_pct: 62
-      },
-      {
-        id: 'p3', name: 'Retargeting — vår', customer: 'Exempelkund AB',
-        status: 'paused',
-        month_start: fmt(new Date(today.getFullYear(), today.getMonth() - 1, 10)),
-        month_end:   fmt(new Date(today.getFullYear(), today.getMonth(), 20)),
-        monthly_budget: 8000, total_spent: 7100, progress_pct: 89
-      },
-      {
-        id: 'p4', name: 'Produktlansering Juli', customer: 'Nytt Bolag',
-        status: 'active',
-        month_start: fmt(new Date(today.getFullYear(), today.getMonth() + 1, 1)),
-        month_end:   fmt(new Date(today.getFullYear(), today.getMonth() + 2, 0)),
-        monthly_budget: 40000, total_spent: 0, progress_pct: 0
-      }
-    ];
-
-    // 45 dagars placeholder spend-kurva (sjunker lite oregelbundet)
-    const PLACEHOLDER_DAILY = (() => {
-      const days = [];
-      const base = 900;
-      for (let i = 44; i >= 0; i--) {
-        const d = addDays(today, -i);
-        const noise = Math.sin(i * 1.3) * 120 + Math.cos(i * 0.7) * 80;
-        const actual  = Math.max(0, Math.round(base + noise + (Math.random() - 0.5) * 60));
-        const planned = Math.round(base + (i < 20 ? 50 : 0));
-        days.push({ date: fmt(d), actual, planned });
-      }
-      return days;
-    })();
-
-    const PLACEHOLDER_WINDOW = {
-      start: fmt(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
-      end:   fmt(new Date(today.getFullYear(), today.getMonth() + 3, 0))
-    };
 
     function toggleTimeline() {
       const panel = document.getElementById('tl-panel');
@@ -2175,38 +2103,34 @@
     }
 
     async function loadTimeline() {
+      // Bara riktiga data: utan kampanjer med budgetplan visas ett tomt läge, aldrig exempeldata.
+      const empty = document.getElementById('tl-empty');
+      const showEmpty = (text) => {
+        document.getElementById('tl-loading').style.display = 'none';
+        document.getElementById('tl-gantt').style.display = 'none';
+        document.getElementById('tl-chart').style.display = 'none';
+        empty.textContent = text;
+        empty.style.display = 'block';
+      };
       try {
         const token = localStorage.getItem('token');
         const res = await fetch('/api/timeline', { headers: { 'Authorization': `Bearer ${token}` } });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-
-        const isPlaceholder = !data.campaigns?.length;
-        const campaigns  = isPlaceholder ? PLACEHOLDER_CAMPAIGNS : data.campaigns;
-        const dailySpend = isPlaceholder ? PLACEHOLDER_DAILY     : data.daily_spend;
-        const win        = isPlaceholder ? PLACEHOLDER_WINDOW    : data.window;
-        const todayStr   = data.today || fmt(today);
-
-        document.getElementById('tl-loading').style.display = 'none';
-
-        if (isPlaceholder) {
-          document.getElementById('tl-placeholder-banner').style.display = 'block';
+        if (!data.campaigns?.length) {
+          showEmpty('Inga kampanjer med budgetplan än. Tidslinjen visas när en budgetplan finns.');
+          tlLoaded = true;
+          return;
         }
-
-        renderGantt(campaigns, win, todayStr);
-        renderSpendCurve(dailySpend);
+        document.getElementById('tl-loading').style.display = 'none';
+        empty.style.display = 'none';
+        renderGantt(data.campaigns, data.window, data.today || fmt(today));
+        renderSpendCurve(data.daily_spend);
         document.getElementById('tl-gantt').style.display = 'block';
         document.getElementById('tl-chart').style.display = 'block';
         tlLoaded = true;
       } catch (e) {
-        // API misslyckades — visa placeholder ändå
-        document.getElementById('tl-loading').style.display = 'none';
-        document.getElementById('tl-placeholder-banner').style.display = 'block';
-        renderGantt(PLACEHOLDER_CAMPAIGNS, PLACEHOLDER_WINDOW, fmt(today));
-        renderSpendCurve(PLACEHOLDER_DAILY);
-        document.getElementById('tl-gantt').style.display = 'block';
-        document.getElementById('tl-chart').style.display = 'block';
-        tlLoaded = true;
+        showEmpty('Tidslinjen kunde inte hämtas. Försök igen om en stund.');
       }
     }
 
@@ -2749,7 +2673,7 @@
       btn.disabled = true;
       tlLoaded = false; // återladda timeline vid nästa öppning
       notifLoaded = false;
-      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus(), loadInsights(), loadGoals(), loadFunnel(), loadAssets(), loadWeekly(true), loadProposals(), loadReviewsCard(), loadCampaigns(_selectedAccountId)]);
+      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus(), loadInsights(), loadGoals(), loadFunnel(), loadAssets(), loadWeekly(true), loadProposals(), loadReviewsCard(), loadCampaigns(_selectedAccountId), loadAudience()]);
       setTimeout(() => { btn.classList.remove('spinning'); btn.disabled = false; }, 600);
     }
 
@@ -3356,6 +3280,7 @@
         el.classList.add('selected');
       }
       loadCampaigns(_selectedAccountId);
+      loadAudience();
     }
 
     async function loadCampaigns(adAccountId) {
@@ -3377,6 +3302,11 @@
         if (!res.ok) throw new Error(data.error || 'Fel');
 
         const campaigns = data.campaigns || [];
+        const statusSv = { ACTIVE: 'Aktiv', PAUSED: 'Pausad' };
+        searchIndex = campaigns.map(c => ({
+          type: 'campaign', id: c.id, label: c.name, icon: '📢',
+          sub: `${statusSv[c.status] || c.status} · ${Math.round(c.spend || 0).toLocaleString('sv-SE')} kr senaste 30 dagarna`,
+        }));
         if (!campaigns.length) {
           tbody.innerHTML = '<tr><td colspan="7" style="color:var(--t40);text-align:center;padding:1.2rem">Inga kampanjer hittades</td></tr>';
           return;
@@ -3816,23 +3746,48 @@
       loadInsights();
     }
 
-    new Chart(document.getElementById('audChart').getContext('2d'), {
-      type:'doughnut',
-      data:{
-        labels:['Ålder','Kön','Intressen','Geografi'],
-        datasets:[{ data:[40,30,20,10], backgroundColor:['rgba(26,106,224,.88)','rgba(79,195,247,.88)','rgba(208,138,8,.88)','rgba(240,192,64,.88)'], borderColor:['#0c1c38','#0c1c38','#0c1c38','#0c1c38'], borderWidth:2, hoverOffset:7 }]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:true, cutout:'62%',
-        animation:{ duration:1200, easing:'easeOutQuart' },
-        plugins:{
-          legend:{ display:false },
-          tooltip:{ backgroundColor:'rgba(10,20,40,.96)', borderColor:'rgba(255,255,255,.12)', borderWidth:1, padding:10,
-            callbacks:{ label: c => ` ${c.label}: ${c.parsed}%` }
+    // ── Målgrupp: visningar per åldersgrupp (Meta, senaste 30 dagarna) ──────
+    // Siffrorna kommer från /api/meta/audience. Cyan som enda accent, i olika styrka.
+    let audChart = null;
+    async function loadAudience() {
+      const empty = document.getElementById('aud-empty');
+      const legend = document.getElementById('aud-legend');
+      const showEmpty = (text) => {
+        empty.textContent = text; empty.hidden = false; legend.innerHTML = '';
+        if (audChart) { audChart.destroy(); audChart = null; }
+      };
+      try {
+        const url = '/api/meta/audience' + (_selectedAccountId ? `?ad_account_id=${encodeURIComponent(_selectedAccountId)}` : '');
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+        const d = await res.json();
+        if (!res.ok) return showEmpty('Målgruppen kunde inte hämtas.');
+        if (!d.connected) return showEmpty('Koppla Meta för att se målgruppen.');
+        if (!d.enough) return showEmpty('För lite data');
+        empty.hidden = true;
+        const alphas = [1, .78, .6, .45, .33, .24, .17, .12];
+        const colors = d.groups.map((g, i) => `rgba(0,217,255,${alphas[i % alphas.length]})`);
+        const pct = (x) => `${Math.round(x * 100)} %`;
+        legend.innerHTML = d.groups.map((g, i) => `
+          <div class="aud-li"><div class="al-dot" style="background:${colors[i]}"></div>${escapeHtml(g.age)}<span class="al-pct">${pct(g.share)}</span></div>`).join('');
+        if (audChart) audChart.destroy();
+        audChart = new Chart(document.getElementById('audChart').getContext('2d'), {
+          type: 'doughnut',
+          data: { labels: d.groups.map(g => g.age), datasets: [{ data: d.groups.map(g => Math.round(g.share * 1000) / 10), backgroundColor: colors, borderColor: '#0c1c38', borderWidth: 2, hoverOffset: 7 }] },
+          options: {
+            responsive: true, maintainAspectRatio: true, cutout: '62%',
+            animation: { duration: 900, easing: 'easeOutQuart' },
+            plugins: {
+              legend: { display: false },
+              tooltip: { backgroundColor: 'rgba(10,20,40,.96)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1, padding: 10,
+                callbacks: { label: c => ` ${c.label}: ${c.parsed.toLocaleString('sv-SE')} % av visningarna` } }
+            }
           }
-        }
+        });
+      } catch (e) {
+        showEmpty('Målgruppen kunde inte hämtas.');
       }
-    });
+    }
+    loadAudience();
   </script>
 </body>
 </html>

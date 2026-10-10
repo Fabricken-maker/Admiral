@@ -297,12 +297,8 @@ export function evaluate(snap, where) {
     out.push(ok ? pass(A, id) : fail(A, id, 'Boka-klick-diagrammet avviker från /api/ga4/insights', { where: where('function buildBokaChart') }));
   }
   {
-    // Diagram vars data inte kommer från något API är hårdkodade.
-    const id = 'ui.diagram målgrupp';
-    const aud = dom.charts?.audChart;
-    out.push(aud
-      ? fail(A, id, `Diagrammet Målgruppsfördelning visar fasta värden (${aud.datasets[0].data.join('/')}) som inte hämtas från någon datakälla`, { where: where("getElementById('audChart')") })
-      : pass(A, id));
+    // Målgruppsdiagrammet ska visa exakt /api/meta/audience: åldersgrupper och andel visningar.
+    out.push(evaluateAudience(dom.charts?.audChart, find('/api/meta/audience'), where));
   }
 
   // ── Veckoutveckling (Modul C) mot /api/weekly ──
@@ -325,6 +321,19 @@ export function evaluate(snap, where) {
       : pass(A, id));
   }
   return out;
+}
+
+// Målgruppsdiagrammet: data måste komma från /api/meta/audience, aldrig fasta värden.
+export function evaluateAudience(chart, audience, where = () => null) {
+  const id = 'ui.diagram målgrupp';
+  if (!chart) return pass(A, id);
+  if (!audience?.enough) {
+    return fail(A, id, `Diagrammet visar målgrupp (${chart.datasets[0].data.join('/')}) utan data från /api/meta/audience`, { where: where("getElementById('audChart')") });
+  }
+  const want = audience.groups.map((g) => [g.age, Math.round(g.share * 1000) / 10]);
+  const got = chart.labels.map((l, i) => [l, Number(chart.datasets[0].data[i])]);
+  const ok = got.length === want.length && want.every(([l, v], i) => got[i][0] === l && Math.abs(got[i][1] - v) < 0.05);
+  return ok ? pass(A, id) : fail(A, id, 'Målgruppsdiagrammet avviker från /api/meta/audience', { where: where('async function loadAudience') });
 }
 
 // Veckokortet ska visa exakt det /api/weekly räknade fram: vecka, preliminär-märkning,

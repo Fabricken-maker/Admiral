@@ -48,6 +48,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/meta/audience"
+  to = "/.netlify/functions/meta-audience"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/admin/campaigns"
   to = "/.netlify/functions/admin-campaigns"
   status = 200
