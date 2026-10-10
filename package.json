@@ -1,35 +1,20 @@
 {
-  "name": "admiral-backend",
+  "name": "admiral",
   "version": "2.0.0",
-  "description": "Admiral Phase 2 Backend - Subscription Management & CRM Integration",
-  "main": "src/index.js",
+  "description": "Admiral: Netlify Functions (netlify/functions), statiska sidor (public) och veckans hälsokoll (healthcheck)",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "migrate": "node migrations/run.js",
     "test": "node --test test/*.test.mjs",
     "test:functions": "node --test test/*.test.mjs",
-    "build": "echo 'No build step needed'",
-    "deploy": "npm run migrate && npm start"
+    "build": "echo 'No build step needed'"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.128.0",
     "@supabase/supabase-js": "^2.39.0",
-    "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^9.2.2",
-    "body-parser": "^1.20.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
     "jpeg-js": "0.4.4",
     "jsonwebtoken": "^9.0.2",
-    "node-fetch": "^3.3.2",
     "pngjs": "7.0.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
   },
   "engines": {
     "node": ">=18.0.0"
