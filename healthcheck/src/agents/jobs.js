@@ -17,6 +17,7 @@ import { fetchJson } from '../lib/http.js';
 import { addDays, completedWeekStarts, stockholmMidnight } from '../lib/time.js';
 import { checkApprovals } from './jobs-approvals.js';
 import { checkTokenNotices } from './jobs-notices.js';
+import { checkReviews } from './jobs-reviews.js';
 
 const A = 'jobs';
 const run$ = promisify(execFile);
@@ -39,6 +40,7 @@ export async function run(ctx) {
     checkWeeklySync(ctx),
     checkApprovals(ctx),
     checkTokenNotices(ctx),
+    checkReviews(ctx),
   ]);
   return results.flat();
 }

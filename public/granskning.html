@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admiral — Granskning</title>
+  <meta name="theme-color" content="#060c18"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #060c18;
+      --panel: #0b1628;
+      --stage: #1f1f1f;          /* neutral mörkgrå, ingen blå ton bakom bilden */
+      --stage-line: #2c2c2c;
+      --border: rgba(255,255,255,.08);
+      --border-hover: rgba(255,255,255,.16);
+      --t80: rgba(255,255,255,.82);
+      --t60: rgba(255,255,255,.60);
+      --t40: rgba(255,255,255,.40);
+      --t07: rgba(255,255,255,.07);
+      --t04: rgba(255,255,255,.04);
+      --accent: #00d9ff;         /* enda accent */
+      --worse: #e39a9a;
+      --neutral: rgba(255,255,255,.78);
+    }
+    html, body { height: 100%; }
+    body { font-family: -apple-system, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif; background: var(--bg); color: #fff; -webkit-font-smoothing: antialiased; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    a { color: var(--accent); text-decoration: none; }
+    [hidden] { display: none !important; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .top { display: flex; align-items: center; gap: 1rem; padding: .8rem 1.4rem; border-bottom: 1px solid var(--border); min-height: 3.4rem; }
+    .brand { font-weight: 800; letter-spacing: .1em; font-size: .9rem; white-space: nowrap; }
+    .brand b { color: var(--accent); }
+    .crumb { font-size: .8rem; color: var(--t60); display: flex; gap: .6rem; align-items: center; min-width: 0; }
+    .crumb a { color: var(--t60); }
+    .crumb a:hover { color: #fff; }
+    .crumb .name { color: #fff; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .top .right { margin-left: auto; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+
+    .btn { font-size: .78rem; font-weight: 600; border-radius: 8px; padding: .45rem .95rem; cursor: pointer; border: 1px solid var(--border-hover); background: transparent; color: var(--t80); white-space: nowrap; }
+    .btn:hover { border-color: rgba(255,255,255,.3); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #04121c; }
+    .btn.bad { border-color: rgba(227,154,154,.5); color: var(--worse); }
+    .btn.small { font-size: .72rem; padding: .3rem .65rem; }
+    .btn:disabled { opacity: .45; cursor: default; }
+    .select, .input, .textarea { background: var(--t04); border: 1px solid var(--border); border-radius: 7px; padding: .42rem .6rem; font-size: .8rem; color: #fff; }
+    .select { color: var(--t80); max-width: 18rem; }
+    .textarea { width: 100%; min-height: 4.2rem; resize: vertical; line-height: 1.45; }
+    .input { width: 100%; }
+    label.f { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--t40); font-weight: 600; margin-bottom: .35rem; }
+    .hint { font-size: .74rem; color: var(--t40); margin-top: .3rem; line-height: 1.4; }
+    .msg { font-size: .8rem; margin-top: .6rem; color: var(--t60); }
+    .msg.err { color: var(--worse); }
+    .msg.ok { color: var(--accent); }
+
+    /* Domslut: cyan = Godkänd, neutral = Granska, dämpad röd = Underkänd */
+    .v-godkand { color: var(--accent); }
+    .v-granska { color: var(--neutral); }
+    .v-underkand { color: var(--worse); }
+    .v-pagar, .v-fel { color: var(--t40); }
+
+    /* ── Översikt ───────────────────────────── */
+    .wrap { max-width: 1240px; margin: 0 auto; padding: 1.6rem 1.4rem 3rem; }
+    .counts { display: flex; gap: 2rem; margin-bottom: 1.4rem; flex-wrap: wrap; }
+    .count .n { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .count .l { font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; color: var(--t40); font-weight: 600; margin-top: .15rem; }
+    .notice { font-size: .8rem; color: var(--t60); border: 1px solid var(--border); border-radius: 9px; padding: .7rem .9rem; margin-bottom: 1.2rem; line-height: 1.5; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1.1rem; }
+    .card { display: block; color: inherit; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--panel); transition: border-color .15s; }
+    .card:hover { border-color: var(--border-hover); }
+    .card .thumb { aspect-ratio: 1; background: var(--stage); display: grid; place-items: center; overflow: hidden; }
+    .card .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .card .meta { padding: .65rem .75rem .75rem; }
+    .card .vd { font-size: .78rem; font-weight: 700; }
+    .card .nm { font-size: .74rem; color: var(--t60); margin-top: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .empty { font-size: .85rem; color: var(--t40); padding: 2rem 0; }
+    .upload { border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; margin-bottom: 1.4rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem 1.2rem; }
+    .upload .full { grid-column: 1 / -1; }
+
+    /* ── Granskningsfönstret ────────────────── */
+    .review { display: flex; height: calc(100vh - 3.4rem); }
+    .stage-wrap { flex: 0 0 65%; display: flex; flex-direction: column; background: var(--stage); min-width: 0; }
+    .tools { display: flex; align-items: center; gap: .4rem; padding: .55rem .8rem; border-bottom: 1px solid var(--stage-line); flex-wrap: wrap; }
+    .tools .zoom { font-size: .74rem; color: var(--t60); min-width: 3.2rem; text-align: center; font-variant-numeric: tabular-nums; }
+    .seg { display: inline-flex; border: 1px solid var(--border-hover); border-radius: 8px; overflow: hidden; margin-left: auto; }
+    .seg button { background: none; border: 0; padding: .3rem .7rem; font-size: .72rem; color: var(--t60); cursor: pointer; }
+    .seg button.on { background: rgba(255,255,255,.1); color: #fff; }
+    .tool { background: none; border: 1px solid transparent; border-radius: 7px; padding: .3rem .6rem; font-size: .74rem; color: var(--t60); cursor: pointer; }
+    .tool:hover { color: #fff; }
+    .tool.on { border-color: var(--border-hover); color: #fff; }
+    .stage { flex: 1; display: flex; min-height: 0; }
+    .pane { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; position: relative; min-width: 0; }
+    .pane + .pane { border-left: 1px solid var(--stage-line); }
+    .pane .lbl { position: absolute; top: .6rem; left: .7rem; font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; color: var(--t40); }
+    .pane img { display: block; margin: auto; }
+    .pane:not(.fit) { align-items: flex-start; justify-content: flex-start; padding: 1.5rem; }
+    .pane.fit img { max-width: calc(100% - 3rem); max-height: calc(100% - 3rem); object-fit: contain; }
+    .pane .wait { font-size: .85rem; color: var(--t40); }
+    .assets { display: flex; gap: .4rem; padding: .55rem .8rem; border-top: 1px solid var(--stage-line); overflow-x: auto; }
+    .assets a { flex: 0 0 auto; width: 3.2rem; height: 3.2rem; border-radius: 6px; border: 1px solid var(--stage-line); background: #181818; display: grid; place-items: center; overflow: hidden; position: relative; }
+    .assets a.on { border-color: var(--accent); }
+    .assets img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .assets .dot { position: absolute; right: 3px; bottom: 3px; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+    .col { flex: 1; min-width: 300px; max-width: 460px; border-left: 1px solid var(--border); overflow-y: auto; padding: 1.4rem 1.4rem 2.5rem; }
+    .verdict { font-size: 1.6rem; font-weight: 700; letter-spacing: -.01em; }
+    .reason { font-size: .82rem; color: var(--t60); margin-top: .35rem; line-height: 1.5; }
+    .decided { font-size: .76rem; color: var(--t60); margin-top: .7rem; border-left: 2px solid var(--border-hover); padding-left: .6rem; line-height: 1.5; }
+    .sec { margin-top: 1.6rem; }
+    .sec h3 { font-size: .66rem; text-transform: uppercase; letter-spacing: .1em; color: var(--t40); font-weight: 600; margin-bottom: .6rem; }
+    .fnd { padding: .65rem 0; border-top: 1px solid var(--border); }
+    .fnd:first-child { border-top: 0; padding-top: 0; }
+    .fnd .t { font-size: .84rem; font-weight: 600; display: flex; gap: .5rem; align-items: baseline; }
+    .fnd .t .mk { font-size: .72rem; font-weight: 700; min-width: 4.4rem; }
+    .fnd .d { font-size: .76rem; color: var(--t60); margin-top: .25rem; line-height: 1.5; }
+    .fnd .q { font-size: .76rem; color: var(--t80); margin-top: .3rem; font-style: italic; }
+    .fnd .w { font-size: .68rem; color: var(--t40); margin-top: .25rem; }
+    .mk-fel { color: var(--worse); }
+    .mk-varning, .mk-manuell { color: var(--neutral); }
+    .mk-ok { color: var(--accent); }
+    .mk-info { color: var(--t40); }
+    .more { background: none; border: 0; color: var(--t60); font-size: .75rem; cursor: pointer; padding: .4rem 0; }
+    .chk { display: flex; gap: .6rem; padding: .45rem 0; font-size: .78rem; border-top: 1px solid var(--t07); align-items: baseline; }
+    .chk:first-child { border-top: 0; }
+    .chk .n { min-width: 8.4rem; color: var(--t80); }
+    .chk .s { color: var(--t60); flex: 1; line-height: 1.45; }
+    .chk .c { font-size: .66rem; color: var(--t40); white-space: nowrap; }
+    .sw { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .sw div { display: flex; align-items: center; gap: .35rem; font-size: .72rem; color: var(--t60); font-variant-numeric: tabular-nums; }
+    .sw i { width: 1rem; height: 1rem; border-radius: 4px; border: 1px solid rgba(255,255,255,.15); display: inline-block; }
+    .feat { font-size: .76rem; color: var(--t60); padding: .22rem 0; display: flex; gap: .5rem; }
+    .feat.blocked { color: var(--worse); }
+    .txt { font-size: .78rem; color: var(--t80); line-height: 1.5; padding: .35rem 0; border-top: 1px solid var(--t07); white-space: pre-wrap; }
+    .txt:first-of-type { border-top: 0; }
+    .txt small { display: block; color: var(--t40); font-size: .66rem; text-transform: uppercase; letter-spacing: .08em; }
+    details summary { cursor: pointer; font-size: .66rem; text-transform: uppercase; letter-spacing: .1em; color: var(--t40); font-weight: 600; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    details summary::after { content: ' +'; }
+    details[open] summary::after { content: ' −'; }
+    details > div { margin-top: .6rem; }
+    .decide { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .6rem; }
+    .foot { font-size: .7rem; color: var(--t40); margin-top: 1.8rem; line-height: 1.5; }
+
+    /* ── Varumärkesprofil ──────────────────── */
+    .form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.3rem 1.6rem; max-width: 980px; }
+    .form .full { grid-column: 1 / -1; }
+    .pal { display: flex; flex-direction: column; gap: .45rem; }
+    .pal .row { display: flex; gap: .45rem; align-items: center; }
+    .pal input[type=color] { width: 2.3rem; height: 2.1rem; padding: 0; border: 1px solid var(--border); border-radius: 6px; background: none; cursor: pointer; }
+    .logos { display: flex; gap: .7rem; flex-wrap: wrap; align-items: center; }
+    .logo { width: 6.5rem; height: 6.5rem; border: 1px solid var(--border); border-radius: 9px; background: var(--stage); display: grid; place-items: center; position: relative; overflow: hidden; }
+    .logo img { max-width: 85%; max-height: 85%; object-fit: contain; }
+    .logo button { position: absolute; top: .25rem; right: .25rem; background: rgba(0,0,0,.6); border: 0; border-radius: 5px; color: #fff; font-size: .7rem; padding: .1rem .35rem; cursor: pointer; }
+    .feats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .3rem 1.2rem; }
+    .feats label { font-size: .78rem; color: var(--t80); display: flex; gap: .5rem; align-items: center; cursor: pointer; }
+
+    @media (max-width: 900px) {
+      .review { flex-direction: column; height: auto; }
+      .stage-wrap { flex: none; height: 62vh; }
+      .col { max-width: none; border-left: 0; border-top: 1px solid var(--border); }
+      .form, .upload, .feats { grid-template-columns: 1fr; }
+      .top { padding: .7rem 1rem; flex-wrap: wrap; }
+      .wrap { padding: 1.2rem 1rem 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">ADMIRAL<b>.</b></div>
+    <nav class="crumb" id="crumb"></nav>
+    <div class="right" id="actions"></div>
+  </header>
+  <main id="main"><div class="wrap"><div class="empty">Laddar…</div></div></main>
+
+<script>
+  const VERDICT = { godkand: 'Godkänd', granska: 'Granska', underkand: 'Underkänd' };
+  const MARK = { fel: 'Fel', varning: 'Kontrollera', manuell: 'Manuellt', ok: 'OK', info: 'Info' };
+  const MAX_FINDINGS = 3;
+  const params = new URLSearchParams(location.search);
+  const main = document.getElementById('main');
+  const crumb = document.getElementById('crumb');
+  const actions = document.getElementById('actions');
+  let pollTimer = null;
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const date = (iso) => iso ? new Date(iso).toLocaleString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm' }) : '';
+  const headers = (json) => ({ Authorization: `Bearer ${localStorage.getItem('token') || ''}`, ...(json ? { 'Content-Type': 'application/json' } : {}) });
+  async function api(path, opts = {}) {
+    const res = await fetch(path, { ...opts, headers: headers(Boolean(opts.body)) });
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 401) { location.href = '/login.html'; throw new Error('Logga in igen'); }
+    if (res.status === 403) throw new Error('Granskningen är bara tillgänglig för Fabricken.');
+    if (!res.ok) throw new Error(body.error || `Fel ${res.status}`);
+    return body;
+  }
+  const post = (path, body) => api(path, { method: 'POST', body: JSON.stringify(body) });
+  const go = (q) => { location.search = new URLSearchParams(q).toString(); };
+  const fail = (e) => { main.innerHTML = `<div class="wrap"><div class="empty">${esc(e.message)}</div></div>`; };
+  const verdictOf = (r) => r.status === 'koar' || r.status === 'analyserar' ? 'pagar' : r.status === 'fel' ? 'fel' : r.effective_verdict;
+  const verdictWord = (v) => VERDICT[v] || (v === 'pagar' ? 'Granskas…' : v === 'fel' ? 'Gick inte att granska' : '');
+  const fileToBase64 = (file) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(file); });
+
+  let customers = [];
+  async function loadCustomers(selected) {
+    if (!customers.length) customers = (await api('/api/reviews?customers=1')).customers || [];
+    return `<select class="select" id="customer" aria-label="Kund">${customers.map((c) => `<option value="${c.user_id}" ${String(c.user_id) === String(selected) ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`;
+  }
+
+  // ── Översikt ───────────────────────────────────────────
+  async function overview(userId) {
+    const d = await api(`/api/reviews?user_id=${userId}`);
+    crumb.innerHTML = `<span class="name">Granskning av annonser</span>`;
+    actions.innerHTML = `${await loadCustomers(d.user_id)}
+      <button class="btn" onclick="go({ profil: ${d.user_id} })">Varumärkesprofil</button>
+      <button class="btn" id="new-btn">Ny bild</button>
+      <button class="btn primary" id="scan-btn">Granska aktiva annonser</button>`;
+    document.getElementById('customer').onchange = (e) => go({ user_id: e.target.value });
+    const c = d.counts;
+    main.innerHTML = `<div class="wrap">
+      <form class="upload" id="upload" hidden>
+        <div class="full"><label class="f" for="up-file">Bild (JPEG, PNG eller WebP)</label><input type="file" id="up-file" accept="image/jpeg,image/png,image/webp" required></div>
+        <div><label class="f" for="up-name">Namn</label><input class="input" id="up-name" placeholder="t.ex. Höstkampanj, variant B"></div>
+        <div><label class="f" for="up-orig">Jämför med original</label><select class="select" id="up-orig" style="max-width:none;width:100%"><option value="">Inget original</option>${d.reviews.filter((r) => r.status === 'klar').map((r) => `<option value="${r.id}">${esc(r.ad_name || 'Bild')} (${r.asset_type})</option>`).join('')}</select></div>
+        <div class="full"><label class="f" for="up-body">Annonstext</label><textarea class="textarea" id="up-body"></textarea></div>
+        <div><label class="f" for="up-title">Rubrik</label><input class="input" id="up-title"></div>
+        <div><label class="f" for="up-desc">Beskrivning</label><input class="input" id="up-desc"></div>
+        <div class="full"><button class="btn primary" type="submit">Granska bilden</button> <button class="btn" type="button" onclick="document.getElementById('upload').hidden = true">Avbryt</button><div class="msg" id="up-msg" role="status"></div></div>
+      </form>
+      ${!d.profile_exists ? `<div class="notice">Kunden har ingen varumärkesprofil. Färger, typsnitt och logotyp kan inte jämföras förrän den är ifylld. <a href="?profil=${d.user_id}">Fyll i varumärkesprofilen</a></div>` : ''}
+      ${!d.ai_active ? `<div class="notice">Bildbedömningen med AI är inte aktiv. Logotyp, produktdetaljer, text i bilden och typsnitt bedöms manuellt.</div>` : ''}
+      <div class="counts">
+        <div class="count"><div class="n v-godkand">${c.godkand}</div><div class="l">Godkänd</div></div>
+        <div class="count"><div class="n v-granska">${c.granska}</div><div class="l">Granska</div></div>
+        <div class="count"><div class="n v-underkand">${c.underkand}</div><div class="l">Underkänd</div></div>
+        ${c.pagar ? `<div class="count"><div class="n v-pagar">${c.pagar}</div><div class="l">Granskas</div></div>` : ''}
+        ${c.fel ? `<div class="count"><div class="n v-fel">${c.fel}</div><div class="l">Gick inte att granska</div></div>` : ''}
+      </div>
+      <div class="msg" id="scan-msg" role="status"></div>
+      ${d.reviews.length ? `<div class="grid">${d.reviews.map((r) => { const v = verdictOf(r); return `
+        <a class="card" href="?id=${r.id}">
+          <div class="thumb">${r.image_url ? `<img src="${esc(r.image_url)}" alt="" loading="lazy">` : ''}</div>
+          <div class="meta"><div class="vd v-${v}">${verdictWord(v)}</div><div class="nm">${esc(r.ad_name || 'Uppladdad bild')}${r.asset_type === 'video' ? ' · video' : ''}</div></div>
+        </a>`; }).join('')}</div>` : '<div class="empty">Inga granskningar ännu. Välj "Granska aktiva annonser" eller ladda upp en bild.</div>'}
+    </div>`;
+
+    document.getElementById('new-btn').onclick = () => { document.getElementById('upload').hidden = false; };
+    document.getElementById('scan-btn').onclick = async (e) => {
+      const msg = document.getElementById('scan-msg');
+      e.target.disabled = true;
+      msg.className = 'msg'; msg.textContent = 'Hämtar aktiva annonser från Meta…';
+      try {
+        const r = await post('/api/reviews', { action: 'scan', user_id: d.user_id });
+        msg.className = 'msg ok';
+        msg.textContent = r.queued ? `${r.queued} bilder och videor granskas nu. Sidan uppdateras.` : `Inget nytt att granska (${r.found} bilder och videor i aktiva annonser).`;
+        if (r.queued) setTimeout(() => overview(d.user_id), 4000);
+      } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+      e.target.disabled = false;
+    };
+    document.getElementById('upload').onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('up-msg');
+      const file = document.getElementById('up-file').files[0];
+      if (!file) return;
+      if (file.size > 4 * 1024 * 1024) { msg.className = 'msg err'; msg.textContent = 'Bilden får vara högst 4 MB.'; return; }
+      msg.className = 'msg'; msg.textContent = 'Laddar upp…';
+      try {
+        const r = await post('/api/reviews', {
+          action: 'upload', user_id: d.user_id, image_base64: await fileToBase64(file),
+          name: document.getElementById('up-name').value || file.name,
+          original_review_id: document.getElementById('up-orig').value || null,
+          texts: { body: document.getElementById('up-body').value, title: document.getElementById('up-title').value, description: document.getElementById('up-desc').value },
+        });
+        go({ id: r.id });
+      } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+    };
+    if (c.pagar) { clearTimeout(pollTimer); pollTimer = setTimeout(() => overview(d.user_id), 5000); }
+  }
+
+  // ── Granskningsfönstret ───────────────────────────────
+  function summaryLine(findings, r) {
+    const n = (s) => findings.filter((f) => f.status === s).length;
+    const fel = n('fel'), check = n('varning'), manual = n('manuell');
+    const parts = [];
+    if (fel) parts.push(`${fel} fel`);
+    if (check) parts.push(`${check} ${check === 1 ? 'sak' : 'saker'} att kontrollera`);
+    if (manual) parts.push(`${manual} ${manual === 1 ? 'kontroll' : 'kontroller'} att göra manuellt`);
+    return parts.length ? `${parts.join(', ').replace(/, ([^,]*)$/, ' och $1')}.` : (r.verdict_reason || 'Inga avvikelser hittades.');
+  }
+  let view = { mode: 'fit', zoom: 1, show: 'variant' };
+  async function review(id) {
+    const d = await api(`/api/reviews?id=${id}`);
+    const r = d.review;
+    const v = verdictOf(r);
+    document.title = `Admiral — ${VERDICT[v] || 'Granskning'}: ${r.ad_name || 'bild'}`;
+    crumb.innerHTML = `<a href="?user_id=${r.user_id ?? ''}" id="back">← Alla granskningar</a><span class="name">${esc(r.ad_name || 'Uppladdad bild')}</span>${r.campaign_name ? `<span>${esc(r.campaign_name)}</span>` : ''}`;
+    actions.innerHTML = '';
+    const findings = r.findings || [];
+    const checks = r.checks || [];
+    const colors = checks.find((c) => c.key === 'farger')?.data;
+    const adv = checks.find((c) => c.key === 'advantage')?.data?.active || [];
+    const t = r.texts || {};
+    const textRows = [...(t.bodies || []).map((x) => ['Annonstext', x]), ...(t.titles || []).map((x) => ['Rubrik', x]), ...(t.descriptions || []).map((x) => ['Beskrivning', x])];
+    const ocr = checks.find((c) => c.key === 'text_i_bild')?.data?.text;
+    if (ocr) textRows.push(['Text i bilden', ocr]);
+    const hasOriginal = Boolean(d.original?.image_url);
+    if (!hasOriginal) view.show = 'variant';
+
+    const findingHtml = (f) => `<div class="fnd">
+        <div class="t"><span class="mk mk-${f.status}">${MARK[f.status]}</span><span>${esc(f.title)}</span></div>
+        ${f.detail ? `<div class="d">${esc(f.detail)}</div>` : ''}
+        ${f.quote ? `<div class="q">"${esc(f.quote)}"</div>` : ''}
+        <div class="w">${esc([f.label, f.where, f.confidence ? `säkerhet ${f.confidence}` : ''].filter(Boolean).join(' · '))}</div>
+      </div>`;
+
+    main.innerHTML = `<div class="review">
+      <section class="stage-wrap" aria-label="Bild">
+        <div class="tools">
+          <button class="tool" data-mode="fit">Anpassa</button>
+          <button class="tool" data-mode="actual">Faktisk storlek</button>
+          <button class="tool" data-zoom="-1" aria-label="Zooma ut">−</button>
+          <span class="zoom" id="zoom-label"></span>
+          <button class="tool" data-zoom="1" aria-label="Zooma in">+</button>
+          ${hasOriginal ? `<div class="seg" role="group" aria-label="Visa"><button data-show="variant">Variant</button><button data-show="original">Original</button><button data-show="both">Sida vid sida</button></div>` : ''}
+        </div>
+        <div class="stage" id="stage"></div>
+        ${d.siblings.length ? `<div class="assets" aria-label="Fler bilder i annonsen">
+          <a class="on" href="?id=${r.id}" title="Den här">${r.image_url ? `<img src="${esc(r.image_url)}" alt="">` : ''}<span class="dot v-${v}"></span></a>
+          ${d.siblings.map((s) => `<a href="?id=${s.id}" title="${s.asset_type === 'video' ? 'Video' : 'Bild'}">${s.image_url ? `<img src="${esc(s.image_url)}" alt="">` : ''}<span class="dot v-${s.status === 'klar' ? s.verdict : 'pagar'}"></span></a>`).join('')}
+        </div>` : ''}
+      </section>
+      <aside class="col" aria-label="Bedömning">
+        <div class="verdict v-${v}">${verdictWord(v)}</div>
+        <div class="reason">${esc(r.status === 'fel' ? r.error || '' : r.status === 'klar' ? summaryLine(findings, r) : 'Bilden granskas. Sidan uppdateras när den är klar.')}</div>
+        ${r.decided_verdict ? `<div class="decided">Beslut av Fabricken ${esc(date(r.decided_at))}: ${VERDICT[r.decided_verdict]}. Automatisk bedömning: ${VERDICT[r.verdict] || '–'}.${r.decision_note ? `<br>${esc(r.decision_note)}` : ''}</div>` : ''}
+
+        ${r.status === 'klar' ? `
+        ${findings.length ? `<div class="sec"><h3>Fynd</h3>
+          <div id="fnd">${findings.slice(0, MAX_FINDINGS).map(findingHtml).join('')}</div>
+          ${findings.length > MAX_FINDINGS ? `<button class="more" id="more">Visa fler (${findings.length - MAX_FINDINGS})</button><div id="fnd-more" hidden>${findings.slice(MAX_FINDINGS).map(findingHtml).join('')}</div>` : ''}
+        </div>` : ''}
+
+        <div class="sec"><details><summary>Alla kontroller</summary><div>
+          ${checks.map((c) => `<div class="chk"><span class="n">${esc(c.label)}</span><span class="s"><span class="mk-${c.status}">${MARK[c.status]}</span> · ${esc(c.summary)}${(c.findings || []).filter((f) => f.status === 'info').map((f) => `<br><span class="mk-info">Info</span> · ${esc(f.detail || f.title)}`).join('')}</span>${c.confidence ? `<span class="c">säkerhet ${esc(c.confidence)}</span>` : ''}</div>`).join('')}
+        </div></details></div>
+
+        ${colors?.dominant?.length ? `<div class="sec"><details><summary>Färger</summary><div>
+          <div class="sw">${colors.dominant.map((x) => `<div><i style="background:${esc(x.hex)}"></i>${esc(x.hex)} · ${Math.round(x.share * 100)} %</div>`).join('')}</div>
+          ${colors.brand?.length ? `<div class="hint" style="margin-top:.7rem">Varumärkets färger i bilden</div><div class="sw" style="margin-top:.35rem">${colors.brand.map((x) => `<div><i style="background:${esc(x.hex)}"></i>${esc(x.name)} · ${(Math.round(x.share * 1000) / 10).toLocaleString('sv-SE')} %</div>`).join('')}</div>` : ''}
+        </div></details></div>` : ''}
+
+        ${r.features ? `<div class="sec"><details><summary>Advantage+ (${adv.length} påslagna)</summary><div>
+          ${adv.length ? adv.map((a) => `<div class="feat ${a.blocked ? 'blocked' : ''}">${a.blocked ? 'Spärrad i profilen ·' : ''} ${esc(a.label)}</div>`).join('') : '<div class="feat">Inga förbättringar är påslagna.</div>'}
+        </div></details></div>` : ''}
+
+        ${textRows.length ? `<div class="sec"><details><summary>Texter</summary><div>
+          ${textRows.map(([k, x]) => `<div class="txt"><small>${k}</small>${esc(x)}</div>`).join('')}
+        </div></details></div>` : ''}
+
+        <div class="sec"><h3>Beslut</h3>
+          <input class="input" id="note" placeholder="Kommentar (valfri)" value="${esc(r.decision_note || '')}">
+          <div class="decide">
+            <button class="btn primary" data-decide="godkand">Godkänn</button>
+            <button class="btn bad" data-decide="underkand">Underkänn</button>
+            ${r.decided_verdict ? '<button class="btn small" data-decide="">Ta bort beslut</button>' : ''}
+            <button class="btn small" id="rerun" style="margin-left:auto">Granska igen</button>
+          </div>
+          <div class="msg" id="dec-msg" role="status"></div>
+        </div>` : r.status === 'fel' ? `<div class="decide" style="margin-top:1rem"><button class="btn small" id="rerun">Försök igen</button></div><div class="msg" id="dec-msg" role="status"></div>` : ''}
+
+        <div class="foot">
+          ${r.width ? `${r.width} × ${r.height} px · ` : ''}${r.asset_type === 'video' ? 'Videons omslagsbild granskas. ' : ''}
+          ${r.analyzed_at ? `Granskad ${esc(date(r.analyzed_at))} med regler${r.ai_model ? ' och AI' : ''}.` : ''}
+          ${d.history.length ? `<br>Tidigare versioner: ${d.history.map((h) => `<a href="?id=${h.id}">${esc(date(h.created_at))}</a>`).join(', ')}` : ''}
+          ${d.original ? `<br>Variant av <a href="?id=${d.original.id}">${esc(d.original.ad_name || 'originalet')}</a>.` : ''}
+        </div>
+      </aside>
+    </div>`;
+
+    const back = document.getElementById('back');
+    if (back && !r.user_id) back.href = 'javascript:history.back()';
+    renderStage(r, d.original);
+    main.querySelectorAll('[data-mode]').forEach((b) => b.onclick = () => { view.mode = b.dataset.mode; view.zoom = 1; renderStage(r, d.original); });
+    main.querySelectorAll('[data-zoom]').forEach((b) => b.onclick = () => zoomBy(Number(b.dataset.zoom), r, d.original));
+    main.querySelectorAll('[data-show]').forEach((b) => b.onclick = () => { view.show = b.dataset.show; renderStage(r, d.original); });
+    const more = document.getElementById('more');
+    if (more) more.onclick = () => { document.getElementById('fnd-more').hidden = false; more.hidden = true; };
+    main.querySelectorAll('[data-decide]').forEach((b) => b.onclick = async () => {
+      const msg = document.getElementById('dec-msg');
+      try {
+        await post('/api/reviews', { action: 'decide', id: r.id, verdict: b.dataset.decide || null, note: document.getElementById('note').value });
+        review(r.id);
+      } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+    });
+    const rerun = document.getElementById('rerun');
+    if (rerun) rerun.onclick = async () => {
+      const msg = document.getElementById('dec-msg');
+      try { await post('/api/reviews', { action: 'rerun', id: r.id }); review(r.id); }
+      catch (err) { msg.className = 'msg err'; msg.textContent = err.message; }
+    };
+    clearTimeout(pollTimer);
+    if (v === 'pagar') pollTimer = setTimeout(() => review(id), 4000);
+  }
+
+  function renderStage(r, original) {
+    const stage = document.getElementById('stage');
+    if (!stage) return;
+    const panes = view.show === 'both' && original ? [['Variant', r.image_url], ['Original', original.image_url]]
+      : view.show === 'original' && original ? [['Original', original.image_url]] : [[original ? 'Variant' : '', r.image_url]];
+    const fit = view.mode === 'fit';
+    stage.innerHTML = panes.map(([lbl, url]) => `<div class="pane ${fit ? 'fit' : ''}">${lbl ? `<span class="lbl">${lbl}</span>` : ''}${url ? `<img src="${esc(url)}" alt="${esc(lbl || 'Annonsbild')}">` : `<div class="wait">${r.status === 'fel' ? 'Bilden saknas' : 'Bilden hämtas…'}</div>`}</div>`).join('');
+    stage.querySelectorAll('img').forEach((img) => {
+      const apply = () => {
+        if (!fit) img.style.width = `${Math.round(img.naturalWidth * view.zoom)}px`;
+        const label = document.getElementById('zoom-label');
+        if (label) label.textContent = fit ? 'Anpassad' : `${Math.round(view.zoom * 100)} %`;
+      };
+      img.complete ? apply() : img.addEventListener('load', apply);
+    });
+    main.querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('on', b.dataset.mode === view.mode));
+    main.querySelectorAll('[data-show]').forEach((b) => b.classList.toggle('on', b.dataset.show === view.show));
+  }
+
+  function zoomBy(dir, r, original) {
+    const steps = [0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.5, 2, 3, 4];
+    if (view.mode === 'fit') {
+      const img = document.querySelector('#stage img');
+      const cur = img ? img.clientWidth / img.naturalWidth : 1;
+      view.mode = 'actual';
+      view.zoom = dir > 0 ? steps.find((s) => s > cur + 0.01) || 4 : [...steps].reverse().find((s) => s < cur - 0.01) || 0.25;
+    } else {
+      const i = steps.indexOf(view.zoom);
+      view.zoom = steps[Math.min(steps.length - 1, Math.max(0, (i < 0 ? 5 : i) + dir))];
+    }
+    renderStage(r, original);
+  }
+
+  // ── Varumärkesprofil ──────────────────────────────────
+  async function profile(userId) {
+    const d = await api(`/api/brand-profile?user_id=${userId}`);
+    const p = d.profile;
+    crumb.innerHTML = `<a href="?user_id=${userId}">← Granskning</a><span class="name">Varumärkesprofil</span>`;
+    actions.innerHTML = await loadCustomers(userId);
+    document.getElementById('customer').onchange = (e) => go({ profil: e.target.value });
+    const lines = (a) => esc((a || []).join('\n'));
+    const featureKeys = Object.keys(d.feature_labels);
+    for (const k of p.blocked_features || []) if (!featureKeys.includes(k)) featureKeys.push(k);
+
+    main.innerHTML = `<div class="wrap"><form class="form" id="pf">
+      <div><label class="f" for="pf-name">Varumärke</label><input class="input" id="pf-name" value="${esc(p.brand_name || '')}"></div>
+      <div><label class="f" for="pf-acc">Annonskonton</label><input class="input" id="pf-acc" value="${esc((p.ad_account_ids || []).join(', '))}"><div class="hint">De konton vars aktiva annonser granskas, t.ex. act_123456.</div></div>
+
+      <div class="full"><label class="f">Färger</label><div class="pal" id="pal"></div><button class="btn small" type="button" id="pal-add" style="margin-top:.5rem">Lägg till färg</button><div class="hint">Jämförs med färgerna i bilden. Minst en av dem bör synas.</div></div>
+
+      <div class="full"><label class="f">Logotyper</label><div class="logos">
+        ${d.logos.map((l) => `<div class="logo">${l.url ? `<img src="${esc(l.url)}" alt="Logotyp">` : ''}<button type="button" data-remove="${esc(l.path)}" aria-label="Ta bort logotyp">Ta bort</button></div>`).join('')}
+        ${d.logos.length < 3 ? `<label class="btn small" style="cursor:pointer">Lägg till logotyp<input type="file" id="logo-file" accept="image/png,image/jpeg,image/webp" hidden></label>` : ''}
+      </div><div class="hint">AI jämför logotypen i annonsen med de här. PNG med genomskinlig bakgrund fungerar bäst.</div></div>
+
+      <div><label class="f" for="pf-fonts">Typsnitt</label><textarea class="textarea" id="pf-fonts" placeholder="Ett per rad">${lines(p.fonts)}</textarea></div>
+      <div><label class="f" for="pf-logo-notes">Om logotypen</label><textarea class="textarea" id="pf-logo-notes" placeholder="t.ex. Alltid vit på mörk bakgrund">${esc(p.logo_notes || '')}</textarea></div>
+      <div><label class="f" for="pf-prod">Om produkterna</label><textarea class="textarea" id="pf-prod" placeholder="Det som inte får förvrängas, t.ex. simulatorns skärm och klubbor">${esc(p.product_notes || '')}</textarea></div>
+      <div><label class="f" for="pf-tone">Ton</label><textarea class="textarea" id="pf-tone">${esc(p.tone_notes || '')}</textarea></div>
+      <div><label class="f" for="pf-forbidden">Förbjudna ord</label><textarea class="textarea" id="pf-forbidden" placeholder="Ett per rad">${lines(p.forbidden_words)}</textarea><div class="hint">Ett förbjudet ord i texten eller bilden ger Underkänd.</div></div>
+      <div><label class="f" for="pf-required">Måste finnas med</label><textarea class="textarea" id="pf-required" placeholder="Ett per rad">${lines(p.required_phrases)}</textarea></div>
+
+      <div class="full"><label class="f">Advantage+-förbättringar som inte är tillåtna</label><div class="feats">
+        ${featureKeys.map((k) => `<label><input type="checkbox" value="${esc(k)}" ${(p.blocked_features || []).includes(k) ? 'checked' : ''}> ${esc(d.feature_labels[k] || k)}</label>`).join('')}
+      </div><div class="hint">Är en av dessa påslagen i en annons blir domslutet Granska.</div></div>
+
+      <div class="full"><button class="btn primary" type="submit">Spara</button><div class="msg" id="pf-msg" role="status">${d.exists ? `Senast ändrad ${esc(date(d.updated_at))}.` : 'Profilen är inte sparad ännu.'}</div></div>
+    </form></div>`;
+
+    const pal = document.getElementById('pal');
+    const addColor = (hex = '#00d9ff', name = '') => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = `<input type="color" value="${esc(hex)}" aria-label="Färg"><input class="input" style="max-width:7rem" value="${esc(hex)}" aria-label="Hex"><input class="input" style="max-width:14rem" placeholder="Namn" value="${esc(name || '')}" aria-label="Namn"><button class="btn small" type="button">Ta bort</button>`;
+      const [picker, hexIn] = row.querySelectorAll('input');
+      picker.oninput = () => { hexIn.value = picker.value; };
+      hexIn.oninput = () => { if (/^#[0-9a-f]{6}$/i.test(hexIn.value)) picker.value = hexIn.value; };
+      row.querySelector('button').onclick = () => row.remove();
+      pal.appendChild(row);
+    };
+    (p.palette || []).forEach((c) => addColor(c.hex, c.name));
+    document.getElementById('pal-add').onclick = () => addColor();
+
+    const msg = document.getElementById('pf-msg');
+    const show = (text, cls) => { msg.className = `msg ${cls || ''}`; msg.textContent = text; };
+    document.getElementById('pf').onsubmit = async (e) => {
+      e.preventDefault();
+      const val = (id) => document.getElementById(id).value;
+      const listOf = (id) => val(id).split('\n').map((s) => s.trim()).filter(Boolean);
+      try {
+        await post('/api/brand-profile', { user_id: userId, profile: {
+          brand_name: val('pf-name'), ad_account_ids: val('pf-acc').split(',').map((s) => s.trim()).filter(Boolean),
+          palette: [...pal.querySelectorAll('.row')].map((row) => { const [, hex, name] = row.querySelectorAll('input'); return { hex: hex.value.trim(), name: name.value.trim() }; }),
+          fonts: listOf('pf-fonts'), logo_notes: val('pf-logo-notes'), product_notes: val('pf-prod'), tone_notes: val('pf-tone'),
+          forbidden_words: listOf('pf-forbidden'), required_phrases: listOf('pf-required'),
+          blocked_features: [...document.querySelectorAll('.feats input:checked')].map((i) => i.value),
+        } });
+        show('Sparat. Nya granskningar använder profilen. Välj "Granska igen" för att bedöma en bild på nytt.', 'ok');
+      } catch (err) { show(err.message, 'err'); }
+    };
+    const logoFile = document.getElementById('logo-file');
+    if (logoFile) logoFile.onchange = async () => {
+      const f = logoFile.files[0];
+      if (!f) return;
+      if (f.size > 3 * 1024 * 1024) return show('Logotypen får vara högst 3 MB.', 'err');
+      try { await post('/api/brand-profile', { action: 'logo', user_id: userId, image_base64: await fileToBase64(f) }); profile(userId); }
+      catch (err) { show(err.message, 'err'); }
+    };
+    main.querySelectorAll('[data-remove]').forEach((b) => b.onclick = async () => {
+      try { await post('/api/brand-profile', { action: 'remove_logo', user_id: userId, path: b.dataset.remove }); profile(userId); }
+      catch (err) { show(err.message, 'err'); }
+    });
+  }
+
+  (async () => {
+    if (!localStorage.getItem('token')) { location.href = '/login.html'; return; }
+    try {
+      if (params.get('id')) await review(params.get('id'));
+      else if (params.get('profil')) await profile(params.get('profil'));
+      else {
+        let userId = params.get('user_id');
+        if (!userId) { await loadCustomers(); userId = (customers.find((c) => !c.is_admin) || customers[0])?.user_id; }
+        if (!userId) throw new Error('Det finns inga kunder att granska.');
+        await overview(userId);
+      }
+    } catch (e) { fail(e); }
+  })();
+</script>
+</body>
+</html>

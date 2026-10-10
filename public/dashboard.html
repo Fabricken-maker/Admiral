@@ -1015,6 +1015,25 @@
       .pr-admin-grid { grid-template-columns: 1fr 1fr; }
     }
 
+    /* ─── GRANSKNING (Modul B, bara Fabricken) ────────────── */
+    .rv { --rv-accent: #00d9ff; --rv-worse: #e39a9a; --pr-accent: #00d9ff; padding: 1.4rem 1.5rem 1.3rem; }
+    .rv-counts { display: flex; gap: 1.8rem; margin: .2rem 0 1rem; flex-wrap: wrap; }
+    .rv-count .n { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .rv-count .l { font-size: .64rem; text-transform: uppercase; letter-spacing: .1em; color: var(--t40); font-weight: 600; margin-top: .1rem; }
+    .rv-godkand { color: var(--rv-accent); }
+    .rv-granska { color: rgba(255,255,255,.78); }
+    .rv-underkand { color: var(--rv-worse); }
+    .rv-pagar { color: var(--t40); }
+    .rv-item { display: flex; gap: .8rem; align-items: center; padding: .6rem 0; border-top: 1px solid var(--border); cursor: pointer; background: none; border-left: 0; border-right: 0; border-bottom: 0; width: 100%; text-align: left; color: inherit; font: inherit; }
+    .rv-item:first-child { border-top: 0; }
+    .rv-item img { width: 2.8rem; height: 2.8rem; object-fit: contain; background: #1f1f1f; border-radius: 6px; flex: 0 0 auto; }
+    .rv-item .vd { font-size: .74rem; font-weight: 700; min-width: 5.2rem; }
+    .rv-item .tx { font-size: .78rem; color: var(--t60); line-height: 1.4; min-width: 0; }
+    .rv-item .tx b { color: #fff; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rv-empty { font-size: .8rem; color: var(--t40); }
+    .rv [hidden] { display: none !important; }
+    @media (max-width: 600px) { .rv { padding: 1.1rem 1rem; } }
+
     /* ─── RESPONSIVE ──────────────────────────────────────── */
     @media (max-width: 1200px) {
       .kpi-row { grid-template-columns: repeat(3, 1fr); }
@@ -1339,6 +1358,19 @@
             </div>
             <div class="pr-result" id="pr-new-result"></div>
           </details>
+        </section>
+
+        <!-- GRANSKNING (Modul B, bara Fabricken) -->
+        <section class="panel rv" id="reviews-panel" style="display:none" aria-labelledby="rv-title">
+          <div class="pr-head">
+            <h2 class="wk-title" id="rv-title">Granskning av annonser</h2>
+            <div class="pr-controls">
+              <select id="rv-customer" class="wk-select" aria-label="Kund" onchange="loadReviewsCard()"></select>
+              <button class="pr-btn primary" onclick="openReviews()">Öppna granskningen</button>
+            </div>
+          </div>
+          <div class="rv-counts" id="rv-counts"></div>
+          <div id="rv-list"></div>
         </section>
 
         <!-- KPI ROW -->
@@ -2624,8 +2656,58 @@
       if (res.ok) loadProposals();
     }
 
+    // ── GRANSKNING AV ANNONSER (Modul B) ───────────────────────
+    // Bara för Fabricken. Granskningen öppnas i ett eget fönster (granskning.html).
+    let rvCustomersLoaded = false;
+    const RV_WORD = { godkand: 'Godkänd', granska: 'Granska', underkand: 'Underkänd' };
+    const RV_MAX = 3;
+
+    function openReviews(id) {
+      const c = document.getElementById('rv-customer').value;
+      const url = id ? `/granskning.html?id=${id}` : `/granskning.html?user_id=${c}`;
+      window.open(url, 'admiral-granskning', 'width=1440,height=920');
+    }
+
+    async function loadReviewsCard() {
+      const panel = document.getElementById('reviews-panel');
+      if (!_isAdminUser) { panel.style.display = 'none'; return; }
+      try {
+        const sel = document.getElementById('rv-customer');
+        if (!rvCustomersLoaded) {
+          const r = await fetch('/api/reviews?customers=1', { headers: prHeaders() }).then(r => r.json());
+          const list = r.customers || [];
+          sel.innerHTML = list.map(c => `<option value="${c.user_id}">${escapeHtml(c.name)}</option>`).join('');
+          const first = list.find(c => !c.is_admin) || list[0];
+          if (first) sel.value = first.user_id;
+          rvCustomersLoaded = true;
+        }
+        const res = await fetch(`/api/reviews?user_id=${sel.value}`, { headers: prHeaders() });
+        if (!res.ok) { panel.style.display = 'none'; return; }
+        const d = await res.json();
+        panel.style.display = '';
+        const c = d.counts;
+        document.getElementById('rv-counts').innerHTML = [
+          ['godkand', c.godkand, 'Godkänd'], ['granska', c.granska, 'Granska'], ['underkand', c.underkand, 'Underkänd'],
+          ...(c.pagar ? [['pagar', c.pagar, 'Granskas']] : []),
+        ].map(([k, n, l]) => `<div class="rv-count"><div class="n rv-${k}">${n}</div><div class="l">${l}</div></div>`).join('');
+        const rank = { underkand: 0, granska: 1 };
+        const attention = d.reviews.filter(r => r.status === 'klar' && r.effective_verdict in rank)
+          .sort((a, b) => rank[a.effective_verdict] - rank[b.effective_verdict]).slice(0, RV_MAX);
+        document.getElementById('rv-list').innerHTML = attention.length
+          ? attention.map(r => `<button class="rv-item" onclick="openReviews(${r.id})">
+              ${r.image_url ? `<img src="${escapeHtml(r.image_url)}" alt="">` : ''}
+              <span class="vd rv-${r.effective_verdict}">${RV_WORD[r.effective_verdict]}</span>
+              <span class="tx"><b>${escapeHtml(r.ad_name || 'Uppladdad bild')}</b>${escapeHtml(r.verdict_reason || '')}</span>
+            </button>`).join('')
+          : `<div class="rv-empty">${d.reviews.length ? 'Inget att åtgärda.' : 'Inga granskningar ännu.'}</div>`;
+      } catch (e) {
+        panel.style.display = 'none';
+      }
+    }
+
     loadWeekly();
     loadProposals();
+    loadReviewsCard();
 
     // ── Uppdatera-knapp ──────────────────────────────────────
     async function refreshAll() {
@@ -2634,7 +2716,7 @@
       btn.disabled = true;
       tlLoaded = false; // återladda timeline vid nästa öppning
       notifLoaded = false;
-      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus(), loadInsights(), loadGoals(), loadFunnel(), loadAssets(), loadWeekly(true), loadProposals(), loadCampaigns(_selectedAccountId)]);
+      await Promise.all([loadAccounts(), loadDailyReport(), checkTokenStatus(), loadInsights(), loadGoals(), loadFunnel(), loadAssets(), loadWeekly(true), loadProposals(), loadReviewsCard(), loadCampaigns(_selectedAccountId)]);
       setTimeout(() => { btn.classList.remove('spinning'); btn.disabled = false; }, 600);
     }
 

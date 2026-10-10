@@ -203,6 +203,18 @@
   status = 200
   force = true
 
+[[redirects]]
+  from = "/api/reviews"
+  to = "/.netlify/functions/reviews"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/brand-profile"
+  to = "/.netlify/functions/brand-profile"
+  status = 200
+  force = true
+
 [functions."budget-adjust"]
   schedule = "0 6 * * *"
 
@@ -217,6 +229,9 @@
 
 [functions."recommendations-sync"]
   schedule = "45 4 * * *"
+
+[functions."reviews-sync"]
+  schedule = "30 5 * * *"
 
 # SPA routing - all other paths go to index.html
 [[redirects]]
