@@ -16,6 +16,7 @@ import { pass, fail, skip } from '../lib/result.js';
 import { fetchJson } from '../lib/http.js';
 import { addDays, completedWeekStarts, stockholmMidnight } from '../lib/time.js';
 import { checkApprovals } from './jobs-approvals.js';
+import { exposedOn } from '../lib/exposure.js';
 import { checkTokenNotices } from './jobs-notices.js';
 import { checkReviews } from './jobs-reviews.js';
 import { checkFatigue } from './jobs-fatigue.js';
@@ -163,6 +164,13 @@ async function checkChroma(ctx) {
     return out;
   }
   out.push(pass(A, 'jobs.chromadb svarar'));
+
+  // ChromaDB har ingen inloggning: den får bara nås från servern själv (127.0.0.1).
+  const port = Number(new URL(base).port || 80);
+  const open = await exposedOn(port);
+  out.push(open.length
+    ? fail(A, 'jobs.chromadb stängd utåt', `ChromaDB nås utan inloggning på serverns publika adress ${open.map((a) => `${a}:${port}`).join(', ')}`, { where: '/docker/openclaw-b7n2/docker-compose.yml (ports för chroma ska vara 127.0.0.1:8000:8000)' })
+    : pass(A, 'jobs.chromadb stängd utåt'));
 
   // Färskhet: antal poster ska ha ökat sedan körningen för minst 6 dagar sedan.
   const col = `${base}/api/v2/tenants/default_tenant/databases/default_database/collections`;
