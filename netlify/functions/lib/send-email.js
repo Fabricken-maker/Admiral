@@ -129,49 +129,6 @@ export function buildAdminDailyReport({ date, findings, criticals, warnings, use
 }
 
 /**
- * E-postmall: Token löper ut (till kund)
- */
-export function buildTokenExpiryEmail({ name, daysLeft, severity }) {
-  const isUrgent = severity === 'critical';
-  const accentColor = isUrgent ? '#f87171' : '#f0c040';
-
-  return `<!DOCTYPE html>
-<html lang="sv">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head>
-<body style="margin:0;padding:0;background:#060c18;font-family:-apple-system,'Inter',sans-serif;color:#fff">
-  <div style="max-width:560px;margin:0 auto;padding:32px 16px">
-
-    <div style="margin-bottom:28px">
-      <span style="font-size:18px;font-weight:800;letter-spacing:.1em">ADMIRAL<span style="color:#4fc3f7">.</span></span>
-    </div>
-
-    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:28px">
-      <div style="font-size:28px;margin-bottom:12px">${isUrgent ? '🔴' : '🟡'}</div>
-      <h1 style="font-size:19px;font-weight:700;margin:0 0 10px;color:${accentColor}">
-        ${isUrgent ? 'Ditt Meta-konto kopplas bort snart' : 'Ditt Meta-token löper ut snart'}
-      </h1>
-      <p style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.65;margin:0 0 20px">
-        Hej ${name || 'där'},<br><br>
-        Ditt Meta-token löper ut om <strong style="color:${accentColor}">${daysLeft} dag${daysLeft !== 1 ? 'ar' : ''}</strong>.
-        ${isUrgent
-          ? ' Admiral kan inte längre optimera dina kampanjer efter det.'
-          : ' Förnya det i tid för att undvika avbrott i din annonsoptimering.'}
-      </p>
-      <a href="https://admiralai.se/dashboard.html" style="display:inline-block;background:#1a6ae0;color:#fff;text-decoration:none;padding:11px 24px;border-radius:8px;font-size:13px;font-weight:700">
-        Förnya Meta-koppling →
-      </a>
-    </div>
-
-    <div style="padding-top:20px;font-size:11px;color:rgba(255,255,255,.25);text-align:center">
-      Admiral · <a href="mailto:hej@admiralai.se" style="color:rgba(255,255,255,.25)">hej@admiralai.se</a>
-      · <a href="https://admiralai.se" style="color:rgba(255,255,255,.25)">admiralai.se</a>
-    </div>
-  </div>
-</body>
-</html>`;
-}
-
-/**
  * E-postmall: Välkomstmail (skickas vid registrering)
  */
 export function buildWelcomeEmail({ name }) {
