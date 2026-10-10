@@ -8,7 +8,12 @@
  * Varför: funktioner i Lambda-kompatibilitetsläget får tillsammans högst 4 KB
  * miljövariabler (AWS Lambda). Den moderna körmiljön har ingen sådan gräns.
  * Adaptern låter varje funktion behålla sin logik oförändrad.
+ *
+ * Varje inloggad begäran kontrolleras också mot databasen (lib/auth-guard.js) innan funktionen
+ * körs. Går databasen inte att nå stoppas begäran (503) i stället för att släppas igenom.
  */
+import { authGuard } from './auth-guard.js';
+
 const NULL_BODY_STATUS = new Set([101, 204, 205, 304]);
 
 export async function toLambdaEvent(req) {
@@ -39,4 +44,16 @@ export function toResponse(result) {
   return new Response(body, { status, headers });
 }
 
-export const modern = (handler) => async (req, context) => toResponse(await handler(await toLambdaEvent(req), context));
+const UNAVAILABLE = { statusCode: 503, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: 'Tjänsten är tillfälligt otillgänglig. Försök igen.' }) };
+
+export const modern = (handler, { guard = authGuard } = {}) => async (req, context) => {
+  const event = await toLambdaEvent(req);
+  let blocked = null;
+  try {
+    blocked = guard ? await guard(event) : null;
+  } catch (e) {
+    console.error('[auth-guard]', e.message);
+    blocked = UNAVAILABLE;
+  }
+  return toResponse(blocked || await handler(event, context));
+};

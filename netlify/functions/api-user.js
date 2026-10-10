@@ -1,6 +1,12 @@
 import jwt from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
 import { getCorsHeaders } from './lib/cors.js';
 import { modern } from './lib/modern.js';
+
+// Uppgifterna läses från databasen, inte bara ur JWT:n. Pausade och avslutade konton stoppas
+// redan i modern.js (lib/auth-guard.js).
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+const ADMIN_EMAIL = process.env.ADMIRAL_ADMIN_EMAIL || 'admin@admiralai.se';
 
 const handler = async (event, context) => {
   const cors = getCorsHeaders(event, 'GET, OPTIONS');
@@ -40,15 +46,28 @@ const handler = async (event, context) => {
     }
 
     const decoded = jwt.verify(token, jwtSecret);
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, company_name, subscription_tier, subscription_status, status, setup_completed')
+      .eq('id', decoded.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!user || user.email !== decoded.email) {
+      return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Invalid or expired token' }) };
+    }
 
     return {
       statusCode: 200,
       headers: cors,
       body: JSON.stringify({
-        id: decoded.id,
-        email: decoded.email,
-        subscription_tier: decoded.subscription_tier,
-        subscription_status: 'active'
+        id: user.id,
+        email: user.email,
+        company_name: user.company_name,
+        subscription_tier: user.subscription_tier,
+        subscription_status: user.subscription_status || 'active',
+        status: user.status || 'active',
+        setup_completed: user.setup_completed ?? false,
+        is_admin: user.email === ADMIN_EMAIL
       })
     };
   } catch (error) {

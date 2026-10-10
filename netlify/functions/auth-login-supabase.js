@@ -3,25 +3,9 @@ import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getCorsHeaders } from './lib/cors.js';
 import { modern } from './lib/modern.js';
+import { createRateLimiter, normalizeEmail, clientIp, LIMITS } from './lib/rate-limit.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-
-const RATE_WINDOW_MS = 15 * 60 * 1000; // 15 minuter
-const MAX_ATTEMPTS   = 5;
-const BLOCK_MINUTES  = 15;
-
-async function incrementRateLimit(key, existing) {
-  const now = new Date();
-  const inWindow = existing && (now - new Date(existing.window_start)) < RATE_WINDOW_MS;
-  const attempts = inWindow ? existing.attempts + 1 : 1;
-  const blockedUntil = attempts >= MAX_ATTEMPTS
-    ? new Date(Date.now() + BLOCK_MINUTES * 60000).toISOString()
-    : null;
-  await supabase.from('rate_limits').upsert(
-    { key, attempts, window_start: inWindow ? existing.window_start : now.toISOString(), blocked_until: blockedUntil },
-    { onConflict: 'key' }
-  );
-}
 
 const handler = async (event, context) => {
   const corsHeaders = getCorsHeaders(event, 'POST, OPTIONS');
@@ -53,32 +37,29 @@ const handler = async (event, context) => {
       };
     }
 
-    // ── Rate limiting ─────────────────────────────────────────
-    const rlKey = `login:${email.toLowerCase()}`;
-    const { data: rl } = await supabase
-      .from('rate_limits')
-      .select('attempts, window_start, blocked_until')
-      .eq('key', rlKey)
-      .maybeSingle();
-
-    if (rl?.blocked_until && new Date(rl.blocked_until) > new Date()) {
-      const waitMin = Math.ceil((new Date(rl.blocked_until) - Date.now()) / 60000);
+    // ── Spärr mot upprepade försök (per e-post och per avsändare) ──
+    const normEmail = normalizeEmail(email);
+    const limiter = createRateLimiter(supabase);
+    const rlKey = `login:${normEmail}`;
+    const keys = [{ key: rlKey, max: LIMITS.email }, { key: `login-ip:${clientIp(event, context)}`, max: LIMITS.ip }];
+    const { rows, wait } = await limiter.check(keys);
+    if (wait > 0) {
       return {
         statusCode: 429,
         headers: corsHeaders,
-        body: JSON.stringify({ error: `För många inloggningsförsök. Försök igen om ${waitMin} minut(er).` })
+        body: JSON.stringify({ error: `För många inloggningsförsök. Försök igen om ${wait} minut(er).` })
       };
     }
 
-    // ── Hämta användare (case-insensitive match) ─────────────
+    // ── Hämta användare (exakt e-post; alla adresser sparas med små bokstäver) ──
     const { data: user, error: queryError } = await supabase
       .from('users')
       .select('*')
-      .ilike('email', email)
-      .single();
+      .eq('email', normEmail)
+      .maybeSingle();
 
     if (queryError || !user) {
-      await incrementRateLimit(rlKey, rl);
+      await limiter.fail(keys, rows);
       return {
         statusCode: 401,
         headers: corsHeaders,
@@ -90,7 +71,7 @@ const handler = async (event, context) => {
     const validPassword = await bcryptjs.compare(password, user.password_hash);
 
     if (!validPassword) {
-      await incrementRateLimit(rlKey, rl);
+      await limiter.fail(keys, rows);
       return {
         statusCode: 401,
         headers: corsHeaders,
@@ -99,7 +80,7 @@ const handler = async (event, context) => {
     }
 
     // ── Rensa rate limit vid lyckad inloggning ────────────────
-    await supabase.from('rate_limits').delete().eq('key', rlKey);
+    await limiter.clear(rlKey);
 
     // Check account status
     if (user.status === 'paused') {
@@ -183,7 +164,7 @@ const handler = async (event, context) => {
     return {
       statusCode: 500,
       headers: corsHeaders,
-      body: JSON.stringify({ error: 'Login failed: ' + error.message })
+      body: JSON.stringify({ error: 'Inloggningen misslyckades. Försök igen.' })
     };
   }
 };

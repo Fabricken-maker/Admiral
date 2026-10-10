@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import bcryptjs from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendEmail, buildWelcomeEmail } from './lib/send-email.js';
+import { normalizeEmail } from './lib/rate-limit.js';
 import { getCorsHeaders } from './lib/cors.js';
 import { modern } from './lib/modern.js';
 
@@ -49,6 +50,11 @@ const handler = async (event, context) => {
     if (new Date(invite.expires_at) < new Date()) {
       return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ error: 'Inbjudningslänken har gått ut. Be om en ny.' }) };
     }
+    // En inbjudan till en viss adress gäller bara den adressen.
+    const normEmail = normalizeEmail(email);
+    if (invite.email && normalizeEmail(invite.email) !== normEmail) {
+      return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ error: 'E-postadressen matchar inte inbjudan.' }) };
+    }
 
     // Validation
     if (!email || !password) {
@@ -67,12 +73,12 @@ const handler = async (event, context) => {
       };
     }
 
-    // Check if user exists
+    // Check if user exists (exakt e-post; alla adresser sparas med små bokstäver)
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
-      .eq('email', email)
-      .single();
+      .eq('email', normEmail)
+      .maybeSingle();
 
     if (existingUser) {
       return {
@@ -82,6 +88,15 @@ const handler = async (event, context) => {
       };
     }
 
+    // Inbjudan tas atomärt: två registreringar samtidigt kan inte använda samma länk.
+    const { data: claimed } = await supabase.from('invite_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('id', invite.id).is('used_at', null).select('id');
+    if (!claimed?.length) {
+      return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ error: 'Inbjudningslänken har redan använts.' }) };
+    }
+    const releaseInvite = () => supabase.from('invite_tokens').update({ used_at: null }).eq('id', invite.id);
+
     // Hash password
     const hashedPassword = await bcryptjs.hash(password, 10);
 
@@ -90,7 +105,7 @@ const handler = async (event, context) => {
       .from('users')
       .insert([
         {
-          email,
+          email: normEmail,
           password_hash: hashedPassword,
           company_name: company_name || email.split('@')[0] + ' Company',
           subscription_tier: 'starter',
@@ -101,20 +116,18 @@ const handler = async (event, context) => {
 
     if (insertError) {
       console.error('Insert error:', insertError);
+      await releaseInvite();
       return {
         statusCode: 500,
         headers: corsHeaders,
-        body: JSON.stringify({ error: 'Registration failed: ' + insertError.message })
+        body: JSON.stringify({ error: insertError.code === '23505' ? 'User already exists' : 'Registreringen misslyckades. Försök igen.' })
       };
     }
 
     const user = newUser[0];
 
-    // Markera inbjudningstoken som använd
-    await supabase.from('invite_tokens').update({
-      used_at: new Date().toISOString(),
-      used_by_user_id: user.id
-    }).eq('token', invite_token);
+    // Koppla inbjudan till kontot (den togs redan ovan)
+    await supabase.from('invite_tokens').update({ used_by_user_id: user.id }).eq('id', invite.id);
 
     // Skicka välkomstmail (fire-and-forget)
     sendEmail({
