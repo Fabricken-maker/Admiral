@@ -300,25 +300,12 @@ async function checkNetlify(ctx) {
       out.push(fail(A, id, `Miljövariabeln ${key} är inte tillgänglig för Functions (scope: ${scopes.join(', ') || 'inget'})`, { where: envUsage(key) }));
     } else out.push(pass(A, id));
   }
-  // META_ACCESS_TOKEN används av budget-activate — måste vara giltigt.
-  const envToken = prodValue('META_ACCESS_TOKEN');
-  if (envToken) {
-    const id = 'infra.env META_ACCESS_TOKEN giltighet';
-    try {
-      const d = await meta.debugToken(envToken);
-      if (!d.is_valid) out.push(fail(A, id, 'Meta-tokenet i miljövariabeln META_ACCESS_TOKEN är ogiltigt', { where: 'netlify/functions/budget-activate.js (process.env.META_ACCESS_TOKEN)' }));
-      else out.push(pass(A, id));
-    } catch (e) {
-      out.push(fail(A, id, `Kunde inte kontrollera META_ACCESS_TOKEN: ${e.message}`, { where: 'Netlify env' }));
-    }
-  }
   return out;
 }
 
 function envUsage(key) {
   return {
     RESEND_API_KEY: 'netlify/functions/lib/send-email.js (dagliga rapporter och token-varningar skickas inte)',
-    META_ACCESS_TOKEN: 'netlify/functions/budget-activate.js',
     GA4_PROPERTY_ID: 'netlify/functions/ga4-insights.js',
     GA4_SERVICE_ACCOUNT_JSON: 'netlify/functions/ga4-insights.js',
   }[key] || 'Netlify env (produktion)';
