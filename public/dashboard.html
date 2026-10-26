@@ -2705,11 +2705,16 @@
           const editBtn = `<button onclick="openGoalsEditor(${p.id})" style="font-size:.65rem;background:rgba(26,106,224,.15);border:1px solid rgba(26,106,224,.3);color:#4fc3f7;padding:.25rem .6rem;border-radius:6px;cursor:pointer">✏️ Redigera mål</button>`;
 
           if (!hasGoals) {
+            // Upptäckt kampanj utan satta mål: visa budget (från Meta) och spend ändå.
             return `<div style="background:var(--t04);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:.7rem">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
-                <div style="font-weight:600">${escapeHtml(p.campaign_name)}</div>
+                <div>
+                  <div style="font-weight:600">${escapeHtml(p.campaign_name)}</div>
+                  <div style="font-size:.65rem;color:var(--t40);margin-top:.15rem">${escapeHtml(p.month_start || '')} → ${escapeHtml(p.month_end || '')}</div>
+                </div>
                 ${editBtn}
               </div>
+              <div style="font-size:.72rem;color:var(--t60);margin-bottom:.4rem">💰 Budget (från Meta): <b>${fmtKr(p.monthly_budget || 0)}</b> · Spenderat: <b>${fmtKr(pr.spend || 0)}</b></div>
               <div style="font-size:.72rem;color:var(--t40)">Inga mål satta ännu. Klicka "Redigera mål" för att börja.</div>
             </div>`;
           }

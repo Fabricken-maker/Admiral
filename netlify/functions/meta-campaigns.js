@@ -50,12 +50,13 @@ const handler = async (event) => {
     if (meData.error) return { statusCode: 400, headers: cors, body: JSON.stringify({ error: meData.error.message }) };
     accountIds = (meData.data || []).map(a => a.id);
   } else {
-    // Kund utan filter — visa bara konton kopplade till deras budget_plans
+    // Kund utan filter — visa konton kopplade till deras öppna budget_plans.
+    // Pausade planer räknas med: en pausad kampanj ska inte dölja hela kontot.
     const { data: plans } = await supabase
       .from('budget_plans')
       .select('ad_account_id')
       .eq('user_id', userId)
-      .eq('status', 'active');
+      .in('status', ['active', 'paused']);
     accountIds = [...new Set((plans || []).map(p => p.ad_account_id).filter(Boolean))];
   }
 
