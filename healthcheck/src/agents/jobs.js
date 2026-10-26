@@ -5,6 +5,7 @@
 //  - GA4-synk → /api/ga4/insights levererar data
 //  - ChromaDB (Sofias minne på VPS:en) → svarar och växer
 //  - weekly-sync (05:15 UTC) → weekly_metrics har senaste avslutade vecka, inga synkfel
+//  - campaign-discovery (04:15 UTC) → kampanjer med spend har en aktiv budgetplan (se jobs-plans.js)
 //  - godkännandeflödet (Modul D) → inga godkännanden som fastnat, inga overifierade skrivningar,
 //    inga ändringar i Meta utan godkännande (se jobs-approvals.js)
 // budget-adjust och nightly-health-check startas aldrig om av modulen:
@@ -20,6 +21,7 @@ import { exposedOn } from '../lib/exposure.js';
 import { checkTokenNotices } from './jobs-notices.js';
 import { checkReviews } from './jobs-reviews.js';
 import { checkFatigue } from './jobs-fatigue.js';
+import { checkPlanCoverage } from './jobs-plans.js';
 
 const A = 'jobs';
 const run$ = promisify(execFile);
@@ -44,6 +46,7 @@ export async function run(ctx) {
     checkTokenNotices(ctx),
     checkReviews(ctx),
     checkFatigue(ctx),
+    checkPlanCoverage(ctx, expectedSyncedWeek()),
   ]);
   return results.flat();
 }
