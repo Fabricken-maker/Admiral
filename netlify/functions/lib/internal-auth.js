@@ -23,6 +23,18 @@ export function verifyInternal(value, secret = process.env.JWT_SECRET, now = Dat
   return crypto.timingSafeEqual(expected, Buffer.from(sig, 'hex'));
 }
 
+// Kör kampanjupptäckten för en kund (efter Meta-omkoppling). Fel får aldrig stoppa anroparen.
+export async function triggerCampaignDiscovery(baseUrl, userId, fetchImpl = fetch) {
+  if (!baseUrl || !userId) return false;
+  const res = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/.netlify/functions/campaign-discovery`, {
+    method: 'POST',
+    headers: { [HEADER]: signInternal(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId }),
+    signal: AbortSignal.timeout(10000),
+  }).catch(() => null);
+  return Boolean(res && res.ok);
+}
+
 // Startar granskningskön (bakgrundsfunktion, svarar 202 direkt).
 export async function triggerReviewRunner(baseUrl, fetchImpl = fetch) {
   if (!baseUrl) return false;
