@@ -29,7 +29,7 @@ const handler = async (event) => {
     const bpId = event.queryStringParameters?.budget_plan_id;
     let q = supabase
       .from('budget_plans')
-      .select('id, campaign_name, user_id, monthly_budget, total_spent, month_start, month_end, target_courses_sold, target_revenue, target_roas, target_cpa, campaign_notes')
+      .select('id, campaign_name, user_id, status, monthly_budget, total_spent, month_start, month_end, target_courses_sold, target_revenue, target_roas, target_cpa, campaign_notes')
       .order('id', { ascending: false });
     if (bpId) q = q.eq('id', bpId);
     if (!isAdmin) q = q.eq('user_id', userId);
