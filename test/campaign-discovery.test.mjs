@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   monthPeriod, campaignBudget, planChanges, applyChanges, fetchAccountData, graphGetAll,
-  accountsPerCustomer, backfillAdAccounts,
+  accountsPerCustomer, backfillAdAccounts, runDiscovery,
 } from '../netlify/functions/lib/campaign-discovery.js';
 
 const TODAY = '2026-10-26'; // oktober = 31 dagar
@@ -255,4 +255,56 @@ test('backfillAdAccounts: fyller från weekly_settings, skriver aldrig över, gi
   const manyAccounts = async () => ({ json: async () => ({ data: [{ id: 'act_1' }, { id: 'act_2' }] }) });
   assert.equal(await backfillAdAccounts(many, 7, 'tok', manyAccounts), null);
   assert.equal(many.writes.length, 0);
+});
+
+// ── runDiscovery: hela körningen (delas av nattjobbet och bakgrundsfunktionen) ──
+function discoveryFixtures() {
+  const sb = fakeSupabase({
+    users: [
+      { id: 3, status: 'active', email: 'admin@admiralai.se', meta_ad_account_id: null },
+      { id: 6, status: 'active', meta_ad_account_id: null },
+      { id: 9, status: 'active', meta_ad_account_id: 'act_egen' },
+    ],
+    weekly_settings: [{ user_id: 6, ad_account_ids: ['act_kund'], active: true }],
+    budget_plans: [],
+  });
+  const pages = {
+    act_egen: { currency: 'SEK' },
+    'act_egen/campaigns': { data: [{ id: 'c9', name: 'Ny', status: 'ACTIVE', daily_budget: '10000' }] },
+    'act_egen/adsets': { data: [] },
+  };
+  const fetchImpl = async (url) => ({ json: async () => pages[new URL(url).pathname.replace(/^\/v\d+\.\d+\//, '')] || {} });
+  return { sb, fetchImpl };
+}
+
+test('runDiscovery: fel hos en kund loggas i health_reports (maskerat) och stoppar inte nästa', async () => {
+  const { sb, fetchImpl } = discoveryFixtures();
+  const tokensForCustomer = async (_s, uid) => {
+    if (uid === 6) throw new Error('Graph 190: access_token=HEMLIGT ogiltigt');
+    return ['tok'];
+  };
+  const results = await runDiscovery({ supabase: sb, tokensForCustomer, fetchImpl });
+
+  assert.equal(results[0].user_id, 6);
+  assert.match(results[0].error, /\[REDACTED\]/);
+  assert.doesNotMatch(results[0].error, /HEMLIGT/);
+  assert.equal(results[1].user_id, 9);
+  assert.equal(results[1].accounts[0].created, 1);
+
+  const report = sb.writes.find((w) => w.table === 'health_reports' && w.op === 'insert');
+  assert.equal(report.row.category, 'campaign_discovery');
+  assert.equal(report.row.user_id, 3); // larmet går till admin
+  assert.match(report.row.message, /kund 6/);
+  assert.doesNotMatch(report.row.details.error, /HEMLIGT/);
+});
+
+test('runDiscovery: onlyUserId kör bara den kunden (omkopplingsfallet)', async () => {
+  const { sb, fetchImpl } = discoveryFixtures();
+  const asked = [];
+  const tokensForCustomer = async (_s, uid) => { asked.push(uid); return ['tok']; };
+  const results = await runDiscovery({ supabase: sb, tokensForCustomer, fetchImpl, onlyUserId: 9 });
+
+  assert.deepEqual(asked, [9]);
+  assert.deepEqual(results.map((r) => r.user_id), [9]);
+  assert.equal(sb.writes.filter((w) => w.table === 'health_reports').length, 0);
 });

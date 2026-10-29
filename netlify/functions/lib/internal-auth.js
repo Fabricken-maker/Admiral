@@ -23,16 +23,17 @@ export function verifyInternal(value, secret = process.env.JWT_SECRET, now = Dat
   return crypto.timingSafeEqual(expected, Buffer.from(sig, 'hex'));
 }
 
-// Kör kampanjupptäckten för en kund (efter Meta-omkoppling). Fel får aldrig stoppa anroparen.
+// Kör kampanjupptäckten för en kund (efter Meta-omkoppling). Bakgrundsfunktion som svarar
+// 202 direkt — kundens redirect väntar aldrig på Meta. Fel får aldrig stoppa anroparen.
 export async function triggerCampaignDiscovery(baseUrl, userId, fetchImpl = fetch) {
   if (!baseUrl || !userId) return false;
-  const res = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/.netlify/functions/campaign-discovery`, {
+  const res = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/.netlify/functions/campaign-discovery-background`, {
     method: 'POST',
     headers: { [HEADER]: signInternal(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ user_id: userId }),
     signal: AbortSignal.timeout(10000),
   }).catch(() => null);
-  return Boolean(res && res.ok);
+  return Boolean(res && (res.status === 202 || res.ok));
 }
 
 // Startar granskningskön (bakgrundsfunktion, svarar 202 direkt).
