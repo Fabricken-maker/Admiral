@@ -12,6 +12,7 @@ Fabrickens tjänst för att följa och förbättra kunders Meta-annonser. Live p
 | Tester | `test/` och `healthcheck/test/` |
 
 ## Moduler
+- **Kampanjupptäckt:** hittar kundernas Meta-kampanjer nattligen (och direkt efter Meta-omkoppling) och speglar budget från Meta i `budget_plans`, så att kampanjer syns utan manuell plan (`campaign-discovery`, `lib/campaign-discovery.js`).
 - **C, Veckoutveckling:** veckokortet på dashboarden (`weekly`, `weekly-sync`).
 - **D, Godkännandeflöde:** förslag, godkännande, skrivgrinden `lib/meta-write.js` (enda koden som skriver till Meta), Ångra (`proposals`, `write-settings`).
 - **B, Granskning av annonsmaterial:** `granskning.html`, `reviews`, `brand-profile`, `reviews-sync`, `reviews-run-background`.

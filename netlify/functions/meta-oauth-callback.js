@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { storeToken } from './lib/token-store.js';
 import { verifyState } from './lib/oauth-state.js';
+import { triggerCampaignDiscovery } from './lib/internal-auth.js';
+import { backfillAdAccounts } from './lib/campaign-discovery.js';
 import { modern } from './lib/modern.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
@@ -49,6 +51,11 @@ const handler = async (event) => {
 
     // Spara token krypterat (Supabase Vault) för denna användare
     await storeToken(supabase, { userId, accessToken, expiresAt, metaUserId: meData.id || null });
+
+    // Fyll users.meta_ad_account_id om det saknas och hitta kundens kampanjer direkt,
+    // så att dashboarden är ifylld när kunden kommer tillbaka. Fel stoppar aldrig kopplingen.
+    await backfillAdAccounts(supabase, userId, accessToken).catch(() => {});
+    await triggerCampaignDiscovery(process.env.BASE_URL, userId).catch(() => {});
 
     return { statusCode: 302, headers: { Location: '/setup-wizard.html?meta_connected=1' } };
   } catch (err) {

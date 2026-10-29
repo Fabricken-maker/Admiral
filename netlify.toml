@@ -203,6 +203,9 @@
   status = 200
   force = true
 
+[functions."campaign-discovery"]
+  schedule = "15 4 * * *"
+
 [functions."budget-adjust"]
   schedule = "0 6 * * *"
 

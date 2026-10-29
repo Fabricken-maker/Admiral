@@ -111,6 +111,7 @@ export const TABLE_USAGE = {
 
 // Schemalagda Netlify-funktioner som ska finnas i aktuell deploy.
 export const EXPECTED_SCHEDULES = {
+  'campaign-discovery': '15 4 * * *',
   'budget-adjust': '0 6 * * *',
   'nightly-health-check': '0 7 * * *',
   'weekly-sync': '15 5 * * *',

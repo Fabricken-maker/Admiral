@@ -28,14 +28,15 @@ const handler = async (event) => {
     return { statusCode: 403, headers: corsHeaders, body: JSON.stringify({ error: err.message, meta_not_connected: true }) };
   }
 
-  // Hämta vilka ad accounts användaren har aktiva budget_plans för (för icke-admins)
+  // Hämta vilka ad accounts användaren har öppna budget_plans för (för icke-admins).
+  // Pausade planer räknas med: en pausad kampanj ska inte dölja hela kontot.
   let allowedAccountIds = null;
   if (!isAdmin) {
     const { data: plans } = await supabase
       .from('budget_plans')
       .select('ad_account_id')
       .eq('user_id', userId)
-      .eq('status', 'active');
+      .in('status', ['active', 'paused']);
     allowedAccountIds = new Set((plans || []).map(p => p.ad_account_id).filter(Boolean));
   }
 
