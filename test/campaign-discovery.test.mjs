@@ -2,8 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   monthPeriod, campaignBudget, planChanges, applyChanges, fetchAccountData, graphGetAll,
-  accountsPerCustomer, backfillAdAccounts, runDiscovery,
+  accountsPerCustomer, backfillAdAccounts, runDiscovery, hasGoals,
 } from '../netlify/functions/lib/campaign-discovery.js';
+
+test('hasGoals: upptäckt plan utan mål → false; något mål > 0 → true', () => {
+  assert.equal(hasGoals({ target_roas: null, target_cpa: null, target_revenue: null, target_courses_sold: null }), false);
+  assert.equal(hasGoals({ target_roas: '0', target_revenue: 0 }), false);
+  assert.equal(hasGoals({}), false);
+  assert.equal(hasGoals({ target_roas: '3.5' }), true);
+  assert.equal(hasGoals({ target_courses_sold: 40 }), true);
+});
 
 const TODAY = '2026-10-26'; // oktober = 31 dagar
 const PERIOD = monthPeriod(TODAY);
