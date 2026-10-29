@@ -346,3 +346,49 @@ export async function backfillAdAccounts(supabase, userId, token = null, fetchIm
   if (upErr) throw new Error(`users update: ${upErr.message}`);
   return patch.meta_ad_account_id;
 }
+
+export const sanitize = (s) => String(s || '').replace(/access_token=[^&\s"']+/gi, 'access_token=[REDACTED]');
+
+/**
+ * En hel upptäcktskörning: alla kunder, eller en kund (onlyUserId, efter Meta-omkoppling).
+ * Fel hos en kund loggas i health_reports och stoppar aldrig de andra.
+ * tokensForCustomer injiceras så att modulen kan testas utan Vault.
+ */
+export async function runDiscovery({ supabase, tokensForCustomer, onlyUserId = null, adminEmail = 'admin@admiralai.se', now = new Date(), fetchImpl = fetch }) {
+  const { data: admin } = await supabase.from('users').select('id').eq('email', adminEmail).maybeSingle();
+  let customers = await accountsPerCustomer(supabase);
+  if (onlyUserId) customers = customers.filter((c) => c.userId === onlyUserId);
+
+  const results = [];
+  for (const customer of customers) {
+    try {
+      const tokens = await tokensForCustomer(supabase, customer.userId);
+      if (!tokens.length) throw new Error('Ingen giltig Meta-koppling');
+
+      // Onboarding/omkoppling kan ha missat users.meta_ad_account_id — fyll från weekly_settings.
+      if (!customer.hasPrimary && customer.weeklyAccounts.length) {
+        await backfillAdAccounts(supabase, customer.userId).catch(() => {});
+      }
+
+      const accounts = [];
+      for (const adAccountId of customer.accounts) {
+        accounts.push(await discoverAccount({ supabase, userId: customer.userId, adAccountId, tokens, now, fetchImpl }));
+      }
+      results.push({ user_id: customer.userId, accounts });
+    } catch (err) {
+      const message = sanitize(err.message || err);
+      results.push({ user_id: customer.userId, error: message });
+      if (admin?.id) {
+        await supabase.from('health_reports').insert({
+          report_date: isoDate(now),
+          user_id: admin.id,
+          severity: 'warning',
+          category: 'campaign_discovery',
+          message: `Kampanjupptäckten misslyckades för kund ${customer.userId}`,
+          details: { error: message },
+        });
+      }
+    }
+  }
+  return results;
+}
