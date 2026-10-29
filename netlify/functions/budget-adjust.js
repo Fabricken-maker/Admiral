@@ -13,6 +13,7 @@ import { tokensForCustomer } from './lib/token-store.js';
 import { buildProposal, ProposalRejected } from './lib/build-proposal.js';
 import { modern } from './lib/modern.js';
 import { actionValue, PURCHASE_TYPES } from './lib/weekly.js';
+import { hasGoals } from './lib/campaign-discovery.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
@@ -70,7 +71,9 @@ const handler = async () => {
     const repo = createRepo(supabase);
     // Ett budgetförslag i stället för en skrivning. Avvisas förslaget (gränser, ingen
     // skrivbehörighet, nödstopp) noteras skälet i resultatet.
+    // Planer utan mål (skapade av kampanjupptäckten) följs upp men får inga förslag.
     const propose = async (plan, objectType, objectId, dailyCents) => {
+      if (!hasGoals(plan)) return { object_id: objectId, skipped: 'Planen saknar mål' };
       try {
         const p = await buildProposal({
           supabase, repo, tokens: await tokensForCustomer(supabase, plan.user_id),
