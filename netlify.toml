@@ -192,6 +192,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/black-friday"
+  to = "/.netlify/functions/black-friday"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/reviews"
   to = "/.netlify/functions/reviews"
   status = 200

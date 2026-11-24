@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Black Friday · DB Golf / TeeBox · Admiral</title>
+<style>
+  :root {
+    --bg: #0b0a09; --panel: #15130f; --panel2: #1d1a14; --line: rgba(245,197,66,.16);
+    --gold: #f5c542; --gold2: #ffdf7a; --red: #e5252a; --red2: #ff4d4d;
+    --text: #f4efe4; --mute: #a39b88; --dim: #6f6858; --ok: #6ee7a0;
+    --display: 'Arial Black', 'Helvetica Neue', Impact, sans-serif;
+    --body: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--body); line-height: 1.45; min-height: 100vh;
+    background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(229,37,42,.18), transparent 70%); }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 60px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--line); background: rgba(11,10,9,.9); position: sticky; top: 0; z-index: 5; backdrop-filter: blur(8px); }
+  .topbar a { font-size: .8rem; letter-spacing: .12em; color: var(--mute); }
+  .topbar a:hover { color: var(--gold); }
+  .topbar .brand { font-weight: 700; color: var(--text); letter-spacing: .22em; }
+
+  /* hero */
+  .hero { position: relative; overflow: hidden; margin: 22px 0 18px; border: 1px solid var(--line); border-radius: 18px;
+    background: linear-gradient(135deg, #1a0707 0%, #0d0b09 55%, #17120a 100%); padding: 34px 30px 28px; }
+  .hero::before { content: ''; position: absolute; inset: 0; opacity: .5;
+    background: repeating-linear-gradient(-45deg, transparent 0 22px, rgba(229,37,42,.10) 22px 44px); pointer-events: none; }
+  .hero::after { content: ''; position: absolute; right: -60px; top: -60px; width: 260px; height: 260px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,197,66,.28), transparent 65%); pointer-events: none; }
+  .hero > * { position: relative; z-index: 1; }
+  .tag { display: inline-flex; align-items: center; gap: 8px; font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+  .tag i { width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 10px var(--red); display: inline-block; }
+  .tag.live i { animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  h1 { font-family: var(--display); font-size: clamp(2.6rem, 9vw, 5.6rem); line-height: .95; letter-spacing: -.01em; text-transform: uppercase; margin: 10px 0 6px;
+    background: linear-gradient(180deg, var(--gold2), var(--gold) 55%, #b8841a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { color: var(--mute); font-size: .95rem; }
+  .sub b { color: var(--text); }
+  .stamp { display: inline-block; margin-top: 14px; font-family: var(--display); font-size: 1.05rem; letter-spacing: .06em; color: #fff; background: var(--red);
+    padding: 6px 14px; transform: rotate(-2deg); border-radius: 4px; box-shadow: 0 4px 0 #7d1114; }
+
+  .cd { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+  .cd div { min-width: 78px; text-align: center; background: rgba(0,0,0,.55); border: 1px solid var(--line); border-radius: 12px; padding: 10px 8px 8px; }
+  .cd b { display: block; font-family: var(--display); font-size: 2rem; color: var(--gold2); font-variant-numeric: tabular-nums; line-height: 1; }
+  .cd span { font-size: .62rem; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); }
+  .cd-note { margin-top: 10px; font-size: .8rem; color: var(--mute); }
+
+  .budget { margin-top: 24px; }
+  .budget .row { display: flex; justify-content: space-between; align-items: baseline; font-size: .8rem; color: var(--mute); margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+  .budget .row b { font-family: var(--display); font-size: 1.5rem; color: var(--text); }
+  .bar { position: relative; height: 16px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; }
+  .bar .fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--red), var(--gold)); border-radius: 99px; transition: width .6s; }
+  .bar .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.55); }
+  .bar-legend { display: flex; gap: 16px; margin-top: 8px; font-size: .7rem; color: var(--dim); flex-wrap: wrap; }
+
+  .demo { background: repeating-linear-gradient(-45deg, #2a2108, #2a2108 12px, #1f1806 12px 24px); border: 1px dashed var(--gold); color: var(--gold2); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: .85rem; }
+  .note { background: var(--panel); border-left: 3px solid var(--gold); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: .86rem; color: var(--mute); }
+  .err { background: #2a0e0e; border: 1px solid var(--red); color: #ffb4b4; border-radius: 12px; padding: 14px 16px; margin: 16px 0; }
+
+  h2 { font-family: var(--display); font-size: 1.05rem; letter-spacing: .1em; text-transform: uppercase; margin: 34px 0 14px; display: flex; align-items: center; gap: 12px; }
+  h2::before { content: ''; width: 26px; height: 4px; background: var(--red); border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.4), 8px 0 0 var(--gold); margin-right: 8px; }
+  h2 small { font-family: var(--body); font-weight: 400; letter-spacing: 0; text-transform: none; font-size: .78rem; color: var(--dim); }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .kpi.hot { border-color: rgba(229,37,42,.55); background: linear-gradient(160deg, #240b0b, var(--panel)); }
+  .kpi span { font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; color: var(--mute); }
+  .kpi b { display: block; font-family: var(--display); font-size: 1.7rem; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .kpi small { color: var(--dim); font-size: .72rem; }
+
+  .days { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .day { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; position: relative; }
+  .day.today { border-color: var(--red); box-shadow: 0 0 0 1px var(--red), 0 0 24px rgba(229,37,42,.25); }
+  .day .dl { font-family: var(--display); font-size: 1.1rem; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+  .day .pill { font-family: var(--body); font-size: .62rem; letter-spacing: .12em; background: var(--red); color: #fff; padding: 3px 8px; border-radius: 99px; }
+  .day .pill.dim { background: rgba(255,255,255,.1); color: var(--mute); }
+  .day .bars { margin: 12px 0 10px; }
+  .day .b { height: 10px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; margin-bottom: 5px; }
+  .day .b i { display: block; height: 100%; border-radius: 99px; }
+  .day .b.plan i { background: rgba(245,197,66,.45); }
+  .day .b.real i { background: linear-gradient(90deg, var(--red), var(--gold)); }
+  .day .legend { display: flex; justify-content: space-between; font-size: .74rem; color: var(--mute); }
+  .day .legend b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .day .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 12px; font-size: .74rem; color: var(--dim); }
+  .day .grid b { display: block; color: var(--text); font-size: .95rem; font-variant-numeric: tabular-nums; }
+  .over { color: var(--red2) !important; } .under { color: var(--ok) !important; }
+
+  .films { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .film { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .film .img { position: relative; aspect-ratio: 1/1; background: #000 center/cover no-repeat; }
+  .film .img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.35), transparent 30%); }
+  .film .ribbon { position: absolute; top: 10px; left: 10px; z-index: 2; font-family: var(--display); font-size: .62rem; letter-spacing: .16em; background: var(--red); color: #fff; padding: 4px 9px; border-radius: 4px; }
+  .film .play { position: absolute; z-index: 2; right: 12px; bottom: 12px; width: 38px; height: 38px; border-radius: 50%; background: rgba(245,197,66,.92); display: grid; place-items: center; }
+  .film .play::before { content: ''; border-left: 11px solid #1a1200; border-top: 7px solid transparent; border-bottom: 7px solid transparent; margin-left: 3px; }
+  .film .cap { padding: 12px 14px 0; }
+  .film .cap b { font-family: var(--display); font-size: 1.05rem; color: var(--gold2); display: block; }
+  .film .cap span { font-size: .78rem; color: var(--mute); }
+  .film .st { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 12px 14px 14px; text-align: center; }
+  .film .st span { font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); display: block; }
+  .film .st b { font-size: .98rem; font-variant-numeric: tabular-nums; }
+
+  .camps { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+  .camp { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .camp .h { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .camp .h b { font-size: 1rem; }
+  .camp .role { font-size: .64rem; letter-spacing: .14em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; font-weight: 700; }
+  .role.cold { background: rgba(80,160,255,.16); color: #9bc8ff; } .role.warm { background: rgba(229,37,42,.2); color: #ff9a9a; }
+  .camp .meta { color: var(--dim); font-size: .76rem; margin: 4px 0 12px; }
+  .camp .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: .68rem; color: var(--dim); text-transform: uppercase; letter-spacing: .1em; }
+  .camp .grid b { display: block; color: var(--text); font-size: 1rem; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+
+  .tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: .82rem; min-width: 780px; }
+  th { text-align: right; font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--mute); padding: 12px 12px; border-bottom: 1px solid var(--line); font-weight: 600; white-space: nowrap; }
+  td { text-align: right; padding: 11px 12px; border-bottom: 1px solid rgba(255,255,255,.05); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  tr:last-child td { border-bottom: 0; }
+  tfoot td { font-weight: 700; border-top: 1px solid var(--line); color: var(--gold2); }
+  .adn { display: flex; align-items: center; gap: 10px; }
+  .adn img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid var(--line); }
+  .adn small { display: block; color: var(--dim); font-size: .68rem; }
+  .st-pill { font-size: .62rem; padding: 2px 8px; border-radius: 99px; background: rgba(255,255,255,.08); color: var(--mute); }
+  .st-pill.ACTIVE { background: rgba(110,231,160,.15); color: var(--ok); }
+  .empty { text-align: center; color: var(--dim); padding: 26px; }
+  .foot { margin-top: 36px; color: var(--dim); font-size: .74rem; line-height: 1.7; }
+  .foot b { color: var(--mute); }
+  @media (max-width: 560px) { .hero { padding: 26px 18px 22px; } .cd div { min-width: 64px; } }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="brand" href="/dashboard.html">ADMIRAL</a>
+  <a href="/dashboard.html">← Tillbaka till dashboarden</a>
+</div>
+<div class="wrap" id="app"><div class="empty">Hämtar Black Friday…</div></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nf = new Intl.NumberFormat('sv-SE');
+const kr = (v, d = 0) => (v == null ? '–' : new Intl.NumberFormat('sv-SE', { minimumFractionDigits: d, maximumFractionDigits: d }).format(v) + ' kr');
+const int = (v) => (v == null ? '–' : nf.format(Math.round(v)));
+const demo = new URLSearchParams(location.search).has('demo');
+const STATUS = { ACTIVE: 'Aktiv', PAUSED: 'Pausad', CAMPAIGN_PAUSED: 'Kampanj pausad', ADSET_PAUSED: 'Annonsgrupp pausad', PENDING_REVIEW: 'Granskas', IN_PROCESS: 'Bearbetas', WITH_ISSUES: 'Problem', DISAPPROVED: 'Nekad', ARCHIVED: 'Arkiverad' };
+let view = null;
+
+async function load() {
+  const token = localStorage.getItem('token');
+  if (!token) { location.href = '/login.html'; return; }
+  try {
+    const res = await fetch('/api/black-friday' + (demo ? '?demo=1' : ''), { headers: { Authorization: 'Bearer ' + token } });
+    if (res.status === 401) { location.href = '/login.html'; return; }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Något gick fel');
+    view = data; render();
+  } catch (e) {
+    $('#app').innerHTML = `<div class="err"><b>Kunde inte hämta Black Friday-siffrorna.</b><br>${esc(e.message)}</div>`;
+  }
+}
+
+function countdownParts(secs) {
+  const d = Math.floor(secs / 86400), h = Math.floor((secs % 86400) / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
+  return [[d, 'dagar'], [h, 'timmar'], [m, 'minuter'], [s, 'sekunder']];
+}
+
+function render() {
+  const v = view, w = v.window, b = v.budget, t = v.totals;
+  const stateTxt = { before: 'Startar snart', live: 'Pågår nu', ended: 'Avslutad' }[w.state];
+  const tick = w.state === 'before' ? 'Börjar om' : w.state === 'live' ? 'Tid kvar' : '';
+  const plannedPct = (b.planned / b.total) * 100;
+  const maxDay = Math.max(1, ...v.days.map((d) => Math.max(d.planned, d.spend)));
+
+  $('#app').innerHTML = `
+    ${v.demo ? '<div class="demo"><b>EXEMPELDATA.</b> Det här är påhittade siffror för att visa utseendet. Riktiga siffror syns utan <code>?demo=1</code> när annonserna är igång.</div>' : ''}
+    <section class="hero">
+      <span class="tag ${w.state === 'live' ? 'live' : ''}"><i></i>${esc(stateTxt)} · ${esc(v.customer)}</span>
+      <h1>Black<br>Friday</h1>
+      <p class="sub">Erbjudandet gäller <b>tis 25 – fre 27 november 2026</b> · totalbudget <b>${kr(b.total)}</b></p>
+      <span class="stamp">ENDAST 25–27 NOV</span>
+      ${w.state !== 'ended' ? `<div class="cd" id="cd"></div><p class="cd-note" id="cd-note">${tick} · erbjudandet slutar fre 27 nov 23:59</p>` : '<p class="cd-note">Erbjudandet är slut.</p>'}
+      <div class="budget">
+        <div class="row"><span>Spenderat av totalbudget</span><span><b>${kr(b.spent)}</b> av ${kr(b.total)} · ${kr(b.left)} kvar</span></div>
+        <div class="bar"><div class="fill" style="width:${b.used_pct}%"></div><div class="mark" style="left:${plannedPct}%" title="Planerat ${b.planned} kr"></div></div>
+        <div class="bar-legend"><span>Streck = planerat ${kr(b.planned)}</span><span>Reserv ${kr(b.reserve)}</span></div>
+      </div>
+    </section>
+    ${v.notes.map((n) => `<div class="note">${esc(n)}</div>`).join('')}
+
+    <h2>Hittills</h2>
+    <div class="kpis">
+      <div class="kpi"><span>Spend</span><b>${kr(t.spend)}</b><small>${b.used_pct} % av budget</small></div>
+      <div class="kpi"><span>Visningar</span><b>${int(t.impressions)}</b></div>
+      <div class="kpi"><span>Klick</span><b>${int(t.link_clicks || t.clicks)}</b><small>${t.link_clicks ? 'länkklick' : 'alla klick'}</small></div>
+      <div class="kpi"><span>Kostnad per klick</span><b>${kr(t.cpc, 2)}</b></div>
+      <div class="kpi hot"><span>Resultat (köp)</span><b>${int(t.results)}</b><small>pixel · ${t.revenue ? 'intäkt ' + kr(t.revenue) : 'ingen intäkt ännu'}</small></div>
+      <div class="kpi hot"><span>Kostnad per resultat</span><b>${kr(t.cost_per_result)}</b><small>${t.roas ? 'ROAS ' + t.roas.toFixed(1) : 'ROAS saknas'}</small></div>
+    </div>
+
+    <h2>Per dag <small>planerat mot verkligt</small></h2>
+    <div class="days">${v.days.map((d) => dayCard(d, maxDay)).join('')}</div>
+
+    <h2>Filmerna <small>tre annonsfilmer</small></h2>
+    <div class="films">${v.films.map(filmCard).join('')}</div>
+
+    <h2>Kampanjer <small>kall och varm</small></h2>
+    <div class="camps">${v.campaigns.length ? v.campaigns.map(campCard).join('') : '<div class="empty">Kampanjerna syns när de finns i kontot.</div>'}</div>
+
+    <h2>Annonser <small>kostnad per annons</small></h2>
+    <div class="tablewrap">${adsTable(v)}</div>
+
+    <p class="foot"><b>Så räknas siffrorna.</b> Hämtas direkt från Meta (bara läsning – Admiral skriver aldrig i DB Golfs konto). Black Friday-annonser = annonser i TB_Trafik_2026H2 och TB_Varm_2026H2 vars namn innehåller BF eller som skapats från 20 nov. Resultat = köp enligt pixeln (samma köp räknas bara en gång). Kostnad per klick räknas på länkklick när Meta anger dem. Meta kan justera siffrorna i efterhand, särskilt de senaste dygnen. Uppdaterad ${new Date(v.generated_at).toLocaleString('sv-SE')}.</p>`;
+  startCountdown();
+}
+
+function dayCard(d, maxDay) {
+  const diff = d.vs_plan;
+  const diffTxt = d.is_future || diff == null ? '' : diff === 0 ? 'enligt plan' : diff > 0 ? `<span class="over">+${kr(diff)} över plan</span>` : `<span class="under">${kr(diff)} under plan</span>`;
+  const pill = d.is_today ? '<span class="pill">IDAG</span>' : d.is_future ? '<span class="pill dim">KOMMER</span>' : d.in_offer ? '<span class="pill dim">KLAR</span>' : '<span class="pill dim">FÖRE</span>';
+  return `<div class="day ${d.is_today ? 'today' : ''}">
+    <div class="dl"><span>${esc(d.label)}</span>${pill}</div>
+    <div class="bars">
+      <div class="b plan"><i style="width:${(d.planned / maxDay) * 100}%"></i></div>
+      <div class="b real"><i style="width:${(d.spend / maxDay) * 100}%"></i></div>
+    </div>
+    <div class="legend"><span>Plan <b>${kr(d.planned)}</b></span><span>Verkligt <b>${kr(d.spend)}</b></span></div>
+    <div class="legend" style="margin-top:2px"><span></span><span>${diffTxt}</span></div>
+    <div class="grid">
+      <div>Visningar<b>${int(d.impressions)}</b></div><div>Klick<b>${int(d.link_clicks || d.clicks)}</b></div>
+      <div>Kostnad/klick<b>${kr(d.cpc, 2)}</b></div><div>Resultat<b>${int(d.results)}</b></div>
+    </div></div>`;
+}
+
+function filmCard(f) {
+  return `<div class="film">
+    <div class="img" style="background-image:url('${esc(f.image)}')">
+      <span class="ribbon">BLACK FRIDAY</span>
+      <div class="play"></div>
+    </div>
+    <div class="cap"><b>${esc(f.title)}</b><span>${esc(f.tagline)}</span></div>
+    <div class="st">
+      <div><span>Spend</span><b>${kr(f.spend)}</b></div>
+      <div><span>Klick</span><b>${int(f.link_clicks || f.clicks)}</b></div>
+      <div><span>Kr/klick</span><b>${kr(f.cpc, 2)}</b></div>
+      <div><span>Visningar</span><b>${int(f.impressions)}</b></div>
+      <div><span>Resultat</span><b>${int(f.results)}</b></div>
+      <div><span>Annonser</span><b>${f.ads}</b></div>
+    </div></div>`;
+}
+
+function campCard(c) {
+  const bud = c.daily_budget ? `${kr(c.daily_budget)}/dag` : c.lifetime_budget ? `${kr(c.lifetime_budget)} totalt` : 'budget på annonsgruppsnivå';
+  return `<div class="camp">
+    <div class="h"><b>${esc(c.name)}</b><span class="role ${c.role}">${c.role === 'warm' ? 'Varm' : 'Kall'}</span></div>
+    <div class="meta">${esc(c.ad_set_hint || '')} · ${esc(STATUS[c.status] || c.status || '')} · ${esc(bud)} · ${c.bf_ads} BF-annonser</div>
+    <div class="grid">
+      <div>Spend<b>${kr(c.spend)}</b></div><div>Visningar<b>${int(c.impressions)}</b></div><div>Klick<b>${int(c.link_clicks || c.clicks)}</b></div>
+      <div>Kr/klick<b>${kr(c.cpc, 2)}</b></div><div>Resultat<b>${int(c.results)}</b></div><div>Kr/resultat<b>${kr(c.cost_per_result)}</b></div>
+    </div></div>`;
+}
+
+function adsTable(v) {
+  if (!v.ads.length) return '<div class="empty">Inga Black Friday-annonser ännu.</div>';
+  const imgs = Object.fromEntries(v.films.map((f) => [f.key, f.image]));
+  const t = v.totals;
+  return `<table><thead><tr><th>Annons</th><th>Kampanj</th><th>Status</th><th>Spend</th><th>Visningar</th><th>Klick</th><th>Kr/klick</th><th>Resultat</th><th>Kr/resultat</th></tr></thead><tbody>
+    ${v.ads.map((a) => `<tr>
+      <td><div class="adn">${a.film ? `<img src="${esc(imgs[a.film])}" alt="">` : ''}<div>${esc(a.name)}<small>${a.film ? 'film ' + esc(v.films.find((f) => f.key === a.film).title) : 'okänd film'}</small></div></div></td>
+      <td>${esc(a.campaign_name || '')}</td><td><span class="st-pill ${esc(a.status)}">${esc(STATUS[a.status] || a.status || '')}</span></td>
+      <td>${kr(a.spend, 2)}</td><td>${int(a.impressions)}</td><td>${int(a.link_clicks || a.clicks)}</td><td>${kr(a.cpc, 2)}</td><td>${int(a.results)}</td><td>${kr(a.cost_per_result)}</td></tr>`).join('')}
+    </tbody><tfoot><tr><td>Totalt</td><td></td><td></td><td>${kr(t.spend, 2)}</td><td>${int(t.impressions)}</td><td>${int(t.link_clicks || t.clicks)}</td><td>${kr(t.cpc, 2)}</td><td>${int(t.results)}</td><td>${kr(t.cost_per_result)}</td></tr></tfoot></table>`;
+}
+
+let timer = null;
+function startCountdown() {
+  clearInterval(timer);
+  const el = $('#cd'); if (!el) return;
+  const target = new Date(view.window.state === 'before' ? view.window.starts_at : view.window.ends_at).getTime();
+  const paint = () => {
+    const left = Math.max(0, Math.round((target - Date.now()) / 1000));
+    el.innerHTML = countdownParts(left).map(([n, l]) => `<div><b>${String(n).padStart(2, '0')}</b><span>${l}</span></div>`).join('');
+    if (left === 0) { clearInterval(timer); load(); }
+  };
+  paint(); timer = setInterval(paint, 1000);
+}
+
+load();
+setInterval(load, 5 * 60 * 1000);
+</script>
+</body>
+</html>
