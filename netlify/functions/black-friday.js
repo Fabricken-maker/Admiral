@@ -15,6 +15,18 @@ import { BF, buildView, demoInput, fetchBlackFriday } from './lib/black-friday.j
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 const ADMIN_EMAIL = process.env.ADMIRAL_ADMIN_EMAIL || 'admin@admiralai.se';
 
+// Köp i MATCHi, inlagda som manuella konverteringar på DB Golfs budgetplaner för BF-kampanjerna.
+async function bfSales() {
+  const { data, error } = await supabase
+    .from('manual_conversions')
+    .select('conversion_date, courses_sold, revenue_sek, notes, budget_plans!inner(campaign_name, user_id)')
+    .eq('budget_plans.user_id', BF.userId)
+    .in('budget_plans.campaign_name', Object.values(BF.campaignNames))
+    .gte('conversion_date', BF.insightsSince);
+  if (error) throw new Error(`Kunde inte läsa köpen: ${error.message}`);
+  return data || [];
+}
+
 const handler = async (event) => {
   const cors = getCorsHeaders(event, 'GET, OPTIONS');
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: cors, body: '' };
@@ -40,7 +52,7 @@ const handler = async (event) => {
   try {
     const tokens = await tokensForCustomer(supabase, BF.userId);
     if (!tokens.length) return json(403, { error: 'Inget giltigt Meta-token för DB Golf', meta_not_connected: true });
-    return json(200, await fetchBlackFriday({ tokens }));
+    return json(200, await fetchBlackFriday({ tokens, sales: await bfSales() }));
   } catch (err) {
     return json(502, { error: err.message });
   }
