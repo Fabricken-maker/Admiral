@@ -98,7 +98,38 @@ const dayLabel = (d) => {
  * ads:       [{id,name,campaign_id,status,effective_status,created_time}]
  * rows:      dagliga insights på annonsnivå [{ad_id,campaign_id,date_start,spend,...}]
  */
-export function buildView({ campaigns = [], ads = [], rows = [], now = new Date(), demo = false } = {}) {
+/**
+ * Köp i MATCHi (klippkortet "Black Friday 2026"). Pixeln mäter inte där, så köpen läggs in för hand
+ * som manuella konverteringar på kampanjernas budgetplaner, med BF / Black Friday i anteckningen.
+ * Det går inte att se vilka köp som kom från annonserna: alla sålda kort räknas.
+ * sales: [{conversion_date, courses_sold, revenue_sek, notes}]
+ */
+export function isBfSale(sale) {
+  return isBfName(sale?.notes || '');
+}
+
+export function matchiSales(sales = [], adSpend = 0) {
+  const mine = sales.filter(isBfSale);
+  const cards = mine.reduce((sum, s) => sum + Math.round(num(s.courses_sold)), 0);
+  const revenue = Math.round(mine.reduce((sum, s) => sum + num(s.revenue_sek), 0) * 100) / 100;
+  const perDay = new Map();
+  for (const s of mine) {
+    const d = perDay.get(s.conversion_date) || { date: s.conversion_date, cards: 0, revenue: 0 };
+    d.cards += Math.round(num(s.courses_sold));
+    d.revenue += num(s.revenue_sek);
+    perDay.set(s.conversion_date, d);
+  }
+  return {
+    cards,
+    revenue,
+    ad_spend: Math.round(adSpend * 100) / 100,
+    cost_per_card: cards > 0 ? adSpend / cards : null,
+    roas: adSpend > 0 && revenue > 0 ? revenue / adSpend : null,
+    days: [...perDay.values()].sort((a, b) => a.date.localeCompare(b.date)),
+  };
+}
+
+export function buildView({ campaigns = [], ads = [], rows = [], sales = [], now = new Date(), demo = false } = {}) {
   const roleOf = (campaignId) => {
     const c = campaigns.find((x) => x.id === campaignId);
     if (!c) return null;
@@ -185,6 +216,8 @@ export function buildView({ campaigns = [], ads = [], rows = [], now = new Date(
       used_pct: Math.min(100, Math.round((total.spend / BF.totalBudget) * 1000) / 10),
     },
     totals: total,
+    // Annonskostnaden här är hela BF-leveransen, även före 25 nov, eftersom korten såldes från 24 nov.
+    matchi: matchiSales(sales, total.spend + preStartSpend),
     days,
     campaigns: campaignsOut,
     ads: adsOut,
@@ -214,14 +247,14 @@ async function getAll(path, params, token, fetchImpl) {
   return out;
 }
 
-export async function fetchBlackFriday({ tokens, now = new Date(), fetchImpl = fetch }) {
+export async function fetchBlackFriday({ tokens, sales = [], now = new Date(), fetchImpl = fetch }) {
   return withTokens(tokens, async (token) => {
     const names = Object.values(BF.campaignNames);
     const all = await getAll(`${BF.accountId}/campaigns`, {
       fields: 'id,name,status,effective_status,daily_budget,lifetime_budget,start_time,stop_time', limit: 100,
     }, token, fetchImpl);
     const campaigns = all.filter((c) => names.includes(c.name));
-    if (!campaigns.length) return buildView({ campaigns: [], now });
+    if (!campaigns.length) return buildView({ campaigns: [], sales, now });
 
     const ids = campaigns.map((c) => c.id);
     const since = BF.insightsSince;
@@ -241,7 +274,7 @@ export async function fetchBlackFriday({ tokens, now = new Date(), fetchImpl = f
         limit: 500,
       }, token, fetchImpl),
     ]);
-    return buildView({ campaigns, ads, rows, now });
+    return buildView({ campaigns, ads, rows, sales, now });
   });
 }
 
@@ -270,5 +303,9 @@ export function demoInput(now = new Date('2026-11-26T20:00:00+01:00')) {
     mk('a1', 'c1', '2026-11-26', 262, 21000, 540, 1), mk('a2', 'c1', '2026-11-26', 231, 18800, 402, 2), mk('a3', 'c1', '2026-11-26', 170, 13900, 244, 0),
     mk('a4', 'c2', '2026-11-26', 51, 1900, 74, 2), mk('a5', 'c2', '2026-11-26', 36, 1500, 48, 0),
   ];
-  return { campaigns, ads, rows, now, demo: true };
+  const sales = [
+    { conversion_date: '2026-11-25', courses_sold: 1, revenue_sek: 1500, notes: 'Black Friday 2026 (exempel)' },
+    { conversion_date: '2026-11-26', courses_sold: 3, revenue_sek: 4500, notes: 'Black Friday 2026 (exempel)' },
+  ];
+  return { campaigns, ads, rows, sales, now, demo: true };
 }

@@ -195,8 +195,9 @@ function render() {
       <div class="kpi"><span>Visningar</span><b>${int(t.impressions)}</b></div>
       <div class="kpi"><span>Klick</span><b>${int(t.link_clicks || t.clicks)}</b><small>${t.link_clicks ? 'länkklick' : 'alla klick'}</small></div>
       <div class="kpi"><span>Kostnad per klick</span><b>${kr(t.cpc, 2)}</b></div>
-      <div class="kpi hot"><span>Resultat (köp)</span><b>${int(t.results)}</b><small>pixel · ${t.revenue ? 'intäkt ' + kr(t.revenue) : 'ingen intäkt ännu'}</small></div>
-      <div class="kpi hot"><span>Kostnad per resultat</span><b>${kr(t.cost_per_result)}</b><small>${t.roas ? 'ROAS ' + t.roas.toFixed(1) : 'ROAS saknas'}</small></div>
+      <div class="kpi hot"><span>Sålda kort i MATCHi</span><b>${int(v.matchi.cards)}</b><small>${v.matchi.cards ? 'intäkt ' + kr(v.matchi.revenue) + (v.matchi.cost_per_card != null ? ' · ' + kr(v.matchi.cost_per_card) + ' per kort' : '') : 'inga köp inlagda ännu'}</small></div>
+      <div class="kpi"><span>Resultat (pixel)</span><b>${int(t.results)}</b><small>${t.revenue ? 'intäkt ' + kr(t.revenue) : 'pixeln mäter inte i MATCHi'}</small></div>
+      <div class="kpi"><span>Kostnad per resultat</span><b>${kr(t.cost_per_result)}</b><small>${t.roas ? 'ROAS ' + t.roas.toFixed(1) : 'ROAS saknas'}</small></div>
     </div>
 
     <h2>Per dag <small>planerat mot verkligt</small></h2>
@@ -211,7 +212,7 @@ function render() {
     <h2>Annonser <small>kostnad per annons</small></h2>
     <div class="tablewrap">${adsTable(v)}</div>
 
-    <p class="foot"><b>Så räknas siffrorna.</b> Hämtas direkt från Meta (bara läsning – Admiral skriver aldrig i DB Golfs konto). Black Friday-annonser = annonser i TB_Trafik_2026H2 och TB_Varm_2026H2 vars namn innehåller BF. Andra annonser i samma kampanjer (t.ex. Prova50) räknas inte, och bara spend från 25 nov ingår. Resultat = köp enligt pixeln (samma köp räknas bara en gång). Kostnad per klick räknas på länkklick när Meta anger dem. Meta kan justera siffrorna i efterhand, särskilt de senaste dygnen. Uppdaterad ${new Date(v.generated_at).toLocaleString('sv-SE')}.</p>`;
+    <p class="foot"><b>Så räknas siffrorna.</b> Hämtas direkt från Meta (bara läsning – Admiral skriver aldrig i DB Golfs konto). Black Friday-annonser = annonser i TB_Trafik_2026H2 och TB_Varm_2026H2 vars namn innehåller BF. Andra annonser i samma kampanjer (t.ex. Prova50) räknas inte, och bara spend från 25 nov ingår. Resultat = köp enligt pixeln (samma köp räknas bara en gång). Sålda kort i MATCHi = klippkortet Black Friday 2026, avläst i MATCHi och inlagt för hand; alla sålda kort räknas, oavsett om köparen kom från en annons, och kostnaden per kort räknas på all leverans för BF-annonserna, även före 25 nov. Kostnad per klick räknas på länkklick när Meta anger dem. Meta kan justera siffrorna i efterhand, särskilt de senaste dygnen. Uppdaterad ${new Date(v.generated_at).toLocaleString('sv-SE')}.</p>`;
   startCountdown();
 }
 

@@ -114,3 +114,26 @@ test('åtkomst: bara admin och DB Golf; exempeldata bara för admin', () => {
   assert.match(s, /!isAdmin && userId !== BF\.userId/);
   assert.match(s, /demo[\s\S]*if \(!isAdmin\)/);
 });
+
+test('köp i MATCHi: bara rader märkta Black Friday räknas, kostnad per kort på all BF-leverans', async () => {
+  const { matchiSales } = await import('../netlify/functions/lib/black-friday.js');
+  const input = demoInput();
+  input.rows.push({ ad_id: 'a1', campaign_id: 'c1', date_start: '2026-11-24', spend: '100', impressions: '200', clicks: '3' });
+  input.sales = [
+    { conversion_date: '2026-11-24', courses_sold: 1, revenue_sek: '1500', notes: 'Black Friday 2026, MATCHi' },
+    { conversion_date: '2026-11-26', courses_sold: 2, revenue_sek: '3000', notes: 'BF-kort' },
+    { conversion_date: '2026-11-26', courses_sold: 4, revenue_sek: '2000', notes: 'Prova50' },
+    { conversion_date: '2026-11-26', courses_sold: 1, revenue_sek: '800', notes: null },
+  ];
+  const v = buildView(input);
+  assert.equal(v.matchi.cards, 3);
+  assert.equal(v.matchi.revenue, 4500);
+  assert.equal(v.matchi.ad_spend, v.budget.spent + v.budget.pre_start_spend);
+  assert.equal(v.matchi.cost_per_card, v.matchi.ad_spend / 3);
+  assert.deepEqual(v.matchi.days.map((d) => [d.date, d.cards]), [['2026-11-24', 1], ['2026-11-26', 2]]);
+  const none = matchiSales([], 500);
+  assert.equal(none.cards, 0);
+  assert.equal(none.cost_per_card, null);
+  assert.equal(none.roas, null);
+  assert.equal(buildView({}).matchi.cards, 0);
+});
