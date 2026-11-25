@@ -347,6 +347,16 @@ export async function backfillAdAccounts(supabase, userId, token = null, fetchIm
   return patch.meta_ad_account_id;
 }
 
+/**
+ * Har planen minst ett mål satt? Planer som upptäckten skapar saknar mål och har
+ * Metas dagsbudget × dagar som månadsbudget. Meta spenderar sällan hela dagsbudgeten,
+ * så budget-adjust skulle annars föreslå att "ta igen" mellanskillnaden i slutet av månaden.
+ */
+export function hasGoals(plan) {
+  return ['target_roas', 'target_cpa', 'target_revenue', 'target_courses_sold']
+    .some((k) => Number(plan?.[k]) > 0);
+}
+
 export const sanitize = (s) => String(s || '').replace(/access_token=[^&\s"']+/gi, 'access_token=[REDACTED]');
 
 /**
