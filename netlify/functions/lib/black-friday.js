@@ -5,8 +5,9 @@
  * och TB_Varm_2026H2 (varm). Admiral skriver aldrig till Meta (DB Golf saknar skrivbehörighet):
  * här används bara graphGet.
  *
- * Vilka annonser som är Black Friday-annonser: namnet innehåller BF / Black Friday,
- * eller annonsen skapades efter BF_SINCE i någon av de två kampanjerna.
+ * Vilka annonser som är Black Friday-annonser: namnet innehåller BF / Black Friday.
+ * Andra annonser i samma kampanjer (t.ex. TB_ProvaPa50_*) rullar parallellt och räknas inte.
+ * Spend räknas från erbjudandets första dag; det som levererats dessförinnan redovisas separat.
  */
 import { graphGet, withTokens } from './meta-graph.js';
 import { actionValue, PURCHASE_TYPES, addDays } from './weekly.js';
@@ -24,8 +25,8 @@ export const BF = {
   totalBudget: 2000,
   // Planerad spend per dag; resten av totalen är reserv.
   plan: { '2026-11-25': 200, '2026-11-26': 750, '2026-11-27': 950 },
-  // Annonser som skapats från och med detta datum i de två kampanjerna räknas som BF.
-  adsCreatedSince: '2026-11-20',
+  // Insights hämtas från detta datum, så att leverans före erbjudandets start kan redovisas separat.
+  insightsSince: '2026-11-20',
   films: [
     { key: 'pris', title: 'BF_Pris', tagline: '6 timmar · 1 500 kr', match: /pris|1500|6tim/i, image: '/black-friday/bf_pris.jpg' },
     { key: 'spara780', title: 'BF_Spara780', tagline: 'Spara 780 kr', match: /780|spara/i, image: '/black-friday/bf_spara780.jpg' },
@@ -40,8 +41,7 @@ export function filmFor(adName = '') {
 }
 
 export function isBfAd(ad) {
-  if (isBfName(ad.name)) return true;
-  return Boolean(ad.created_time) && ad.created_time.slice(0, 10) >= BF.adsCreatedSince;
+  return isBfName(ad.name);
 }
 
 const num = (v) => Number(v || 0);
@@ -106,7 +106,11 @@ export function buildView({ campaigns = [], ads = [], rows = [], now = new Date(
   };
   const bfAds = ads.filter(isBfAd);
   const bfIds = new Set(bfAds.map((a) => a.id));
-  const bfRows = rows.filter((r) => bfIds.has(r.ad_id));
+  const allBfRows = rows.filter((r) => bfIds.has(r.ad_id));
+  // Budgeten gäller erbjudandets dagar: leverans före start räknas inte in, men redovisas.
+  const bfRows = allBfRows.filter((r) => r.date_start >= BF.days[0]);
+  const preStartSpend = Math.round(allBfRows.filter((r) => r.date_start < BF.days[0])
+    .reduce((sum, r) => sum + num(r.spend), 0) * 100) / 100;
 
   const tot = emptyStats();
   const perDay = new Map();
@@ -176,6 +180,7 @@ export function buildView({ campaigns = [], ads = [], rows = [], now = new Date(
       planned: plannedTotal,
       reserve: BF.totalBudget - plannedTotal,
       spent: total.spend,
+      pre_start_spend: preStartSpend,
       left: Math.round((BF.totalBudget - total.spend) * 100) / 100,
       used_pct: Math.min(100, Math.round((total.spend / BF.totalBudget) * 1000) / 10),
     },
@@ -189,6 +194,7 @@ export function buildView({ campaigns = [], ads = [], rows = [], now = new Date(
       !campaigns.length && 'Hittar inte kampanjerna TB_Trafik_2026H2 / TB_Varm_2026H2 i kontot.',
       campaigns.length && !bfAds.length && 'Inga Black Friday-annonser hittades ännu – annonserna byggs i Annonshanteraren.',
       win.state === 'before' && 'Erbjudandet har inte börjat. Siffrorna fylls på från 25 nov.',
+      preStartSpend > 0 && `Annonserna levererade för ${String(preStartSpend.toFixed(2)).replace('.', ',')} kr före 25 nov. Det ingår inte i siffrorna här.`,
     ].filter(Boolean),
   };
 }
@@ -218,7 +224,7 @@ export async function fetchBlackFriday({ tokens, now = new Date(), fetchImpl = f
     if (!campaigns.length) return buildView({ campaigns: [], now });
 
     const ids = campaigns.map((c) => c.id);
-    const since = BF.adsCreatedSince;
+    const since = BF.insightsSince;
     const today = now.toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' });
     const lastDay = addDays(BF.days.at(-1), 3);
     const until = today < lastDay ? today : lastDay;
@@ -230,7 +236,7 @@ export async function fetchBlackFriday({ tokens, now = new Date(), fetchImpl = f
       getAll(`${BF.accountId}/insights`, {
         level: 'ad', time_increment: 1,
         fields: 'ad_id,campaign_id,spend,impressions,clicks,inline_link_clicks,actions,action_values',
-        time_range: { since: BF.adsCreatedSince, until: until > since ? until : since },
+        time_range: { since: BF.insightsSince, until: until > since ? until : since },
         filtering: [{ field: 'campaign.id', operator: 'IN', value: ids }],
         limit: 500,
       }, token, fetchImpl),

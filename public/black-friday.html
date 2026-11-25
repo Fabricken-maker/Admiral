@@ -211,7 +211,7 @@ function render() {
     <h2>Annonser <small>kostnad per annons</small></h2>
     <div class="tablewrap">${adsTable(v)}</div>
 
-    <p class="foot"><b>Så räknas siffrorna.</b> Hämtas direkt från Meta (bara läsning – Admiral skriver aldrig i DB Golfs konto). Black Friday-annonser = annonser i TB_Trafik_2026H2 och TB_Varm_2026H2 vars namn innehåller BF eller som skapats från 20 nov. Resultat = köp enligt pixeln (samma köp räknas bara en gång). Kostnad per klick räknas på länkklick när Meta anger dem. Meta kan justera siffrorna i efterhand, särskilt de senaste dygnen. Uppdaterad ${new Date(v.generated_at).toLocaleString('sv-SE')}.</p>`;
+    <p class="foot"><b>Så räknas siffrorna.</b> Hämtas direkt från Meta (bara läsning – Admiral skriver aldrig i DB Golfs konto). Black Friday-annonser = annonser i TB_Trafik_2026H2 och TB_Varm_2026H2 vars namn innehåller BF. Andra annonser i samma kampanjer (t.ex. Prova50) räknas inte, och bara spend från 25 nov ingår. Resultat = köp enligt pixeln (samma köp räknas bara en gång). Kostnad per klick räknas på länkklick när Meta anger dem. Meta kan justera siffrorna i efterhand, särskilt de senaste dygnen. Uppdaterad ${new Date(v.generated_at).toLocaleString('sv-SE')}.</p>`;
   startCountdown();
 }
 

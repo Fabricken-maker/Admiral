@@ -10,12 +10,29 @@ test('filmer känns igen på annonsnamnet', () => {
   assert.equal(filmFor('Något annat'), null);
 });
 
-test('Black Friday-annons: namn med BF/Black Friday eller skapad efter 20 nov', () => {
-  assert.ok(isBfAd({ name: 'TB_BF_Pris' }));
+test('Black Friday-annons: bara namn med BF/Black Friday, inte Prova50 eller andra nya annonser', () => {
+  assert.ok(isBfAd({ name: 'TB_BF_6tim1500_Pris' }));
+  assert.ok(isBfAd({ name: 'TB_BF_Ganget_Varm' }));
   assert.ok(isBfAd({ name: 'Black Friday 2026' }));
   assert.ok(!isBfAd({ name: 'TB_Kall_Video1', created_time: '2026-10-01T10:00:00+0200' }));
-  assert.ok(isBfAd({ name: 'Ny annons', created_time: '2026-11-24T14:00:00+0100' }));
+  assert.ok(!isBfAd({ name: 'TB_ProvaPa50_Ganget', created_time: '2026-11-23T14:00:00+0100' }));
+  assert.ok(!isBfAd({ name: 'Ny annons', created_time: '2026-11-24T14:00:00+0100' }));
   assert.ok(!isBfAd({ name: 'Bfoo' }));
+});
+
+test('Prova50 räknas inte, och leverans före 25 nov redovisas separat', () => {
+  const input = demoInput();
+  const base = input.rows.reduce((s, r) => s + Number(r.spend), 0);
+  input.ads.push({ id: 'p50', name: 'TB_ProvaPa50_Ganget', campaign_id: 'c1', created_time: '2026-11-23T10:00:00+0100' });
+  input.rows.push({ ad_id: 'p50', campaign_id: 'c1', date_start: '2026-11-25', spend: '44', impressions: '600', clicks: '7' });
+  input.rows.push({ ad_id: 'a1', campaign_id: 'c1', date_start: '2026-11-24', spend: '12.5', impressions: '200', clicks: '3' });
+  const v = buildView(input);
+  assert.equal(v.totals.spend, base);
+  assert.equal(v.budget.pre_start_spend, 12.5);
+  assert.ok(!v.ads.some((a) => a.name.includes('Prova')));
+  assert.equal(v.films.find((f) => f.key === 'ganget').ads, 1);
+  assert.ok(!v.days.some((d) => d.date < '2026-11-25'));
+  assert.ok(v.notes.some((n) => n.includes('12,50 kr')));
 });
 
 test('tidsgränsen: före, under och efter erbjudandet', () => {
