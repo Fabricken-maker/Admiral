@@ -1265,6 +1265,7 @@
         <nav class="topbar-nav">
           <a href="/dashboard.html" class="nav-tab active">Dashboard</a>
           <a href="/admin.html" class="nav-tab" id="nav-admin" style="display:none">Admin</a>
+          <a href="/black-friday.html" class="nav-tab" id="nav-bf" style="display:none;color:#f5c542;font-weight:700">Black Friday</a>
         </nav>
         </div>
         <div class="topbar-right">
@@ -1713,6 +1714,8 @@
           document.getElementById('admin-link').style.display = 'block';
           document.getElementById('nav-admin').style.display = 'inline-flex';
         }
+        // Black Friday-vyn: admin och DB Golf (user 6)
+        if (email === 'admin@admiralai.se' || user.id === 6) document.getElementById('nav-bf').style.display = 'inline-flex';
       } catch(e) {}
     })();
 
